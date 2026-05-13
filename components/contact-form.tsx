@@ -28,12 +28,12 @@ export function ContactForm() {
 
   if (state === "success") {
     return (
-      <div className="flex flex-col items-start gap-3 rounded-2xl border border-green-100 bg-green-50 p-8">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100 text-green-600 text-xl font-bold">
+      <div className="flex flex-col items-start gap-3 rounded-2xl border border-rule bg-surface p-8">
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-soft text-pink text-xl font-bold">
           ✓
         </div>
-        <h3 className="text-lg font-semibold text-gray-900">Bericht verstuurd</h3>
-        <p className="text-sm leading-relaxed text-gray-500">
+        <h3 className="text-lg font-semibold text-ink">Bericht verstuurd</h3>
+        <p className="text-sm leading-relaxed text-ink-2">
           Bedankt voor je bericht. We nemen zo snel mogelijk contact met je op.
         </p>
         <button
@@ -45,7 +45,7 @@ export function ContactForm() {
             setSubject("");
             setMessage("");
           }}
-          className="mt-2 text-sm font-semibold text-gray-900 hover:underline"
+          className="mt-2 text-sm font-semibold text-ink hover:underline"
         >
           Nieuw bericht sturen →
         </button>
@@ -54,13 +54,13 @@ export function ContactForm() {
   }
 
   const inputClass =
-    "w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 outline-none transition focus:border-amber-400 focus:bg-white focus:ring-2 focus:ring-amber-100 disabled:cursor-not-allowed disabled:opacity-60";
+    "w-full rounded-xl border border-rule bg-surface px-4 py-3 text-sm text-ink placeholder:text-muted outline-none transition focus:border-pink focus:ring-2 focus:ring-pink/10 disabled:cursor-not-allowed disabled:opacity-60";
 
   return (
     <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="name" className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+          <label htmlFor="name" className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
             Naam
           </label>
           <input
@@ -77,7 +77,7 @@ export function ContactForm() {
         </div>
 
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+          <label htmlFor="email" className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
             E-mail
           </label>
           <input
@@ -95,7 +95,7 @@ export function ContactForm() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="subject" className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+        <label htmlFor="subject" className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
           Onderwerp
         </label>
         <input
@@ -111,7 +111,7 @@ export function ContactForm() {
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="message" className="text-xs font-semibold uppercase tracking-widest text-gray-400">
+        <label htmlFor="message" className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
           Bericht
         </label>
         <textarea
@@ -127,7 +127,7 @@ export function ContactForm() {
       </div>
 
       {state === "error" && (
-        <p className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 text-sm text-red-600">
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
           Er ging iets mis. Probeer het opnieuw of stuur een e-mail rechtstreeks.
         </p>
       )}
@@ -135,7 +135,7 @@ export function ContactForm() {
       <button
         type="submit"
         disabled={state === "loading" || !name || !email || !subject || !message}
-        className="mt-1 rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+        className="mt-1 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-paper transition-colors hover:bg-ink/80 disabled:cursor-not-allowed disabled:opacity-50"
       >
         {state === "loading" ? "Verzenden…" : "Verstuur bericht"}
       </button>

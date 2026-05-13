@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { siteConfig } from "@/lib/site-config";
+import { ThemeToggle } from "./theme-toggle";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -14,23 +15,27 @@ export function SiteHeader() {
     href === "/" ? pathname === "/" : pathname.startsWith(href);
 
   return (
-    <header className="sticky top-0 z-30 border-b border-gray-100 bg-white/90 backdrop-blur-md">
-      <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-rule bg-paper/85 backdrop-blur-[14px] backdrop-saturate-150">
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
         {/* Brand */}
         <Link
           href="/"
-          className="flex items-center gap-2.5"
+          className="flex items-center gap-3"
           aria-label={siteConfig.name}
           onClick={() => setOpen(false)}
         >
-          <span
-            className="flex h-8 w-8 shrink-0 rounded-full bg-amber-500"
-            aria-hidden="true"
-          />
-          <div className="leading-tight">
-            <p className="text-sm font-bold text-gray-900">{siteConfig.name}</p>
-            <p className="text-xs text-gray-400">{siteConfig.location}</p>
-          </div>
+          {/* Direction C logo mark */}
+          <span className="relative flex h-7 w-7 shrink-0 rounded-lg bg-pink" aria-hidden="true">
+            <span className="absolute inset-1.5 rounded-[3px] bg-paper" />
+          </span>
+          <span className="leading-none">
+            <span className="block text-[0.9375rem] font-semibold tracking-tight text-ink">
+              {siteConfig.name}
+            </span>
+            <span className="mt-0.5 block font-mono text-[0.625rem] tracking-[0.08em] text-muted">
+              {siteConfig.postalCode}
+            </span>
+          </span>
         </Link>
 
         {/* Desktop nav */}
@@ -39,10 +44,8 @@ export function SiteHeader() {
             <Link
               key={item.href}
               href={item.href}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
-                isActive(item.href)
-                  ? "bg-gray-100 text-gray-900"
-                  : "text-gray-500 hover:text-gray-900"
+              className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
+                isActive(item.href) ? "text-ink" : "text-ink-2 hover:text-ink"
               }`}
             >
               {item.label}
@@ -50,30 +53,44 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        {/* Hamburger */}
-        <button
-          type="button"
-          onClick={() => setOpen((o) => !o)}
-          aria-label={open ? "Menu sluiten" : "Menu openen"}
-          aria-expanded={open}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-gray-500 transition-colors hover:bg-gray-100 sm:hidden"
-        >
-          {open ? (
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <path d="M1 1l16 16M17 1L1 17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-              <path d="M1 4h16M1 9h16M1 14h16" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          )}
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle />
+
+          {/* Hamburger */}
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            aria-label={open ? "Menu sluiten" : "Menu openen"}
+            aria-expanded={open}
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-ink/5 hover:text-ink sm:hidden"
+          >
+            {open ? (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path
+                  d="M2 2l12 12M14 2L2 14"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                />
+              </svg>
+            ) : (
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path
+                  d="M2 4h12M2 8h12M2 12h12"
+                  stroke="currentColor"
+                  strokeWidth="1.75"
+                  strokeLinecap="round"
+                />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}
       {open && (
-        <div className="border-t border-gray-100 bg-white px-4 pb-4 sm:hidden">
-          <nav className="flex flex-col gap-1 pt-2" aria-label="Mobiele navigatie">
+        <div className="border-t border-rule bg-paper px-5 pb-4 sm:hidden">
+          <nav className="flex flex-col gap-0.5 pt-2" aria-label="Mobiele navigatie">
             {siteConfig.navigation.map((item) => (
               <Link
                 key={item.href}
@@ -81,8 +98,8 @@ export function SiteHeader() {
                 onClick={() => setOpen(false)}
                 className={`rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
                   isActive(item.href)
-                    ? "bg-gray-100 text-gray-900"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    ? "bg-pink-soft text-pink-ink"
+                    : "text-ink-2 hover:bg-ink/5 hover:text-ink"
                 }`}
               >
                 {item.label}
