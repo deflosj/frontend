@@ -1,0 +1,12 @@
+export { IconPlus } from "./IconPlus";
+export { IconEdit } from "./IconEdit";
+export { IconTrash } from "./IconTrash";
+export { IconSun } from "./IconSun";
+export { IconMoon } from "./IconMoon";
+export { IconMonitor } from "./IconMonitor";
+export { IconUser } from "./IconUser";
+export { IconCheck } from "./IconCheck";
+export { IconHamburger } from "./IconHamburger";
+export { IconClose } from "./IconClose";
+export { IconFacebook } from "./IconFacebook";
+export { IconInstagram } from "./IconInstagram";

@@ -5,6 +5,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { clearToken, getToken } from "@/lib/api";
+import { DrawerProvider } from "@/components/admin/drawer-provider";
 import "./admin.css";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
@@ -188,7 +189,9 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
       </aside>
 
       {/* ── Content ─────────────────────────────────────── */}
-      <div className="admin-content min-w-0 flex-1">{children}</div>
+      <DrawerProvider>
+        <div className="admin-content min-w-0 flex-1">{children}</div>
+      </DrawerProvider>
     </div>
   );
 }

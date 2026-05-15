@@ -6,50 +6,15 @@ import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import { siteConfig } from "@/lib/site-config";
-
-// ── Icons ─────────────────────────────────────────────────────────────────────
-function IconSun() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="8" r="2.75" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.06 1.06M11.54 11.54l1.06 1.06M12.6 3.4l-1.06 1.06M4.46 11.54l-1.06 1.06" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconMoon() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6.002 6.002 0 0 0 7 7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconMonitor() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1" y="2" width="14" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M5.5 15h5M8 11.5V15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconUser() {
-  return (
-    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="8" cy="5.5" r="2.75" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M2.5 14c0-3 2.46-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconCheck() {
-  return (
-    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
-      <path d="M2 6.5l3.5 3.5 5.5-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
+import {
+  IconSun,
+  IconMoon,
+  IconMonitor,
+  IconUser,
+  IconCheck,
+  IconHamburger,
+  IconClose,
+} from "@/components/icons";
 
 // ── Theme dropdown ────────────────────────────────────────────────────────────
 
@@ -222,15 +187,7 @@ export function SiteHeader() {
             aria-expanded={open}
             className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-ink/5 hover:text-ink sm:hidden"
           >
-            {open ? (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-              </svg>
-            ) : (
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
-              </svg>
-            )}
+            {open ? <IconClose /> : <IconHamburger />}
           </button>
         </div>
       </div>

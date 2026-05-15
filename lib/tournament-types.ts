@@ -72,11 +72,14 @@ export interface TournamentMatch {
   bracketPos: string | null;
 }
 
+export type TournamentStatus = "UPCOMING" | "ONGOING" | "COMPLETED";
+
 export interface TournamentListItem {
   id: number;
   name: string;
   year: number;
   isActive: boolean;
+  status: TournamentStatus;
   createdAt: string;
 }
 

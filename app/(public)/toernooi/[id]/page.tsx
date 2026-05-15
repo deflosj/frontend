@@ -110,7 +110,7 @@ function MatchBlock({
     <div className="rounded-xl border border-rule bg-surface px-4 py-4">
       {match.track !== null && (
         <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">
-          Baan {match.track} · {fmt(match.time)}
+          Baan {match.track} · {fmt(match.time ?? new Date().toISOString())}
         </p>
       )}
       <div className="flex items-center gap-3">
@@ -219,7 +219,7 @@ function TabWedstrijden({
       {phases.map((phase) => {
         const phaseMatches = matches
           .filter((m) => m.phase === phase)
-          .sort((a, b) => new Date(a.time).getTime() - new Date(b.time).getTime());
+          .sort((a, b) => new Date(a.time ?? new Date()).getTime() - new Date(b.time ?? new Date()).getTime());
         return (
           <div key={phase}>
             <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-muted">

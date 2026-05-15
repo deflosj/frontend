@@ -76,13 +76,13 @@
   padding: 0.55rem 1.5rem;
   font-size: 0.875rem;
   font-weight: 500;
-  color: rgba(250, 248, 245, 0.6);
+  color: rgba(250, 248, 245, 0.78);
   transition: color 120ms ease, background 120ms ease;
 }
 
 .admin-nav__link:hover {
-  color: rgba(250, 248, 245, 0.9);
-  background: rgba(255, 255, 255, 0.06);
+  color: rgba(250, 248, 245, 0.95);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .admin-nav__link.active {
@@ -258,7 +258,7 @@ table.admin-table {
 }
 
 .badge--green  { background: #e6f4ea; color: #1e7e34; }
-.badge--yellow { background: #fff8e1; color: #b37400; }
+.badge--yellow { background: #fff3cc; color: #7a4d00; }
 .badge--red    { background: #fce8e6; color: #c5221f; }
 .badge--gray   { background: var(--bg-alt); color: var(--muted); }
 .badge--pink   { background: var(--accent-soft); color: var(--accent-strong); }
@@ -537,6 +537,202 @@ table.admin-table {
   font-size: 0.9rem;
 }
 
+/* ── Radix Sheet (right-side drawer) ─────────────────────── */
+
+.admin-sheet-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(0, 0, 0, 0.35);
+  animation: sheet-overlay-in 150ms ease;
+}
+
+.admin-sheet-overlay[data-state="closed"] {
+  animation: sheet-overlay-out 150ms ease;
+}
+
+.admin-sheet {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 50;
+  height: 100dvh;
+  overflow-y: auto;
+  background: var(--bg-alt);
+  box-shadow: -4px 0 32px rgba(0, 0, 0, 0.12);
+  padding: 1.75rem;
+  outline: none;
+  animation: sheet-slide-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.admin-sheet[data-state="closed"] {
+  animation: sheet-slide-out 180ms ease-in;
+}
+
+.admin-sheet__title {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 500;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.admin-sheet__desc {
+  margin: 0.2rem 0 0;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+@keyframes sheet-overlay-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sheet-overlay-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes sheet-slide-in    { from { transform: translateX(100%); } to { transform: translateX(0); } }
+@keyframes sheet-slide-out   { from { transform: translateX(0); } to { transform: translateX(100%); } }
+
+/* ── Confirm dialog ──────────────────────────────────────── */
+
+.admin-confirm__title {
+  margin: 0 0 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.admin-confirm__desc {
+  display: block;
+  margin: 0 0 1.5rem;
+  font-size: 0.875rem;
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+/* ── Step progress bar ───────────────────────────────────── */
+
+.admin-step-bar {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+
+.admin-step-bar__segment {
+  flex: 1;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--border);
+  transition: background 200ms;
+}
+
+.admin-step-bar__segment[data-active="true"] {
+  background: var(--accent);
+}
+
+/* ── Step labels ─────────────────────────────────────────── */
+
+.admin-step-labels {
+  display: flex;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.admin-step-labels__item {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.admin-step-labels__item[data-active="true"] {
+  color: var(--accent);
+}
+
+.admin-step-labels__item[data-done="true"] {
+  color: var(--text-2);
+}
+
+.admin-step-labels__num {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  font-size: 0.65rem;
+  font-weight: 700;
+  border: 1.5px solid currentColor;
+  line-height: 1;
+}
+
+/* ── Preset chips (tournament structure step) ────────────── */
+
+.preset-row {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.preset-input {
+  width: 72px;
+  padding: 0.35rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.8rem;
+  font-family: inherit;
+  outline: none;
+}
+
+.preset-input:focus {
+  border-color: var(--accent);
+}
+
+/* ── Summary box ─────────────────────────────────────────── */
+
+.admin-summary {
+  padding: 0.9rem 1rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg-alt);
+  border: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--text-2);
+  line-height: 1.8;
+}
+
+.admin-summary__title {
+  display: block;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 0.2rem;
+}
+
+.admin-summary__list {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.admin-summary [data-warn="true"] {
+  color: #b37400;
+}
+
+/* ── Form helpers ────────────────────────────────────────── */
+
+.form-field__label {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--text-2);
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
 /* ── Native <dialog> support ─────────────────────────────── */
 
 dialog {
@@ -556,15 +752,25 @@ dialog.admin-drawer {
   outline: none;
 }
 
-dialog.admin-confirm {
-  margin: auto;
-  max-width: min(420px, 90vw);
-  width: 100%;
+/* Radix Dialog.Content renders a <div>, not <dialog> — use class-only selector */
+.admin-confirm {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  width: min(420px, 90vw);
   border-radius: var(--radius-xl);
   background: var(--surface);
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
   padding: 1.75rem;
   outline: none;
+  animation: confirm-in 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes confirm-in {
+  from { opacity: 0; transform: translate(-50%, -48%) scale(0.96); }
+  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 }
 
 dialog::backdrop {
