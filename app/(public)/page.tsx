@@ -90,65 +90,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── Day programme ────────────────────────────────────── */}
-      <section className="border-b border-rule">
-        <div className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
-          <div className="mb-8">
-            <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
-              Programma
-            </p>
-            <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-              Hoe ziet een dag eruit?
-            </h2>
-          </div>
-
-          <div className="flex flex-col divide-y divide-rule">
-            {weeklyProgram.map((item) => (
-              <div key={item.time} className="flex gap-6 py-5 first:pt-0 last:pb-0">
-                <p className="w-12 shrink-0 font-mono text-sm font-medium tabular-nums text-muted">
-                  {item.time}
-                </p>
-                <div>
-                  <p className="text-sm font-semibold text-ink">{item.title}</p>
-                  <p className="mt-0.5 text-sm leading-relaxed text-ink-2">{item.description}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── CTA ──────────────────────────────────────────────── */}
-      <section>
-        <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8 sm:py-20">
-          <div className="rounded-3xl bg-surface border border-rule px-8 py-10 sm:px-12 sm:py-14 text-center">
-            <p className="mb-3 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
-              Meedoen
-            </p>
-            <h2 className="mb-4 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-              Klaar om deel te nemen?
-            </h2>
-            <p className="mx-auto mb-8 max-w-md text-base leading-relaxed text-ink-2">
-              Schrijf je in voor het tornooi of de dorpelingenkoers. Iedereen is welkom,
-              van beginner tot gevorderde.
-            </p>
-            <div className="flex flex-wrap justify-center gap-3">
-              <Link
-                href="/toernooi"
-                className="rounded-full bg-pink px-6 py-3 text-sm font-semibold text-white transition-colors hover:bg-pink/85"
-              >
-                Inschrijven tornooi
-              </Link>
-              <Link
-                href="/contact"
-                className="rounded-full border border-rule px-6 py-3 text-sm font-semibold text-ink-2 transition-colors hover:border-ink/20 hover:text-ink"
-              >
-                Neem contact op
-              </Link>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

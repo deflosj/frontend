@@ -67,7 +67,7 @@ export interface TournamentMatch {
   winnerId: number | null;
   scoreA: number | null;
   scoreB: number | null;
-  time: string;
+  time: string | null;
   track: number | null;
   bracketPos: string | null;
 }

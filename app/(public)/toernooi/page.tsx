@@ -31,14 +31,14 @@ export default async function TournamentPortalPage() {
       <div className="border-b border-rule">
         <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8 sm:py-20">
           <p className="mb-3 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
-            Portaal
+            Petanque
           </p>
           <h1 className="mb-4 text-4xl font-bold tracking-tight text-ink sm:text-5xl">
             Toernooi
           </h1>
           <p className="max-w-xl text-lg leading-relaxed text-ink-2">
             Alle edities van het De Flosj petanquetoernooi. Bekijk live standen, het volledige
-            schema en de finale — of blader door de archieven van vorige jaren.
+            schema en de finale of blader door de archieven van vorige jaren.
           </p>
         </div>
       </div>
@@ -52,7 +52,7 @@ export default async function TournamentPortalPage() {
         {active && (
           <div className="mb-12">
             <p className="mb-4 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
-              Huidig seizoen
+              Huidig jaar
             </p>
             <Link
               href={`/toernooi/${active.id}`}

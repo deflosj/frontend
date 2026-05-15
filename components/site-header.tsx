@@ -1,11 +1,151 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import { siteConfig } from "@/lib/site-config";
-import { ThemeToggle } from "./theme-toggle";
+
+// ── Icons ─────────────────────────────────────────────────────────────────────
+function IconSun() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="8" r="2.75" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1.06 1.06M11.54 11.54l1.06 1.06M12.6 3.4l-1.06 1.06M4.46 11.54l-1.06 1.06" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconMoon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <path d="M13.5 9.5A6 6 0 0 1 6.5 2.5a6.002 6.002 0 0 0 7 7Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+function IconMonitor() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <rect x="1" y="2" width="14" height="9.5" rx="2" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M5.5 15h5M8 11.5V15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconUser() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+      <circle cx="8" cy="5.5" r="2.75" stroke="currentColor" strokeWidth="1.5" />
+      <path d="M2.5 14c0-3 2.46-5 5.5-5s5.5 2 5.5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function IconCheck() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true">
+      <path d="M2 6.5l3.5 3.5 5.5-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+// ── Theme dropdown ────────────────────────────────────────────────────────────
+
+type Theme = "light" | "dark" | "system";
+
+const THEME_OPTIONS: { key: Theme; label: string; Icon: () => React.ReactElement }[] = [
+  { key: "light",  label: "Licht",   Icon: IconSun     },
+  { key: "dark",   label: "Donker",  Icon: IconMoon    },
+  { key: "system", label: "Systeem", Icon: IconMonitor },
+];
+
+function ThemeDropdown() {
+  const [theme, setTheme] = useState<Theme>("system");
+  const [isDark, setIsDark] = useState(false);
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme") as Theme | null;
+    if (stored === "light" || stored === "dark") {
+      setTheme(stored);
+    } else {
+      setTheme("system");
+    }
+    setIsDark(document.documentElement.classList.contains("dark"));
+  }, []);
+
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  function apply(t: Theme) {
+    setTheme(t);
+    setOpen(false);
+    if (t === "system") {
+      localStorage.removeItem("theme");
+      const sys = globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", sys);
+      setIsDark(sys);
+    } else {
+      localStorage.setItem("theme", t);
+      document.documentElement.classList.toggle("dark", t === "dark");
+      setIsDark(t === "dark");
+    }
+  }
+
+  const ActiveIcon = isDark ? IconMoon : IconSun;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Thema wijzigen"
+        aria-expanded={open}
+        className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 ${
+          open ? "bg-ink/8 text-ink" : "text-muted hover:bg-ink/5 hover:text-ink"
+        }`}
+      >
+        <ActiveIcon />
+      </button>
+
+      {open && (
+        <div className="animate-dropdown absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-xl border border-rule bg-paper shadow-lg shadow-ink/8">
+          {THEME_OPTIONS.map(({ key, label, Icon }) => {
+            const active = theme === key;
+            return (
+              <button
+                key={key}
+                type="button"
+                onClick={() => apply(key)}
+                className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-sm transition-colors duration-100 hover:bg-ink/5 ${
+                  active ? "text-pink" : "text-ink-2 hover:text-ink"
+                }`}
+              >
+                <Icon />
+                <span className="flex-1 text-left">{label}</span>
+                {active && <IconCheck />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Header ────────────────────────────────────────────────────────────────────
+
+const NAV_ALL = [
+  ...siteConfig.navigation.map((item) => ({ ...item, icon: false })),
+];
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -16,45 +156,63 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-rule bg-paper/85 backdrop-blur-[14px] backdrop-saturate-150">
-      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
-        {/* Brand */}
+      <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-5 py-3 sm:px-8">
+
+        {/* ── Brand ──────────────────────────────────────────── */}
         <Link
           href="/"
-          className="flex items-center gap-3"
+          className="group flex items-center gap-2.5 shrink-0"
           aria-label={siteConfig.name}
           onClick={() => setOpen(false)}
         >
-          {/* Direction C logo mark */}
-          <span className="relative flex h-7 w-7 shrink-0 rounded-lg bg-pink" aria-hidden="true">
-            <span className="absolute inset-1.5 rounded-[3px] bg-paper" />
-          </span>
-          <span className="leading-none">
-            <span className="block text-[0.9375rem] font-semibold tracking-tight text-ink">
-              {siteConfig.name}
-            </span>
-            <span className="mt-0.5 block font-mono text-[0.625rem] tracking-[0.08em] text-muted">
-              {siteConfig.postalCode}
-            </span>
+          <Image
+            src="/logo.jpg"
+            alt={siteConfig.name}
+            width={28}
+            height={28}
+            className="rounded-md transition-opacity duration-200 group-hover:opacity-75"
+          />
+          <span className="text-sm font-semibold text-ink transition-colors duration-150 group-hover:text-ink/70">
+            {siteConfig.name}
           </span>
         </Link>
 
-        {/* Desktop nav */}
+        {/* ── Desktop nav ────────────────────────────────────── */}
         <nav className="hidden items-center gap-0.5 sm:flex" aria-label="Hoofdnavigatie">
-          {siteConfig.navigation.map((item) => (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`rounded-full px-3.5 py-2 text-sm font-medium transition-colors ${
-                isActive(item.href) ? "text-ink" : "text-ink-2 hover:text-ink"
-              }`}
-            >
-              {item.label}
-            </Link>
-          ))}
+          {siteConfig.navigation.map((item) => {
+            const active = isActive(item.href);
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`group relative px-3.5 py-2 text-sm font-medium transition-colors duration-150 ${
+                  active ? "text-ink" : "text-ink-2 hover:text-ink"
+                }`}
+              >
+                {item.label}
+                {/* animated underline — grows left→right on hover, stays on active */}
+                <span
+                  className={`absolute bottom-0.5 left-3.5 right-3.5 h-[1.5px] origin-left rounded-full bg-pink transition-transform duration-200 ease-out ${
+                    active ? "scale-x-100" : "scale-x-0 group-hover:scale-x-100"
+                  }`}
+                />
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="flex items-center gap-1">
-          <ThemeToggle />
+        {/* ── Actions ────────────────────────────────────────── */}
+        <div className="flex items-center gap-1 shrink-0">
+          <ThemeDropdown />
+
+          {/* User / login */}
+          <Link
+            href="/login"
+            aria-label="Inloggen"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-ink/5 hover:text-ink"
+          >
+            <IconUser />
+          </Link>
 
           {/* Hamburger */}
           <button
@@ -62,52 +220,108 @@ export function SiteHeader() {
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? "Menu sluiten" : "Menu openen"}
             aria-expanded={open}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors hover:bg-ink/5 hover:text-ink sm:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-ink/5 hover:text-ink sm:hidden"
           >
             {open ? (
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M2 2l12 12M14 2L2 14"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                />
+                <path d="M2 2l12 12M14 2L2 14" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
               </svg>
             ) : (
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                <path
-                  d="M2 4h12M2 8h12M2 12h12"
-                  stroke="currentColor"
-                  strokeWidth="1.75"
-                  strokeLinecap="round"
-                />
+                <path d="M2 4h12M2 8h12M2 12h12" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" />
               </svg>
             )}
           </button>
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* ── Mobile menu ────────────────────────────────────────── */}
       {open && (
-        <div className="border-t border-rule bg-paper px-5 pb-4 sm:hidden">
+        <div className="animate-dropdown border-t border-rule bg-paper px-5 pb-5 sm:hidden">
+
+          {/* Nav links */}
           <nav className="flex flex-col gap-0.5 pt-2" aria-label="Mobiele navigatie">
-            {siteConfig.navigation.map((item) => (
+            {NAV_ALL.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => setOpen(false)}
-                className={`rounded-xl px-4 py-3 text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium transition-colors duration-150 ${
                   isActive(item.href)
                     ? "bg-pink-soft text-pink-ink"
                     : "text-ink-2 hover:bg-ink/5 hover:text-ink"
                 }`}
               >
+                {item.icon}
                 {item.label}
               </Link>
             ))}
+            {/* Login */}
+            <Link
+              href="/login"
+              onClick={() => setOpen(false)}
+              className="mt-0.5 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-ink-2 transition-colors duration-150 hover:bg-ink/5 hover:text-ink"
+            >
+              <IconUser />
+              Inloggen
+            </Link>
           </nav>
+
+          {/* Divider */}
+          <div className="my-3 h-px bg-rule" />
+
+          {/* Mobile theme row */}
+          <MobileThemeRow />
         </div>
       )}
     </header>
+  );
+}
+
+// ── Mobile theme row (isolated so hooks aren't called in a loop) ──────────────
+
+function MobileThemeRow() {
+  const [theme, setTheme] = useState<Theme>("system");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme") as Theme | null;
+    if (stored === "light" || stored === "dark") setTheme(stored);
+    else setTheme("system");
+  }, []);
+
+  function apply(t: Theme) {
+    setTheme(t);
+    if (t === "system") {
+      localStorage.removeItem("theme");
+      const sys = globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
+      document.documentElement.classList.toggle("dark", sys);
+    } else {
+      localStorage.setItem("theme", t);
+      document.documentElement.classList.toggle("dark", t === "dark");
+    }
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <p className="mr-2 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
+        Thema
+      </p>
+      {THEME_OPTIONS.map(({ key, label, Icon }) => (
+        <button
+          key={key}
+          type="button"
+          onClick={() => apply(key)}
+          aria-label={label}
+          className={`flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-medium transition-colors duration-150 ${
+            theme === key
+              ? "bg-pink-soft text-pink-ink"
+              : "text-ink-2 hover:bg-ink/5 hover:text-ink"
+          }`}
+        >
+          <Icon />
+          {label}
+        </button>
+      ))}
+    </div>
   );
 }

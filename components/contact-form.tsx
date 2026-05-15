@@ -4,6 +4,50 @@ import { useState } from "react";
 
 type FormState = "idle" | "loading" | "success" | "error";
 
+// ── Animated underline field wrapper ─────────────────────────────────────────
+
+function Field({
+  id,
+  label,
+  children,
+}: Readonly<{ id: string; label: string; children: React.ReactNode }>) {
+  return (
+    <div className="group/field flex flex-col gap-2.5">
+      <label
+        htmlFor={id}
+        className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted transition-colors duration-200 group-focus-within/field:text-ink"
+      >
+        {label}
+      </label>
+      <div className="relative pb-px">
+        {children}
+        {/* static base line */}
+        <div className="pointer-events-none absolute bottom-0 left-0 h-px w-full bg-rule" />
+        {/* animated pink line — grows from left on focus */}
+        <div className="pointer-events-none absolute bottom-0 left-0 h-px w-0 bg-pink transition-[width] duration-300 ease-out group-focus-within/field:w-full" />
+      </div>
+    </div>
+  );
+}
+
+// ── Send icon ─────────────────────────────────────────────────────────────────
+
+function IconSend() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+      <path
+        d="M2 7.5h11M9 3l4.5 4.5L9 12"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export function ContactForm() {
   const [state, setState] = useState<FormState>("idle");
   const [name, setName] = useState("");
@@ -26,16 +70,29 @@ export function ContactForm() {
     }
   }
 
+  // ── Success state ───────────────────────────────────────────────────────────
+
   if (state === "success") {
     return (
-      <div className="flex flex-col items-start gap-3 rounded-2xl border border-rule bg-surface p-8">
-        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-soft text-pink text-xl font-bold">
-          ✓
+      <div className="flex flex-col gap-6 py-4">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-pink-soft text-pink">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none" aria-hidden="true">
+            <path
+              d="M4.5 11l4.5 4.5 8.5-9"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
         </div>
-        <h3 className="text-lg font-semibold text-ink">Bericht verstuurd</h3>
-        <p className="text-sm leading-relaxed text-ink-2">
-          Bedankt voor je bericht. We nemen zo snel mogelijk contact met je op.
-        </p>
+        <div>
+          <h3 className="mb-2 text-xl font-semibold text-ink">Bericht verstuurd</h3>
+          <p className="max-w-sm text-sm leading-relaxed text-ink-2">
+            Bedankt voor je bericht. We nemen zo snel mogelijk contact met je op,
+            normaal binnen de 2 werkdagen.
+          </p>
+        </div>
         <button
           type="button"
           onClick={() => {
@@ -45,24 +102,26 @@ export function ContactForm() {
             setSubject("");
             setMessage("");
           }}
-          className="mt-2 text-sm font-semibold text-ink hover:underline"
+          className="group flex items-center gap-1.5 self-start text-sm font-medium text-muted transition-colors duration-200 hover:text-ink"
         >
-          Nieuw bericht sturen →
+          <span>Nieuw bericht sturen</span>
+          <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
         </button>
       </div>
     );
   }
 
-  const inputClass =
-    "w-full rounded-xl border border-rule bg-surface px-4 py-3 text-sm text-ink placeholder:text-muted outline-none transition focus:border-pink focus:ring-2 focus:ring-pink/10 disabled:cursor-not-allowed disabled:opacity-60";
+  const inputBase =
+    "w-full bg-transparent py-2.5 text-sm text-ink placeholder:text-muted/40 outline-none disabled:cursor-not-allowed disabled:opacity-60";
+
+  const canSubmit = Boolean(name && email && subject && message);
+
+  // ── Form ───────────────────────────────────────────────────────────────────
 
   return (
-    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="name" className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
-            Naam
-          </label>
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-8">
+      <div className="grid gap-8 sm:grid-cols-2">
+        <Field id="name" label="Naam">
           <input
             id="name"
             type="text"
@@ -72,14 +131,11 @@ export function ContactForm() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             disabled={state === "loading"}
-            className={inputClass}
+            className={inputBase}
           />
-        </div>
+        </Field>
 
-        <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
-            E-mail
-          </label>
+        <Field id="email" label="E-mail">
           <input
             id="email"
             type="email"
@@ -89,15 +145,12 @@ export function ContactForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             disabled={state === "loading"}
-            className={inputClass}
+            className={inputBase}
           />
-        </div>
+        </Field>
       </div>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="subject" className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
-          Onderwerp
-        </label>
+      <Field id="subject" label="Onderwerp">
         <input
           id="subject"
           type="text"
@@ -106,14 +159,11 @@ export function ContactForm() {
           value={subject}
           onChange={(e) => setSubject(e.target.value)}
           disabled={state === "loading"}
-          className={inputClass}
+          className={inputBase}
         />
-      </div>
+      </Field>
 
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="message" className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
-          Bericht
-        </label>
+      <Field id="message" label="Bericht">
         <textarea
           id="message"
           rows={5}
@@ -122,23 +172,34 @@ export function ContactForm() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           disabled={state === "loading"}
-          className={`${inputClass} resize-none`}
+          className={`${inputBase} resize-none`}
         />
-      </div>
+      </Field>
 
       {state === "error" && (
-        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+        <p className="text-sm text-red-500 dark:text-red-400">
           Er ging iets mis. Probeer het opnieuw of stuur een e-mail rechtstreeks.
         </p>
       )}
 
-      <button
-        type="submit"
-        disabled={state === "loading" || !name || !email || !subject || !message}
-        className="mt-1 rounded-full bg-ink px-6 py-3 text-sm font-semibold text-paper transition-colors hover:bg-ink/80 disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {state === "loading" ? "Verzenden…" : "Verstuur bericht"}
-      </button>
+      <div className="flex items-center gap-5 pt-2">
+        <button
+          type="submit"
+          disabled={state === "loading" || !canSubmit}
+          className="group flex items-center gap-2.5 rounded-full bg-pink px-7 py-3.5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:bg-pink/85 hover:shadow-md hover:shadow-pink/20 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40"
+        >
+          <span>{state === "loading" ? "Verzenden…" : "Verstuur bericht"}</span>
+          {state !== "loading" && (
+            <span className="transition-transform duration-200 group-hover:translate-x-0.5">
+              <IconSend />
+            </span>
+          )}
+        </button>
+
+        {state === "loading" && (
+          <span className="text-xs text-muted">Even geduld…</span>
+        )}
+      </div>
     </form>
   );
 }
