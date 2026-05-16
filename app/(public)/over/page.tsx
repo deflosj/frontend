@@ -20,8 +20,7 @@ export default function AboutPage() {
             Een vereniging uit Rotselaar
           </h1>
           <p className="max-w-xl text-lg leading-relaxed text-ink-2">
-            De Flosj is een actieve vzw gedragen door vrijwilligers. Wij brengen sport en
-            gemeenschap samen in evenementen waar iedereen welkom is.
+            De Flosj VZW is opgericht in 2022 met als doel het dorp van Rotselaar terug leven in te blazen. Dit door geregeld evenementen te organiseren die de mensen dichter bij elkaar brengen.
           </p>
         </div>
       </div>

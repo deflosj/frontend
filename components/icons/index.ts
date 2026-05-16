@@ -15,3 +15,6 @@ export { IconHamburger } from "./IconHamburger";
 export { IconClose } from "./IconClose";
 export { IconFacebook } from "./IconFacebook";
 export { IconInstagram } from "./IconInstagram";
+export { IconMail } from "./IconMail";
+export { IconPin } from "./IconPin";
+export { IconPhone } from "./IconPhone";

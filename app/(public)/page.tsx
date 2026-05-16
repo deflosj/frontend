@@ -1,32 +1,58 @@
 import Link from "next/link";
 
-import { featureCards, homeHighlights, weeklyProgram } from "@/lib/site-content";
-import { siteConfig } from "@/lib/site-config";
+type Event = {
+  id: number;
+  title: string;
+  startsAt: string;
+  location: string | null;
+};
 
-export default function HomePage() {
+async function getEvents(): Promise<Event[]> {
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api"}/content/events`,
+      { next: { revalidate: 3600 } }
+    );
+    if (!res.ok) return [];
+    return res.json() as Promise<Event[]>;
+  } catch {
+    return [];
+  }
+}
+
+function formatDate(iso: string): string {
+  return new Date(iso).toLocaleDateString("nl-BE", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+export default async function HomePage() {
+  const events = await getEvents();
+
   return (
     <div>
       {/* ── Hero ─────────────────────────────────────────────── */}
       <section className="border-b border-rule">
         <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8 sm:py-24">
-          <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_220px] lg:gap-16">
+          <div className="grid grid-cols-1 items-start gap-10 lg:grid-cols-[1fr_300px] lg:gap-16">
             <div>
               <p className="mb-5 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
-                {siteConfig.name} — {siteConfig.location}
+                Kermiscomité Rotselaar dorp
               </p>
               <h1 className="mb-6 text-4xl font-bold leading-[1.06] tracking-tight text-ink sm:text-5xl lg:text-6xl">
-                Sfeer, sport<br />en gemeenschap.
+                De Flosj <br /> VZW
               </h1>
               <p className="mb-8 max-w-lg text-base leading-relaxed text-ink-2 sm:text-lg">
-                De Flosj brengt elk jaar sport en sfeer naar Rotselaar, van het petanquetornooi
-                tot de dorpelingenkoers. Iedereen is welkom.
+                De Flosj VZW is opgericht in 2022 met als doel het dorp van Rotselaar terug leven in te blazen. Dit door geregeld evenementen te organiseren die de mensen dichter bij elkaar brengen. Dit jaar willen we dit doen met volgende evenementen:
               </p>
               <div className="flex flex-wrap gap-3">
                 <Link
                   href="/toernooi"
                   className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition-colors hover:bg-ink/80"
                 >
-                  Bekijk het toernooi
+                  Bekijk het Petanque toernooi
                 </Link>
                 <Link
                   href="/dorpelingenkoers"
@@ -37,59 +63,32 @@ export default function HomePage() {
               </div>
             </div>
 
-            {/* Stats */}
+            {/* Events */}
             <div className="grid grid-cols-3 gap-3 lg:grid-cols-1">
-              {homeHighlights.map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-rule bg-surface px-4 py-3 lg:px-5 lg:py-4"
-                >
-                  <p className="text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-muted sm:text-[0.625rem]">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 text-sm font-bold text-ink lg:text-base">{item.value}</p>
+              {events.length > 0 ? (
+                events.map((event) => (
+                  <div
+                    key={event.id}
+                    className="rounded-2xl border border-rule bg-surface px-4 py-3 lg:px-5 lg:py-4"
+                  >
+                    <p className="text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-muted sm:text-[0.625rem]">
+                      {formatDate(event.startsAt)}
+                    </p>
+                    <p className="mt-1 text-sm font-bold text-ink lg:text-base">{event.title}</p>
+                    {event.location && (
+                      <p className="mt-0.5 text-xs text-muted">{event.location}</p>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-2xl border border-rule bg-surface px-4 py-3 lg:px-5 lg:py-4">
+                  <p className="text-xs text-muted">Geen evenementen gepland.</p>
                 </div>
-              ))}
+              )}
             </div>
           </div>
         </div>
       </section>
-
-      {/* ── Feature cards ────────────────────────────────────── */}
-      <section className="border-b border-rule">
-        <div className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
-          <div className="mb-8">
-            <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
-              Ontdek
-            </p>
-            <h2 className="text-2xl font-bold tracking-tight text-ink sm:text-3xl">
-              Alles wat De Flosj te bieden heeft
-            </h2>
-          </div>
-
-          <div className="grid gap-3 sm:grid-cols-3">
-            {featureCards.map((card) => (
-              <Link
-                key={card.title}
-                href={card.href}
-                className="group flex flex-col rounded-2xl border border-rule bg-surface p-5 transition-colors hover:border-pink/30 hover:bg-pink-soft sm:p-6"
-              >
-                <p className="mb-2 text-[0.625rem] font-semibold uppercase tracking-[0.08em] text-pink">
-                  {card.eyebrow}
-                </p>
-                <h3 className="mb-2 text-base font-semibold leading-snug text-ink sm:text-lg">
-                  {card.title}
-                </h3>
-                <p className="flex-1 text-sm leading-relaxed text-ink-2">{card.description}</p>
-                <span className="mt-4 text-sm font-semibold text-ink group-hover:text-pink-ink">
-                  Meer lezen →
-                </span>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
     </div>
   );
 }

@@ -35,13 +35,23 @@ function Field({
 const inputBase =
   "w-full bg-transparent py-2.5 text-sm text-ink placeholder:text-muted/40 outline-none disabled:cursor-not-allowed disabled:opacity-60";
 
-// ── Section heading ───────────────────────────────────────────────────────────
+// ── Section card ──────────────────────────────────────────────────────────────
 
-function SectionHeading({ children }: Readonly<{ children: React.ReactNode }>) {
+function Section({
+  step,
+  title,
+  children,
+}: Readonly<{ step: number; title: string; children: React.ReactNode }>) {
   return (
-    <p className="mb-5 border-b border-rule pb-3 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
+    <div className="rounded-2xl border border-rule bg-surface px-6 py-6 sm:px-8 sm:py-7">
+      <div className="mb-6 flex items-center gap-3">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-pink-soft text-[0.6rem] font-bold text-pink">
+          {step}
+        </span>
+        <h3 className="text-sm font-semibold text-ink">{title}</h3>
+      </div>
       {children}
-    </p>
+    </div>
   );
 }
 
@@ -120,8 +130,8 @@ export function RegistrationForm() {
           Bedankt voor je inschrijving voor de{" "}
           <strong>
             {raceCategory === "DORPELINGENKOERS" ? "Dorpelingenkoers" : "Fun wedstrijd"}
-          </strong>
-          . Je ontvangt een bevestiging zodra je inschrijving goedgekeurd is.
+          </strong>{". "}
+          Je ontvangt een bevestiging zodra je inschrijving goedgekeurd is.
         </p>
         <div className="flex flex-wrap justify-center gap-3">
           <Link
@@ -150,24 +160,22 @@ export function RegistrationForm() {
   // ── Form ────────────────────────────────────────────────────────────────────
 
   return (
-    <div className="flex flex-col gap-10">
-      {/* Race type selector */}
-      <div>
-        <p className="mb-3 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
-          Kies jouw wedstrijd <span className="text-pink">*</span>
-        </p>
+    <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-4">
+
+      {/* ── Stap 1: Wedstrijd ──────────────────────────────── */}
+      <Section step={1} title="Kies je wedstrijd">
         <div className="grid grid-cols-2 gap-3">
           {(
             [
               {
                 value: "DORPELINGENKOERS" as RaceCategory,
                 label: "Dorpelingenkoers",
-                desc: "Voor inwoners van het dorp",
+                desc: "32 km · voor inwoners & clubleden",
               },
               {
                 value: "FUN_WEDSTRIJD" as RaceCategory,
                 label: "Fun wedstrijd",
-                desc: "Voor iedereen, recreatief",
+                desc: "46 km · open voor iedereen",
               },
             ] as const
           ).map(({ value, label, desc }) => (
@@ -175,143 +183,134 @@ export function RegistrationForm() {
               key={value}
               type="button"
               onClick={() => setRaceCategory(value)}
-              className={`rounded-2xl border-2 px-5 py-4 text-left transition-all duration-150 ${
+              className={`rounded-xl border-2 px-4 py-4 text-left transition-all duration-150 ${
                 raceCategory === value
                   ? "border-pink bg-pink-soft"
-                  : "border-rule bg-surface hover:border-ink/20"
+                  : "border-rule bg-paper hover:border-ink/20"
               }`}
             >
-              <p
-                className={`font-semibold ${raceCategory === value ? "text-pink" : "text-ink"}`}
-              >
+              <p className={`text-sm font-semibold ${raceCategory === value ? "text-pink" : "text-ink"}`}>
                 {label}
               </p>
               <p className="mt-0.5 text-xs text-muted">{desc}</p>
             </button>
           ))}
         </div>
-      </div>
+      </Section>
 
-      <form onSubmit={handleSubmit} noValidate className="flex flex-col gap-10">
-        {/* Persoonsgegevens */}
-        <div>
-          <SectionHeading>Persoonsgegevens</SectionHeading>
-          <div className="flex flex-col gap-8">
-            <div className="grid gap-8 sm:grid-cols-2">
-              <Field id="firstName" label="Voornaam" required>
-                <input
-                  id="firstName" type="text" placeholder="Jan" required
-                  autoComplete="given-name" value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  disabled={state === "loading"} className={inputBase}
-                />
-              </Field>
-              <Field id="lastName" label="Achternaam" required>
-                <input
-                  id="lastName" type="text" placeholder="Janssen" required
-                  autoComplete="family-name" value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  disabled={state === "loading"} className={inputBase}
-                />
-              </Field>
-            </div>
-            <div className="grid gap-8 sm:grid-cols-2">
-              <Field id="dateOfBirth" label="Geboortedatum" required>
-                <input
-                  id="dateOfBirth" type="date" required value={dateOfBirth}
-                  onChange={(e) => setDateOfBirth(e.target.value)}
-                  disabled={state === "loading"} className={inputBase}
-                />
-              </Field>
-              <Field id="gender" label="Geslacht" required>
-                <select
-                  id="gender" required value={gender}
-                  onChange={(e) => setGender(e.target.value as "M" | "V" | "X")}
-                  disabled={state === "loading"} className={inputBase}
-                >
-                  <option value="M">Man</option>
-                  <option value="V">Vrouw</option>
-                  <option value="X">X (niet-binair)</option>
-                </select>
-              </Field>
-            </div>
-          </div>
-        </div>
-
-        {/* Contact & adres */}
-        <div>
-          <SectionHeading>Contact &amp; adres</SectionHeading>
-          <div className="flex flex-col gap-8">
-            <Field id="address" label="Adres (straat, nummer, gemeente)" required>
+      {/* ── Stap 2: Persoonsgegevens ───────────────────────── */}
+      <Section step={2} title="Persoonsgegevens">
+        <div className="flex flex-col gap-8">
+          <div className="grid gap-8 sm:grid-cols-2">
+            <Field id="firstName" label="Voornaam" required>
               <input
-                id="address" type="text" placeholder="Dorpstraat 1, 0000 Gemeente" required
-                autoComplete="street-address" value={address}
-                onChange={(e) => setAddress(e.target.value)}
+                id="firstName" type="text" placeholder="Jan" required
+                autoComplete="given-name" value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
                 disabled={state === "loading"} className={inputBase}
               />
             </Field>
-            <div className="grid gap-8 sm:grid-cols-2">
-              <Field id="email" label="E-mail" required>
-                <input
-                  id="email" type="email" placeholder="jan@voorbeeld.be" required
-                  autoComplete="email" value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={state === "loading"} className={inputBase}
-                />
-              </Field>
-              <Field id="phone" label="Telefoonnummer" required>
-                <input
-                  id="phone" type="tel" placeholder="+32 470 00 00 00" required
-                  autoComplete="tel" value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  disabled={state === "loading"} className={inputBase}
-                />
-              </Field>
-            </div>
-          </div>
-        </div>
-
-        {/* Overige */}
-        <div>
-          <SectionHeading>Overige gegevens</SectionHeading>
-          <div className="flex flex-col gap-8">
-            <Field id="nationalRegisterNumber" label="Rijkregisternummer" required>
+            <Field id="lastName" label="Achternaam" required>
               <input
-                id="nationalRegisterNumber" type="text" placeholder="00.00.00-000.00"
-                required value={nationalRegisterNumber}
-                onChange={(e) => setNationalRegisterNumber(e.target.value)}
+                id="lastName" type="text" placeholder="Janssen" required
+                autoComplete="family-name" value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
                 disabled={state === "loading"} className={inputBase}
               />
             </Field>
-            <Field id="wielerclub" label="Wielerclub (indien van toepassing)">
+          </div>
+          <div className="grid gap-8 sm:grid-cols-2">
+            <Field id="dateOfBirth" label="Geboortedatum" required>
               <input
-                id="wielerclub" type="text"
-                placeholder="Naam van de club (optioneel)" value={wielerclub}
-                onChange={(e) => setWielerclub(e.target.value)}
+                id="dateOfBirth" type="date" required value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                disabled={state === "loading"} className={inputBase}
+              />
+            </Field>
+            <Field id="gender" label="Geslacht" required>
+              <select
+                id="gender" required value={gender}
+                onChange={(e) => setGender(e.target.value as "M" | "V" | "X")}
+                disabled={state === "loading"} className={inputBase}
+              >
+                <option value="M">Man</option>
+                <option value="V">Vrouw</option>
+                <option value="X">X (niet-binair)</option>
+              </select>
+            </Field>
+          </div>
+        </div>
+      </Section>
+
+      {/* ── Stap 3: Contact & adres ────────────────────────── */}
+      <Section step={3} title="Contact & adres">
+        <div className="flex flex-col gap-8">
+          <Field id="address" label="Adres (straat, nummer, gemeente)" required>
+            <input
+              id="address" type="text" placeholder="Dorpstraat 1, 3110 Rotselaar" required
+              autoComplete="street-address" value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              disabled={state === "loading"} className={inputBase}
+            />
+          </Field>
+          <div className="grid gap-8 sm:grid-cols-2">
+            <Field id="email" label="E-mail" required>
+              <input
+                id="email" type="email" placeholder="jan@voorbeeld.be" required
+                autoComplete="email" value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={state === "loading"} className={inputBase}
+              />
+            </Field>
+            <Field id="phone" label="Telefoonnummer" required>
+              <input
+                id="phone" type="tel" placeholder="+32 470 00 00 00" required
+                autoComplete="tel" value={phone}
+                onChange={(e) => setPhone(e.target.value)}
                 disabled={state === "loading"} className={inputBase}
               />
             </Field>
           </div>
         </div>
+      </Section>
 
-        {/* Error */}
-        {(state === "error") && errorMsg && (
-          <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{errorMsg}</p>
-        )}
+      {/* ── Stap 4: Overige gegevens ───────────────────────── */}
+      <Section step={4} title="Overige gegevens">
+        <div className="flex flex-col gap-8">
+          <Field id="nationalRegisterNumber" label="Rijkregisternummer" required>
+            <input
+              id="nationalRegisterNumber" type="text" placeholder="00.00.00-000.00"
+              required value={nationalRegisterNumber}
+              onChange={(e) => setNationalRegisterNumber(e.target.value)}
+              disabled={state === "loading"} className={inputBase}
+            />
+          </Field>
+          <Field id="wielerclub" label="Wielerclub (optioneel)">
+            <input
+              id="wielerclub" type="text"
+              placeholder="Naam van de club" value={wielerclub}
+              onChange={(e) => setWielerclub(e.target.value)}
+              disabled={state === "loading"} className={inputBase}
+            />
+          </Field>
+        </div>
+      </Section>
 
-        {/* GDPR */}
+      {/* ── Error ──────────────────────────────────────────── */}
+      {state === "error" && errorMsg && (
+        <p className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-600">{errorMsg}</p>
+      )}
+
+      {/* ── GDPR + submit ──────────────────────────────────── */}
+      <div className="flex flex-col gap-5 pt-2">
         <p className="text-xs leading-relaxed text-muted">
           Je persoonsgegevens worden uitsluitend gebruikt voor de organisatie van de koers en
-          worden na het evenement verwijderd. Je hebt het recht je inschrijving op te vragen of
-          te laten verwijderen via{" "}
+          worden na het evenement verwijderd. Vragen?{" "}
           <a href="mailto:info@deflosj.be" className="underline hover:text-ink">
             info@deflosj.be
           </a>
-          .
         </p>
-
-        {/* Submit */}
-        <div className="flex items-center gap-5 pt-2">
+        <div className="flex items-center gap-5">
           <button
             type="submit"
             disabled={!canSubmit}
@@ -328,7 +327,7 @@ export function RegistrationForm() {
             <span className="text-xs text-muted">Even geduld…</span>
           )}
         </div>
-      </form>
-    </div>
+      </div>
+    </form>
   );
 }

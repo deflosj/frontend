@@ -3,47 +3,12 @@ import Link from "next/link";
 
 import { ContactForm } from "@/components/contact-form";
 import { siteConfig } from "@/lib/site-config";
+import { IconFacebook, IconInstagram, IconMail, IconPhone, IconPin } from "@/components/icons";
 
 export const metadata: Metadata = {
   title: "Contact",
   description: `Contacteer ${siteConfig.name} voor vragen over toernooi, koers of vereniging.`,
 };
-
-function IconMail() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <rect x="2" y="4.5" width="14" height="10" rx="2" stroke="currentColor" strokeWidth="1.5" />
-      <path d="M2 7l7 5 7-5" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconPhone() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path
-        d="M5.5 2.5h2a1 1 0 0 1 1 1v2.5a1 1 0 0 1-.65.94L6.7 7.5C7.6 9.55 8.45 10.4 10.5 11.3l.56-1.15a1 1 0 0 1 .94-.65H14.5a1 1 0 0 1 1 1v2A1.5 1.5 0 0 1 14 15C8.48 15 3 9.52 3 4a1.5 1.5 0 0 1 1.5-1.5h1Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function IconPin() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-      <path
-        d="M9 1.5A5 5 0 0 1 14 6.5c0 3.75-5 10-5 10S4 10.25 4 6.5A5 5 0 0 1 9 1.5Z"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinejoin="round"
-      />
-      <circle cx="9" cy="6.5" r="2" stroke="currentColor" strokeWidth="1.5" />
-    </svg>
-  );
-}
 
 const contactDetails = [
   {
@@ -69,39 +34,48 @@ const contactDetails = [
   },
 ];
 
+const socialLinks = [
+  { label: "Facebook", href: siteConfig.socials.facebook, Icon: IconFacebook },
+  { label: "Instagram", href: siteConfig.socials.instagram, Icon: IconInstagram },
+];
+
 export default function ContactPage() {
   return (
-    <div className="lg:grid lg:grid-cols-[420px_1fr]">
-      {/* ── Left — info panel ──────────────────────────────── */}
-      <div className="flex items-center border-b border-rule bg-surface px-8 py-16 lg:min-h-[calc(100vh-61px)] lg:border-b-0 lg:border-r lg:px-14">
-        <div className="w-full max-w-85">
-          <p className="mb-4 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
+    <div>
+      {/* ── Header ─────────────────────────────────────────── */}
+      <div className="border-b border-rule">
+        <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8 sm:py-20">
+          <p className="mb-3 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
             Contact
           </p>
-          <h1 className="mb-5 text-3xl font-bold tracking-tight text-ink sm:text-[2.5rem] sm:leading-[1.1]">
+          <h1 className="mb-4 text-4xl font-bold tracking-tight text-ink sm:text-5xl">
             Neem contact op
           </h1>
-          <p className="mb-14 text-base leading-relaxed text-ink-2">
+          <p className="max-w-xl text-lg leading-relaxed text-ink-2">
             Vragen over het toernooi, de dorpelingenkoers of de vereniging?
             We horen graag van je.
           </p>
+        </div>
+      </div>
 
-          <div className="flex flex-col gap-6">
+      {/* ── Content ────────────────────────────────────────── */}
+      <div className="mx-auto max-w-5xl px-5 py-12 sm:px-8 sm:py-16">
+        <div className="grid gap-10 lg:grid-cols-[280px_1fr] lg:gap-16">
+
+          {/* ── Left: contact details + social ─────────────── */}
+          <div className="flex flex-col gap-3">
             {contactDetails.map(({ label, value, href, description, Icon }) => (
               <Link
                 key={label}
                 href={href}
                 target={href.startsWith("http") ? "_blank" : undefined}
                 rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
-                className="group flex items-start gap-4"
+                className="group flex items-start gap-4 rounded-2xl border border-rule bg-surface px-5 py-4 transition-colors duration-200 hover:border-pink/25 hover:bg-pink-soft/20"
               >
-                {/* icon */}
-                <span className="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-rule bg-paper text-muted transition-all duration-200 group-hover:border-pink/25 group-hover:bg-pink-soft group-hover:text-pink">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rule bg-paper text-muted transition-colors duration-200 group-hover:border-pink/25 group-hover:bg-pink-soft group-hover:text-pink">
                   <Icon />
                 </span>
-
-                {/* text */}
-                <div className="transition-transform duration-200 group-hover:translate-x-0.5">
+                <div>
                   <p className="mb-0.5 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
                     {label}
                   </p>
@@ -112,20 +86,33 @@ export default function ContactPage() {
                 </div>
               </Link>
             ))}
-          </div>
-        </div>
-      </div>
 
-      {/* ── Right — form panel ─────────────────────────────── */}
-      <div className="flex items-center justify-center px-8 py-16 lg:min-h-[calc(100vh-61px)] lg:px-16">
-        <div className="w-full max-w-lg">
-          <p className="mb-3 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
-            Stuur een bericht
-          </p>
-          <h2 className="mb-12 text-2xl font-bold tracking-tight text-ink">
-            We zijn er voor je
-          </h2>
-          <ContactForm />
+            {/* Social */}
+            <div className="mt-2 rounded-2xl border border-rule bg-surface px-5 py-4">
+              <p className="mb-3 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
+                Volg ons
+              </p>
+              <div className="flex gap-2">
+                {socialLinks.map(({ label, href, Icon }) => (
+                  <Link
+                    key={label}
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={label}
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-rule bg-paper text-muted transition-all duration-200 hover:border-pink/25 hover:bg-pink-soft hover:text-pink"
+                  >
+                    <Icon />
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* ── Right: form ────────────────────────────────── */}
+          <div className="rounded-2xl border border-rule bg-surface px-6 py-8 sm:px-8 sm:py-10">
+            <ContactForm />
+          </div>
         </div>
       </div>
     </div>

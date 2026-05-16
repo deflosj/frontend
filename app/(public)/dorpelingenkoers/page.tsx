@@ -114,18 +114,6 @@ export default function VillageRacePage() {
           >
             Inschrijven
           </Link>
-          <Link
-            href="/contact"
-            className="rounded-full border border-rule px-5 py-2.5 text-sm font-semibold text-ink-2 transition-colors hover:border-ink/20 hover:text-ink"
-          >
-            Info aanvragen
-          </Link>
-          <Link
-            href="/toernooi"
-            className="rounded-full border border-rule px-5 py-2.5 text-sm font-semibold text-ink-2 transition-colors hover:border-ink/20 hover:text-ink"
-          >
-            Bekijk ook het toernooi
-          </Link>
         </div>
       </div>
     </div>

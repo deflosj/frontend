@@ -1,31 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface NewsPost {
-  id: number;
-  title: string;
-  slug: string;
-  body: string;
-  coverUrl: string | null;
-  publishedAt: string | null;
-  createdAt: string;
-}
-
-interface Form {
-  title: string;
-  slug: string;
-  body: string;
-  coverUrl: string;
-  isPublished: boolean;
-}
-
-const blank: Form = { title: "", slug: "", body: "", coverUrl: "", isPublished: false };
+import { useDrawer } from "@/components/admin/drawer-provider";
+import { NewsDrawer, type NewsPost } from "../../../components/news/news-drawer";
 
 // ── Cell components (module scope — required by S6478) ────────────────────────
 
@@ -94,41 +74,14 @@ function makeColumns(onEdit: (post: NewsPost) => void): ColumnDef<NewsPost>[] {
   ];
 }
 
-// ── useDialog hook — syncs open state with native <dialog> ────────────────────
-
-function useDialog(open: boolean, onClose: () => void) {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (open) { el.showModal(); } else { el.close(); }
-  }, [open]);
-  // Sync when dialog is closed via Escape key
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    el.addEventListener("close", onClose);
-    return () => el.removeEventListener("close", onClose);
-  }, [onClose]);
-  return ref;
-}
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminNewsPage() {
-  const [posts, setPosts]     = useState<NewsPost[]>([]);
+  const { openDrawer } = useDrawer();
+  const [posts, setPosts] = useState<NewsPost[]>([]);
   const [loading, setLoading] = useState(true);
-  const [open, setOpen]       = useState(false);
-  const [editing, setEditing] = useState<NewsPost | null>(null);
-  const [form, setForm]       = useState<Form>(blank);
-  const [saving, setSaving]   = useState(false);
-  const [error, setError]     = useState("");
-
-  const [search, setSearch]         = useState("");
+  const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
-
-  const close = () => setOpen(false);
-  const dialogRef = useDialog(open, close);
 
   async function load() {
     try {
@@ -140,51 +93,9 @@ export default function AdminNewsPage() {
 
   useEffect(() => { load(); }, []);
 
-  function openCreate() {
-    setEditing(null);
-    setForm(blank);
-    setError("");
-    setOpen(true);
-  }
-
-  function openEdit(post: NewsPost) {
-    setEditing(post);
-    setForm({
-      title: post.title,
-      slug: post.slug,
-      body: post.body,
-      coverUrl: post.coverUrl ?? "",
-      isPublished: post.publishedAt !== null,
-    });
-    setError("");
-    setOpen(true);
-  }
-
-  async function handleSave(e: React.SyntheticEvent) {
-    e.preventDefault();
-    setSaving(true);
-    setError("");
-    try {
-      const payload = {
-        title: form.title,
-        slug: form.slug || undefined,
-        body: form.body,
-        coverUrl: form.coverUrl || null,
-        isPublished: form.isPublished,
-      };
-      if (editing) {
-        await apiFetch(`/content/news/${editing.id}`, { method: "PATCH", body: JSON.stringify(payload) });
-      } else {
-        await apiFetch("/content/news", { method: "POST", body: JSON.stringify(payload) });
-      }
-      close();
-      setLoading(true);
-      await load();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Opslaan mislukt.");
-    } finally {
-      setSaving(false);
-    }
+  function handleSaved() {
+    setLoading(true);
+    load();
   }
 
   const filtered = useMemo(() => {
@@ -197,7 +108,7 @@ export default function AdminNewsPage() {
     });
   }, [posts, search, filterStatus]);
 
-  const columns = makeColumns(openEdit);
+  const columns = makeColumns((p) => openDrawer(<NewsDrawer editing={p} onSaved={handleSaved} />));
 
   return (
     <>
@@ -226,7 +137,7 @@ export default function AdminNewsPage() {
                 onChange: setFilterStatus,
               },
             ]}
-            onAdd={openCreate}
+            onAdd={() => openDrawer(<NewsDrawer editing={null} onSaved={handleSaved} />)}
             addLabel="Nieuw artikel"
             resultCount={filtered.length}
             totalCount={posts.length}
@@ -238,51 +149,6 @@ export default function AdminNewsPage() {
         loading={loading}
         emptyText="Nog geen artikelen aangemaakt."
       />
-
-      <dialog ref={dialogRef} className="admin-drawer">
-        <div className="admin-drawer__header">
-          <h2>{editing ? "Artikel bewerken" : "Nieuw artikel"}</h2>
-          <button className="admin-drawer__close" onClick={close} type="button">✕</button>
-        </div>
-
-        <form className="admin-form" onSubmit={handleSave}>
-          {error && <p className="form-error">{error}</p>}
-
-          <div className="form-field">
-            <label htmlFor="n-title">Titel *</label>
-            <input id="n-title" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required disabled={saving} />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="n-slug">Slug (optioneel — auto-gegenereerd)</label>
-            <input id="n-slug" value={form.slug} placeholder="mijn-artikel-titel" onChange={(e) => setForm({ ...form, slug: e.target.value })} disabled={saving} />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="n-cover">Cover URL (optioneel)</label>
-            <input id="n-cover" value={form.coverUrl} placeholder="https://..." onChange={(e) => setForm({ ...form, coverUrl: e.target.value })} disabled={saving} />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="n-body">Inhoud *</label>
-            <textarea id="n-body" value={form.body} onChange={(e) => setForm({ ...form, body: e.target.value })} required disabled={saving} style={{ minHeight: 180 }} />
-          </div>
-
-          <label className="form-checkbox">
-            <input type="checkbox" checked={form.isPublished} onChange={(e) => setForm({ ...form, isPublished: e.target.checked })} disabled={saving} />
-            {" "}Gepubliceerd
-          </label>
-
-          <div className="admin-drawer__actions">
-            <button type="submit" className="btn-sm btn-sm--primary" disabled={saving || !form.title || !form.body}>
-              {saving ? "Opslaan…" : "Opslaan"}
-            </button>
-            <button type="button" className="btn-sm btn-sm--ghost" onClick={close} disabled={saving}>
-              Annuleren
-            </button>
-          </div>
-        </form>
-      </dialog>
     </>
   );
 }

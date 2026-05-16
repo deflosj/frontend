@@ -19,17 +19,8 @@ interface MemberProfile {
 
 // ── Cell components (module scope — required by S6478) ────────────────────────
 
-function NameCell({ firstName, lastName, bio }: Readonly<{ firstName: string; lastName: string; bio: string | null }>) {
-  return (
-    <>
-      <strong>{firstName} {lastName}</strong>
-      {bio && (
-        <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", color: "var(--muted)" }}>
-          {bio.length > 80 ? `${bio.slice(0, 80)}…` : bio}
-        </p>
-      )}
-    </>
-  );
+function NameCell({ firstName, lastName }: Readonly<{ firstName: string; lastName: string }>) {
+  return <strong>{firstName} {lastName}</strong> ;
 }
 
 function PhoneCell({ phone }: Readonly<{ phone: string | null }>) {
@@ -57,7 +48,7 @@ const COLUMNS: ColumnDef<MemberProfile>[] = [
     header: "Naam",
     sortable: true,
     sortValue: (m) => `${m.lastName} ${m.firstName}`,
-    cell: (m) => <NameCell firstName={m.firstName} lastName={m.lastName} bio={m.bio} />,
+    cell: (m) => <NameCell firstName={m.firstName} lastName={m.lastName} />,
   },
   {
     key: "phone",

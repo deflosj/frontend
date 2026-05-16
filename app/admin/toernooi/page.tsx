@@ -8,9 +8,9 @@ import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar, type ColumnDisplay } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
 import { IconCheck, IconEdit, IconTrash } from "@/components/icons";
-import { CreateDrawer } from "./_components/create-drawer";
-import { EditDrawer } from "./_components/edit-drawer";
-import { DeleteConfirm } from "./_components/delete-confirm";
+import { CreateDrawer } from "../../../components/toernooi/create-drawer";
+import { EditDrawer } from "../../../components/toernooi/edit-drawer";
+import { DeleteConfirm } from "../../../components/toernooi/delete-confirm";
 
 // ── CSV export ────────────────────────────────────────────────────────────────
 

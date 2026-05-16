@@ -5,65 +5,12 @@ import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
+import { MessageDetailDrawer, type ContactMessage } from "../../../components/messages/message-detail-drawer";
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface ContactMessage {
-  id: number;
-  name: string;
-  email: string;
-  subject: string | null;
-  body: string;
-  status: "UNREAD" | "READ" | "ARCHIVED";
-  createdAt: string;
-  readAt: string | null;
-}
+// ── Constants ──────────────────────────────────────────────────────────────────
 
 const STATUS_LABELS: Record<string, string> = { UNREAD: "Ongelezen", READ: "Gelezen", ARCHIVED: "Gearchiveerd" };
-const STATUS_BADGE:  Record<string, string> = { UNREAD: "pink",      READ: "green",   ARCHIVED: "gray"          };
-
-// ── Detail drawer ─────────────────────────────────────────────────────────────
-
-function MessageDetail({ message }: Readonly<{ message: ContactMessage }>) {
-  return (
-    <div>
-      <dl style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "0.5rem 1rem", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
-        <dt style={{ color: "var(--muted)", fontWeight: 500 }}>Van</dt>
-        <dd style={{ margin: 0 }}>{message.name}</dd>
-        <dt style={{ color: "var(--muted)", fontWeight: 500 }}>E-mail</dt>
-        <dd style={{ margin: 0 }}>
-          <a href={`mailto:${message.email}`} style={{ color: "var(--accent)" }}>{message.email}</a>
-        </dd>
-        {message.subject && (
-          <>
-            <dt style={{ color: "var(--muted)", fontWeight: 500 }}>Onderwerp</dt>
-            <dd style={{ margin: 0 }}>{message.subject}</dd>
-          </>
-        )}
-        <dt style={{ color: "var(--muted)", fontWeight: 500 }}>Datum</dt>
-        <dd style={{ margin: 0 }}>{new Date(message.createdAt).toLocaleString("nl-BE")}</dd>
-        <dt style={{ color: "var(--muted)", fontWeight: 500 }}>Status</dt>
-        <dd style={{ margin: 0 }}>
-          <span className={`badge badge--${STATUS_BADGE[message.status]}`}>{STATUS_LABELS[message.status]}</span>
-        </dd>
-      </dl>
-      <div
-        style={{
-          padding: "1rem",
-          borderRadius: "10px",
-          background: "var(--bg-alt)",
-          border: "1px solid var(--border)",
-          fontSize: "0.875rem",
-          color: "var(--text-2)",
-          whiteSpace: "pre-wrap",
-          lineHeight: 1.7,
-        }}
-      >
-        {message.body}
-      </div>
-    </div>
-  );
-}
+const STATUS_BADGE: Record<string, string> = { UNREAD: "pink", READ: "green", ARCHIVED: "gray" };
 
 // ── Cell components (module scope — required by S6478) ────────────────────────
 
@@ -211,19 +158,7 @@ export default function AdminMessagesPage() {
   }
 
   function viewMessage(m: ContactMessage) {
-    openDrawer(
-      <div>
-        <div className="admin-drawer__header" style={{ marginBottom: "1.5rem" }}>
-          <h2 style={{ margin: 0, fontSize: "1.1rem", fontWeight: 500 }}>
-            {m.subject ?? "Bericht"}
-          </h2>
-        </div>
-        <MessageDetail message={m} />
-      </div>
-    );
-    if (m.status === "UNREAD") {
-      markRead(m.id).catch(() => {});
-    }
+    openDrawer(<MessageDetailDrawer message={m} onMarkRead={markRead} />);
   }
 
   const filtered = useMemo(() => {

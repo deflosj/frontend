@@ -15,11 +15,11 @@ import {
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar, type ColumnDisplay } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
-import { DetailDrawer } from "./_components/detail-drawer";
-import { ApproveConfirm } from "./_components/approve-confirm";
-import { RejectConfirm } from "./_components/reject-confirm";
-import { DeleteConfirm } from "./_components/delete-confirm";
-import { SettingsDrawer } from "./_components/settings-drawer";
+import { DetailDrawer } from "../../../components/dorpelingenkoers/detail-drawer";
+import { ApproveConfirm } from "../../../components/dorpelingenkoers/approve-confirm";
+import { RejectConfirm } from "../../../components/dorpelingenkoers/reject-confirm";
+import { DeleteConfirm } from "../../../components/dorpelingenkoers/delete-confirm";
+import { SettingsDrawer } from "../../../components/dorpelingenkoers/settings-drawer";
 
 // ── CSV export ────────────────────────────────────────────────────────────────
 
@@ -398,18 +398,6 @@ export default function InschrijvingenPage() {
         <div className="admin-stat">
           <p className="admin-stat__label">Totaal</p>
           <p className="admin-stat__value">{stats.total}</p>
-        </div>
-        <div className="admin-stat">
-          <p className="admin-stat__label">Goedgekeurd</p>
-          <p className="admin-stat__value" style={{ color: "#1e7e34" }}>{stats.approved}</p>
-        </div>
-        <div className="admin-stat">
-          <p className="admin-stat__label">In afwachting</p>
-          <p className="admin-stat__value" style={{ color: "#7a4d00" }}>{stats.pending}</p>
-        </div>
-        <div className="admin-stat">
-          <p className="admin-stat__label">Afgekeurd</p>
-          <p className="admin-stat__value" style={{ color: "#c5221f" }}>{stats.rejected}</p>
         </div>
         <div className="admin-stat">
           <p className="admin-stat__label">Dorpelingenkoers</p>

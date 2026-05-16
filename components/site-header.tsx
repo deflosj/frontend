@@ -131,7 +131,7 @@ export function SiteHeader() {
           onClick={() => setOpen(false)}
         >
           <Image
-            src="/logo.jpg"
+            src="/logo_transparant.png"
             alt={siteConfig.name}
             width={28}
             height={28}

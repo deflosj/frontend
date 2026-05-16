@@ -21,7 +21,7 @@ export function SiteFooter() {
             aria-label={siteConfig.name}
           >
             <Image
-              src="/logo.jpg"
+              src="/logo_transparant.png"
               alt={siteConfig.name}
               width={28}
               height={28}

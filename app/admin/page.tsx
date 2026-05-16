@@ -166,27 +166,6 @@ export default function AdminDashboardPage() {
         loading={loading}
         emptyText="Geen berichten ontvangen."
       />
-
-      {/* Quick links */}
-      <div className="admin-section">
-        <div className="admin-table-wrapper">
-          <div className="admin-table-header">
-            <h2>Snelkoppelingen</h2>
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "0.5rem", padding: "1rem" }}>
-            {QUICK_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="btn-sm btn-sm--ghost"
-                style={{ justifyContent: "flex-start" }}
-              >
-                {link.label} →
-              </Link>
-            ))}
-          </div>
-        </div>
-      </div>
     </>
   );
 }
