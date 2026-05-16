@@ -264,6 +264,7 @@ export default function InschrijvingenPage() {
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [settings, setSettings] = useState<RegistrationSettings>(DEFAULT_SETTINGS);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
 
   const [search, setSearch]               = useState("");
   const [filterCategory, setFilterCategory] = useState<RaceCategory | "ALL">("ALL");
@@ -273,15 +274,15 @@ export default function InschrijvingenPage() {
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    Promise.all([
+    Promise.allSettled([
       apiFetch<Registration[]>("/registrations"),
       apiFetch<RegistrationSettings>("/registrations/settings"),
-    ])
-      .then(([regs, s]) => {
-        setRegistrations(regs);
-        setSettings(s);
-      })
-      .finally(() => setLoading(false));
+    ]).then(([regs, s]) => {
+      if (regs.status === "fulfilled") setRegistrations(regs.value);
+      else setFetchError(regs.reason instanceof Error ? regs.reason.message : "Laden mislukt.");
+      if (s.status === "fulfilled") setSettings(s.value);
+      setLoading(false);
+    });
   }, []);
 
   // ── Stats ──────────────────────────────────────────────────────────────────
@@ -358,6 +359,22 @@ export default function InschrijvingenPage() {
             <p>Beheer inschrijvingen voor de dorpelingenkoers en fun wedstrijd.</p>
           </div>
         </div>
+
+        {fetchError && (
+          <div
+            style={{
+              marginTop: "1rem",
+              padding: "0.65rem 1rem",
+              borderRadius: "10px",
+              background: "#fdecea",
+              color: "#c5221f",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+            }}
+          >
+            Kon inschrijvingen niet laden: <strong>{fetchError}</strong>
+          </div>
+        )}
 
         {!settings.isOpen && (
           <div

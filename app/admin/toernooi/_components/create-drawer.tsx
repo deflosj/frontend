@@ -83,28 +83,28 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
 
   const footer1 = (
     <>
+      <button type="button" className="btn-sm btn-sm--ghost" onClick={close}>Annuleren</button>
       <button type="submit" form="step1-form" className="btn-sm btn-sm--primary" disabled={!name.trim()}>
         Volgende →
       </button>
-      <button type="button" className="btn-sm btn-sm--ghost" onClick={close}>Annuleren</button>
     </>
   );
 
   const footer2 = (
     <>
+      <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setStep(1)}>← Terug</button>
       <button type="button" className="btn-sm btn-sm--primary" onClick={() => setStep(3)}>
         Volgende →
       </button>
-      <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setStep(1)}>← Terug</button>
     </>
   );
 
   const footer3 = (
     <>
+      <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setStep(2)}>← Terug</button>
       <button type="button" className="btn-sm btn-sm--primary" onClick={handleCreate} disabled={saving}>
         {saving ? "Aanmaken…" : "Toernooi aanmaken"}
       </button>
-      <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setStep(2)}>← Terug</button>
     </>
   );
 

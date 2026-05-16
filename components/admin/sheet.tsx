@@ -47,7 +47,7 @@ export function SheetContent({
             <IconClose />
           </Dialog.Close>
         </div>
-        {children}
+        <div className="admin-sheet__body">{children}</div>
       </Dialog.Content>
     </Dialog.Portal>
   );

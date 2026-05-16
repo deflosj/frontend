@@ -45,21 +45,6 @@ export function StepDrawer({
           ))}
         </div>
 
-        {/* Step labels */}
-        <div className="admin-step-labels">
-          {steps.map((label, i) => (
-            <span
-              key={label}
-              className="admin-step-labels__item"
-              data-active={i + 1 === currentStep}
-              data-done={i + 1 < currentStep}
-            >
-              <span className="admin-step-labels__num">{i + 1}</span>
-              {label}
-            </span>
-          ))}
-        </div>
-
         {/* Content */}
         <div className="admin-form">
           {error && <div className="form-error">{error}</div>}
@@ -67,7 +52,7 @@ export function StepDrawer({
         </div>
 
         {/* Footer */}
-        <div className="admin-drawer__actions">{footer}</div>
+        <div className="admin-drawer__actions" style={{ marginTop: "auto", paddingTop: "1rem" }}>{footer}</div>
       </SheetContent>
     </Sheet>
   );

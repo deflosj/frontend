@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { IconArrowUp, IconArrowDown } from "../icons";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -44,15 +45,7 @@ function SortIcon({ active, dir }: Readonly<{ active: boolean; dir: SortDir }>) 
       </svg>
     );
   }
-  return dir === "asc" ? (
-    <svg width="9" height="9" viewBox="0 0 10 14" fill="none" aria-hidden="true" style={{ color: "var(--accent)" }}>
-      <path d="M5 13V1M1 4l4-3 4 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  ) : (
-    <svg width="9" height="9" viewBox="0 0 10 14" fill="none" aria-hidden="true" style={{ color: "var(--accent)" }}>
-      <path d="M5 1v12M1 10l4 3 4-3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
+  return dir === "asc" ? <IconArrowUp /> : <IconArrowDown />
 }
 
 // ── DataTable ─────────────────────────────────────────────────────────────────
@@ -113,18 +106,10 @@ export function DataTable<T extends { id: number }>({
   const showPagination = sorted.length > pageSize || pageSizeOptions.some((s) => s < sorted.length);
 
   return (
-    <div className="admin-table-wrapper">
-      {/* Optional toolbar slot (TableToolbar renders here) */}
+    <>
       {toolbar && <div className="admin-table-toolbar-row">{toolbar}</div>}
 
-      {/* Title row */}
-      {(title || headerAction) && (
-        <div className="admin-table-header">
-          {title && <h2>{title}</h2>}
-          {headerAction && <div>{headerAction}</div>}
-        </div>
-      )}
-
+      <div className="admin-table-wrapper">
       {loading && <p className="admin-empty">Laden…</p>}
 
       {!loading && data.length === 0 && <p className="admin-empty">{emptyText}</p>}
@@ -225,6 +210,7 @@ export function DataTable<T extends { id: number }>({
           )}
         </>
       )}
-    </div>
+      </div>
+    </>
   );
 }

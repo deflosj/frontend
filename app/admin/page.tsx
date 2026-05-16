@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import type { TournamentListItem } from "@/lib/tournament-types";
+import type { Registration } from "@/lib/registration-types";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface NewsPost { id: number; publishedAt: string | null }
 interface CalEvent { id: number; isPublished: boolean }
-interface Member   { id: number }
 interface ContactMessage {
   id: number;
   name: string;
@@ -67,40 +67,42 @@ const QUICK_LINKS = [
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
-  const [news, setNews]             = useState<NewsPost[]>([]);
-  const [events, setEvents]         = useState<CalEvent[]>([]);
-  const [members, setMembers]       = useState<Member[]>([]);
-  const [messages, setMessages]     = useState<ContactMessage[]>([]);
-  const [tournaments, setTournaments] = useState<TournamentListItem[]>([]);
-  const [loading, setLoading]       = useState(true);
+  const [news, setNews]                   = useState<NewsPost[]>([]);
+  const [events, setEvents]               = useState<CalEvent[]>([]);
+  const [messages, setMessages]           = useState<ContactMessage[]>([]);
+  const [tournaments, setTournaments]     = useState<TournamentListItem[]>([]);
+  const [registrations, setRegistrations] = useState<Registration[]>([]);
+  const [loading, setLoading]             = useState(true);
 
   useEffect(() => {
     Promise.allSettled([
       apiFetch<NewsPost[]>("/content/news"),
       apiFetch<CalEvent[]>("/content/events"),
-      apiFetch<Member[]>("/members"),
       apiFetch<ContactMessage[]>("/contact/messages"),
       apiFetch<TournamentListItem[]>("/tournaments"),
-    ]).then(([n, e, m, msg, t]) => {
+      apiFetch<Registration[]>("/registrations"),
+    ]).then(([n, e, msg, t, r]) => {
       if (n.status   === "fulfilled") setNews(n.value);
       if (e.status   === "fulfilled") setEvents(e.value);
-      if (m.status   === "fulfilled") setMembers(m.value);
       if (msg.status === "fulfilled") setMessages(msg.value);
       if (t.status   === "fulfilled") setTournaments(t.value);
+      if (r.status   === "fulfilled") setRegistrations(r.value);
       setLoading(false);
     });
   }, []);
 
-  const unread          = messages.filter((m) => m.status === "UNREAD").length;
+  const unread           = messages.filter((m) => m.status === "UNREAD").length;
+  const pendingRegs      = registrations.filter((r) => r.status === "PENDING").length;
   const activeTournament = tournaments.find((t) => t.isActive);
-  const recentMessages  = messages.slice(0, 6);
+  const recentMessages   = messages.slice(0, 6);
 
   const stats = [
-    { label: "Toernooien",         value: tournaments.length, href: "/admin/toernooi" },
-    { label: "Nieuwsartikelen",    value: news.length,        href: "/admin/news"     },
-    { label: "Events",             value: events.length,      href: "/admin/events"   },
-    { label: "Leden",              value: members.length,     href: "/admin/members"  },
-    { label: "Ongelezen berichten", value: unread,            href: "/admin/messages", accent: unread > 0 },
+    { label: "Toernooien",          value: tournaments.length,   href: "/admin/toernooi"       },
+    { label: "Inschrijvingen",       value: registrations.length, href: "/admin/inschrijvingen" },
+    { label: "In afwachting",        value: pendingRegs,          href: "/admin/inschrijvingen", accent: pendingRegs > 0 },
+    { label: "Nieuwsartikelen",     value: news.length,          href: "/admin/news"           },
+    { label: "Events",              value: events.length,        href: "/admin/events"         },
+    { label: "Ongelezen berichten", value: unread,               href: "/admin/messages",       accent: unread > 0 },
   ];
 
   return (
@@ -140,7 +142,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Stats */}
-      <div className="admin-stats" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
+      <div className="admin-stats" style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }}>
         {stats.map((s) => (
           <Link href={s.href} key={s.label} className="admin-stat" style={{ textDecoration: "none", display: "block" }}>
             <p className="admin-stat__label">{s.label}</p>

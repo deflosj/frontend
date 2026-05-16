@@ -380,6 +380,7 @@ table.admin-table {
 
 .admin-drawer__actions {
   display: flex;
+  justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1.5rem;
 }
@@ -558,7 +559,9 @@ table.admin-table {
   bottom: 0;
   z-index: 50;
   height: 100dvh;
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   background: var(--bg-alt);
   box-shadow: -4px 0 32px rgba(0, 0, 0, 0.12);
   padding: 1.75rem;
@@ -566,13 +569,21 @@ table.admin-table {
   animation: sheet-slide-in 200ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
+.admin-sheet__body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
 .admin-sheet[data-state="closed"] {
   animation: sheet-slide-out 180ms ease-in;
 }
 
-.admin-sheet__title {
+.admin-drawer__header .admin-sheet__title {
   margin: 0;
-  font-size: 1.15rem;
+  font-size: 2rem;
   font-weight: 500;
   letter-spacing: -0.02em;
   color: var(--text);
@@ -779,16 +790,12 @@ dialog::backdrop {
 
 /* ── Table toolbar ───────────────────────────────────────── */
 
-.admin-table-toolbar-row {
-  border-bottom: 1px solid var(--border);
-}
-
 .table-toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
-  padding: 0.6rem 1rem;
+  padding: 0.6rem 0rem;
   flex-wrap: wrap;
 }
 

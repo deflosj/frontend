@@ -283,7 +283,7 @@ export default function AdminTournooisPage() {
                     <path d="M6.5 6a1.5 1.5 0 0 1 3 0c0 1-1.5 1.5-1.5 2.5M8 11.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
                   </svg>
                 ),
-                onClick: () => window.open("https://deflosj.be/admin/help", "_blank", "noopener,noreferrer"),
+                onClick: () => window.open("#", "_blank", "noopener,noreferrer"),
               },
             ]}
           />

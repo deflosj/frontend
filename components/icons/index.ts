@@ -1,3 +1,5 @@
+export { IconArrowUp } from "./IconArrowUp";
+export { IconArrowDown } from "./IconArrowDown";
 export { IconPlus } from "./IconPlus";
 export { IconEdit } from "./IconEdit";
 export { IconTrash } from "./IconTrash";
