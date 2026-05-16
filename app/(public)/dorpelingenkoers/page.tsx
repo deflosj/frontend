@@ -5,24 +5,24 @@ import { siteConfig } from "@/lib/site-config";
 
 export const metadata: Metadata = {
   title: "Dorpelingenkoers",
-  description: `De dorpelingenkoers van ${siteConfig.name}: uitleg en praktische info.`,
+  description: `De dorpelingenkoers van ${siteConfig.name}: 4e editie op zaterdag 6 juni 2026 in Rotselaar.`,
 };
 
 const raceDetails = [
   {
-    eyebrow: "Deelnemers",
-    title: "Voor wie",
-    text: "Voor inwoners, supporters en deelnemers die de lokale koers willen meemaken. Geen profs, wel veel sfeer.",
+    eyebrow: "Dorpelingenkoers · 32 km",
+    title: "Voor inwoners & clubleden",
+    text: "Exclusief voor inwoners van Rotselaar of leden van lokale wielerclubs. 14 ronden van 2,3 km. Minimum 18 jaar, geen actieve licentie. Ex-renners moeten minstens 5 jaar inactief zijn (laatste wedstrijd vóór 31/12/2020).",
   },
   {
-    eyebrow: "Beleving",
-    title: "Sfeer",
-    text: "Gezellig, toegankelijk en ingebed in de buurt. Supporters langs de kant, deelnemers op de fiets.",
+    eyebrow: "FUN-wedstrijd · 46 km",
+    title: "Open voor iedereen",
+    text: "Open voor alle deelnemers, ook niet-inwoners en Elite 3-licentiehouders. 20 ronden van 2,3 km. Mannen van 45+ rijden in een aparte categorie.",
   },
   {
-    eyebrow: "Logistiek",
-    title: "Praktische aanpak",
-    text: "Duidelijke informatie over vertrek, timing, route en contactpunten zodat alles vlot verloopt.",
+    eyebrow: "Inschrijving · €25",
+    title: "Aan het startpunt",
+    text: "Inschrijven en rugnummer ophalen aan 'Het huis' (tegenover Café de Zijbeuk) vanaf 16:30. Betalen kan cash of via Payconiq.",
   },
 ];
 
@@ -33,14 +33,14 @@ export default function VillageRacePage() {
       <div className="border-b border-rule">
         <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8 sm:py-20">
           <p className="mb-3 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
-            Dorpelingenkoers
+            4e Editie · Zaterdag 6 juni 2026
           </p>
           <h1 className="mb-4 text-4xl font-bold tracking-tight text-ink sm:text-5xl">
-            De koers van het dorp
+            Dorpelingenkoers Rotselaar
           </h1>
           <p className="max-w-xl text-lg leading-relaxed text-ink-2">
-            Elk jaar brengt De Flosj een fietskoers voor het hele dorp. Open voor iedereen,
-            geliefd door iedereen.
+            Twee koersen op een afgesloten circuit van 2,3 km door het hart van Rotselaar.
+            Open voor inwoners, clubleden én iedereen die wil meerijden.
           </p>
         </div>
       </div>
@@ -62,20 +62,22 @@ export default function VillageRacePage() {
           ))}
         </div>
 
-        {/* ── Programme highlight ─────────────────────────── */}
+        {/* ── Programme ───────────────────────────────────── */}
         <div className="mt-10 rounded-2xl border border-rule bg-surface px-6 py-6 sm:px-8 sm:py-8">
           <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
             Programma
           </p>
           <h2 className="mb-5 text-xl font-bold tracking-tight text-ink sm:text-2xl">
-            Hoe verloopt de koersdag?
+            Verloop van de koersdag
           </h2>
           <div className="flex flex-col divide-y divide-rule">
             {[
-              { time: "14:00", label: "Deelnemers aanmelden" },
-              { time: "15:00", label: "Start dorpelingenkoers" },
-              { time: "17:00", label: "Aankomst en huldiging" },
-              { time: "17:30", label: "Receptie voor deelnemers" },
+              { time: "16:30", label: "Inschrijving & rugnummers ophalen (Het huis)" },
+              { time: "17:15", label: "Opwarmingsronde Dorpelingenkoers" },
+              { time: "17:30", label: "Start Dorpelingenkoers (32 km · 14 ronden)" },
+              { time: "19:15", label: "Opwarmingsronde FUN-wedstrijd" },
+              { time: "19:30", label: "Start FUN-wedstrijd (46 km · 20 ronden)" },
+              { time: "21:00", label: "Huldiging aan Café de Zijbeuk" },
             ].map(({ time, label }) => (
               <div key={time} className="flex gap-6 py-4 first:pt-0 last:pb-0">
                 <p className="w-12 shrink-0 font-mono text-sm font-medium tabular-nums text-muted">
@@ -87,13 +89,36 @@ export default function VillageRacePage() {
           </div>
         </div>
 
+        {/* ── Route ───────────────────────────────────────── */}
+        <div className="mt-6 rounded-2xl border border-rule bg-surface px-6 py-6 sm:px-8 sm:py-8">
+          <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
+            Parcours · 2,3 km per ronde
+          </p>
+          <h2 className="mb-3 text-xl font-bold tracking-tight text-ink sm:text-2xl">
+            Afgesloten circuit
+          </h2>
+          <p className="text-sm leading-relaxed text-ink-2">
+            Provinciebaan (afslag vóór Hellichstraat) → Dorpsplein → Bergstraat → Vijfde
+            Liniestraat → Rodenbachlaan → Provinciebaan.
+          </p>
+          <p className="mt-3 text-sm text-muted">
+            Verkeer verboden van 16:30 tot 21:00.
+          </p>
+        </div>
+
         {/* ── CTA ────────────────────────────────────────────── */}
         <div className="mt-8 flex flex-wrap gap-3">
           <Link
-            href="/contact"
-            className="rounded-full bg-ink px-5 py-2.5 text-sm font-semibold text-paper transition-colors hover:bg-ink/80"
+            href="/dorpelingenkoers/inschrijven"
+            className="rounded-full bg-pink px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-pink/85 hover:shadow-md hover:shadow-pink/20"
           >
-            Inschrijven of info aanvragen
+            Inschrijven
+          </Link>
+          <Link
+            href="/contact"
+            className="rounded-full border border-rule px-5 py-2.5 text-sm font-semibold text-ink-2 transition-colors hover:border-ink/20 hover:text-ink"
+          >
+            Info aanvragen
           </Link>
           <Link
             href="/toernooi"

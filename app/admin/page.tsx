@@ -4,10 +4,13 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import type { TournamentListItem } from "@/lib/tournament-types";
+import { DataTable, type ColumnDef } from "@/components/admin/data-table";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface NewsPost { id: number; publishedAt: string | null }
 interface CalEvent { id: number; isPublished: boolean }
-interface Member { id: number }
+interface Member   { id: number }
 interface ContactMessage {
   id: number;
   name: string;
@@ -17,29 +20,59 @@ interface ContactMessage {
   createdAt: string;
 }
 
-function fmt(iso: string) {
-  return new Date(iso).toLocaleDateString("nl-BE");
+// ── Cell components (module scope — required by S6478) ────────────────────────
+
+function MsgNameCell({ name }: Readonly<{ name: string }>) {
+  return <strong>{name}</strong>;
 }
 
-function badgeVariant(status: ContactMessage["status"]): string {
-  if (status === "UNREAD") return "pink";
-  if (status === "READ")   return "green";
-  return "gray";
+function MsgSubjectCell({ subject }: Readonly<{ subject: string | null }>) {
+  return <>{subject ?? <span style={{ color: "var(--muted)" }}>—</span>}</>;
 }
 
-function statusLabel(status: ContactMessage["status"]): string {
-  if (status === "UNREAD") return "Ongelezen";
-  if (status === "READ")   return "Gelezen";
-  return "Gearchiveerd";
+function MsgStatusBadge({ status }: Readonly<{ status: ContactMessage["status"] }>) {
+  let color = "gray";
+  let label = "Gearchiveerd";
+  if (status === "UNREAD") { color = "pink";  label = "Ongelezen"; }
+  else if (status === "READ") { color = "green"; label = "Gelezen"; }
+  return <span className={`badge badge--${color}`}>{label}</span>;
 }
+
+function MsgDateCell({ iso }: Readonly<{ iso: string }>) {
+  return <>{new Date(iso).toLocaleDateString("nl-BE")}</>;
+}
+
+// ── Columns ───────────────────────────────────────────────────────────────────
+
+const MSG_COLUMNS: ColumnDef<ContactMessage>[] = [
+  { key: "name",      header: "Naam",       cell: (m) => <MsgNameCell name={m.name} /> },
+  { key: "email",     header: "E-mail",     cell: (m) => m.email },
+  { key: "subject",   header: "Onderwerp",  cell: (m) => <MsgSubjectCell subject={m.subject} /> },
+  { key: "status",    header: "Status",     cell: (m) => <MsgStatusBadge status={m.status} /> },
+  { key: "createdAt", header: "Datum",      cell: (m) => <MsgDateCell iso={m.createdAt} /> },
+];
+
+// ── Quick links ───────────────────────────────────────────────────────────────
+
+const QUICK_LINKS = [
+  { href: "/admin/toernooi",       label: "Toernooien beheren" },
+  { href: "/admin/news",           label: "Nieuws beheren"     },
+  { href: "/admin/events",         label: "Events beheren"     },
+  { href: "/admin/sponsors",       label: "Sponsors beheren"   },
+  { href: "/admin/members",        label: "Leden bekijken"     },
+  { href: "/admin/messages",       label: "Berichten lezen"    },
+  { href: "/admin/inschrijvingen", label: "Inschrijvingen"     },
+];
+
+// ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
-  const [news, setNews] = useState<NewsPost[]>([]);
-  const [events, setEvents] = useState<CalEvent[]>([]);
-  const [members, setMembers] = useState<Member[]>([]);
-  const [messages, setMessages] = useState<ContactMessage[]>([]);
+  const [news, setNews]             = useState<NewsPost[]>([]);
+  const [events, setEvents]         = useState<CalEvent[]>([]);
+  const [members, setMembers]       = useState<Member[]>([]);
+  const [messages, setMessages]     = useState<ContactMessage[]>([]);
   const [tournaments, setTournaments] = useState<TournamentListItem[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
     Promise.allSettled([
@@ -49,27 +82,26 @@ export default function AdminDashboardPage() {
       apiFetch<ContactMessage[]>("/contact/messages"),
       apiFetch<TournamentListItem[]>("/tournaments"),
     ]).then(([n, e, m, msg, t]) => {
-      if (n.status === "fulfilled") setNews(n.value);
-      if (e.status === "fulfilled") setEvents(e.value);
-      if (m.status === "fulfilled") setMembers(m.value);
+      if (n.status   === "fulfilled") setNews(n.value);
+      if (e.status   === "fulfilled") setEvents(e.value);
+      if (m.status   === "fulfilled") setMembers(m.value);
       if (msg.status === "fulfilled") setMessages(msg.value);
-      if (t.status === "fulfilled") setTournaments(t.value);
+      if (t.status   === "fulfilled") setTournaments(t.value);
       setLoading(false);
     });
   }, []);
 
-  const unread = messages.filter((m) => m.status === "UNREAD").length;
+  const unread          = messages.filter((m) => m.status === "UNREAD").length;
   const activeTournament = tournaments.find((t) => t.isActive);
+  const recentMessages  = messages.slice(0, 6);
 
   const stats = [
-    { label: "Toernooien", value: tournaments.length, href: "/admin/toernooi" },
-    { label: "Nieuwsartikelen", value: news.length, href: "/admin/news" },
-    { label: "Events", value: events.length, href: "/admin/events" },
-    { label: "Leden", value: members.length, href: "/admin/members" },
-    { label: "Ongelezen berichten", value: unread, href: "/admin/messages", accent: unread > 0 },
+    { label: "Toernooien",         value: tournaments.length, href: "/admin/toernooi" },
+    { label: "Nieuwsartikelen",    value: news.length,        href: "/admin/news"     },
+    { label: "Events",             value: events.length,      href: "/admin/events"   },
+    { label: "Leden",              value: members.length,     href: "/admin/members"  },
+    { label: "Ongelezen berichten", value: unread,            href: "/admin/messages", accent: unread > 0 },
   ];
-
-  const recentMessages = messages.slice(0, 6);
 
   return (
     <>
@@ -78,7 +110,7 @@ export default function AdminDashboardPage() {
         <p>Welkom in het beheerderspaneel van De Flosj</p>
       </div>
 
-      {/* ── Active tournament banner ───────────────────────── */}
+      {/* Active tournament banner */}
       {!loading && activeTournament && (
         <div
           style={{
@@ -107,90 +139,50 @@ export default function AdminDashboardPage() {
         </div>
       )}
 
-      {/* ── Stats ─────────────────────────────────────────── */}
+      {/* Stats */}
       <div className="admin-stats" style={{ gridTemplateColumns: "repeat(5, minmax(0, 1fr))" }}>
         {stats.map((s) => (
           <Link href={s.href} key={s.label} className="admin-stat" style={{ textDecoration: "none", display: "block" }}>
             <p className="admin-stat__label">{s.label}</p>
-            <p
-              className="admin-stat__value"
-              style={s.accent ? { color: "var(--accent)" } : undefined}
-            >
+            <p className="admin-stat__value" style={s.accent ? { color: "var(--accent)" } : undefined}>
               {loading ? "—" : s.value}
             </p>
           </Link>
         ))}
       </div>
 
-      {/* ── Recent messages ───────────────────────────────── */}
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <h2>Recente berichten</h2>
+      {/* Recent messages */}
+      <DataTable
+        title="Recente berichten"
+        headerAction={
           <Link href="/admin/messages" className="btn-sm btn-sm--ghost">
             Alle berichten
           </Link>
-        </div>
+        }
+        data={recentMessages}
+        columns={MSG_COLUMNS}
+        loading={loading}
+        emptyText="Geen berichten ontvangen."
+      />
 
-        {loading ? (
-          <p className="admin-empty">Laden…</p>
-        ) : recentMessages.length === 0 ? (
-          <p className="admin-empty">Geen berichten ontvangen.</p>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Naam</th>
-                <th>E-mail</th>
-                <th>Onderwerp</th>
-                <th>Status</th>
-                <th>Datum</th>
-              </tr>
-            </thead>
-            <tbody>
-              {recentMessages.map((msg) => (
-                <tr key={msg.id}>
-                  <td><strong>{msg.name}</strong></td>
-                  <td>{msg.email}</td>
-                  <td>{msg.subject ?? "—"}</td>
-                  <td>
-                    <span className={`badge badge--${badgeVariant(msg.status)}`}>
-                      {statusLabel(msg.status)}
-                    </span>
-                  </td>
-                  <td>{fmt(msg.createdAt)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
-
-      {/* ── Quick links ───────────────────────────────────── */}
+      {/* Quick links */}
       <div className="admin-section">
         <div className="admin-table-wrapper">
           <div className="admin-table-header">
             <h2>Snelkoppelingen</h2>
           </div>
-          <table className="admin-table">
-            <tbody>
-              {[
-                { href: "/admin/toernooi",  label: "Toernooien beheren"  },
-                { href: "/admin/news",      label: "Nieuws beheren"       },
-                { href: "/admin/events",    label: "Events beheren"       },
-                { href: "/admin/sponsors",  label: "Sponsors beheren"     },
-                { href: "/admin/members",   label: "Leden bekijken"       },
-                { href: "/admin/messages",  label: "Berichten lezen"      },
-              ].map((link) => (
-                <tr key={link.href}>
-                  <td>
-                    <Link href={link.href} style={{ color: "var(--accent-strong)", fontWeight: 500 }}>
-                      {link.label} →
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px, 1fr))", gap: "0.5rem", padding: "1rem" }}>
+            {QUICK_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="btn-sm btn-sm--ghost"
+                style={{ justifyContent: "flex-start" }}
+              >
+                {link.label} →
+              </Link>
+            ))}
+          </div>
         </div>
       </div>
     </>

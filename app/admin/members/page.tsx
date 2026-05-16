@@ -1,7 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { DataTable, type ColumnDef } from "@/components/admin/data-table";
+import { TableToolbar } from "@/components/admin/table-toolbar";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface MemberProfile {
   id: number;
@@ -13,9 +17,75 @@ interface MemberProfile {
   isPublic: boolean;
 }
 
+// ── Cell components (module scope — required by S6478) ────────────────────────
+
+function NameCell({ firstName, lastName, bio }: Readonly<{ firstName: string; lastName: string; bio: string | null }>) {
+  return (
+    <>
+      <strong>{firstName} {lastName}</strong>
+      {bio && (
+        <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", color: "var(--muted)" }}>
+          {bio.length > 80 ? `${bio.slice(0, 80)}…` : bio}
+        </p>
+      )}
+    </>
+  );
+}
+
+function PhoneCell({ phone }: Readonly<{ phone: string | null }>) {
+  return <>{phone ?? "—"}</>;
+}
+
+function JoinedCell({ joinedAt }: Readonly<{ joinedAt: string | null }>) {
+  if (!joinedAt) return <>—</>;
+  return <>{new Date(joinedAt).toLocaleDateString("nl-BE")}</>;
+}
+
+function VisibilityBadge({ isPublic }: Readonly<{ isPublic: boolean }>) {
+  return isPublic ? (
+    <span className="badge badge--green">Openbaar</span>
+  ) : (
+    <span className="badge badge--gray">Privé</span>
+  );
+}
+
+// ── Columns ───────────────────────────────────────────────────────────────────
+
+const COLUMNS: ColumnDef<MemberProfile>[] = [
+  {
+    key: "name",
+    header: "Naam",
+    sortable: true,
+    sortValue: (m) => `${m.lastName} ${m.firstName}`,
+    cell: (m) => <NameCell firstName={m.firstName} lastName={m.lastName} bio={m.bio} />,
+  },
+  {
+    key: "phone",
+    header: "Telefoon",
+    cell: (m) => <PhoneCell phone={m.phone} />,
+  },
+  {
+    key: "joinedAt",
+    header: "Lid sinds",
+    sortable: true,
+    sortValue: (m) => m.joinedAt ?? "",
+    cell: (m) => <JoinedCell joinedAt={m.joinedAt} />,
+  },
+  {
+    key: "isPublic",
+    header: "Zichtbaar",
+    cell: (m) => <VisibilityBadge isPublic={m.isPublic} />,
+  },
+];
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function AdminMembersPage() {
   const [members, setMembers] = useState<MemberProfile[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const [search, setSearch]           = useState("");
+  const [filterVisible, setFilterVisible] = useState("ALL");
 
   useEffect(() => {
     apiFetch<MemberProfile[]>("/members")
@@ -23,60 +93,56 @@ export default function AdminMembersPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return members.filter((m) => {
+      if (filterVisible === "PUBLIC" && !m.isPublic) return false;
+      if (filterVisible === "PRIVATE" && m.isPublic) return false;
+      if (q) {
+        const name = `${m.firstName} ${m.lastName}`.toLowerCase();
+        if (!name.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [members, search, filterVisible]);
+
   return (
     <>
       <div className="admin-page-header">
         <h1>Leden</h1>
-        <p>Overzicht van leden met een openbaar profiel</p>
+        <p>Overzicht van alle ledenprofielen</p>
       </div>
 
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <h2>Leden ({members.length})</h2>
-        </div>
-
-        {loading ? (
-          <p className="admin-empty">Laden…</p>
-        ) : members.length === 0 ? (
-          <p className="admin-empty">Geen openbare ledenprofielen gevonden.</p>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Naam</th>
-                <th>Telefoon</th>
-                <th>Lid sinds</th>
-                <th>Zichtbaar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {members.map((m) => (
-                <tr key={m.id}>
-                  <td>
-                    <strong>{m.firstName} {m.lastName}</strong>
-                    {m.bio && (
-                      <p style={{ margin: "0.2rem 0 0", fontSize: "0.78rem", color: "var(--muted)" }}>
-                        {m.bio.length > 80 ? m.bio.slice(0, 80) + "…" : m.bio}
-                      </p>
-                    )}
-                  </td>
-                  <td>{m.phone ?? "—"}</td>
-                  <td>
-                    {m.joinedAt
-                      ? new Date(m.joinedAt).toLocaleDateString("nl-BE")
-                      : "—"}
-                  </td>
-                  <td>
-                    <span className={`badge badge--${m.isPublic ? "green" : "gray"}`}>
-                      {m.isPublic ? "Openbaar" : "Privé"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <DataTable
+        toolbar={
+          <TableToolbar
+            search={search}
+            onSearch={setSearch}
+            searchPlaceholder="Zoek op naam…"
+            filters={[
+              {
+                key: "visible",
+                label: "Zichtbaar",
+                value: filterVisible,
+                defaultValue: "ALL",
+                options: [
+                  { value: "ALL",     label: "Alle leden"  },
+                  { value: "PUBLIC",  label: "Openbaar"    },
+                  { value: "PRIVATE", label: "Privé"       },
+                ],
+                onChange: setFilterVisible,
+              },
+            ]}
+            resultCount={filtered.length}
+            totalCount={members.length}
+          />
+        }
+        title={`Leden (${loading ? "…" : members.length})`}
+        data={filtered}
+        columns={COLUMNS}
+        loading={loading}
+        emptyText="Geen ledenprofielen gevonden."
+      />
     </>
   );
 }
