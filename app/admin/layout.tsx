@@ -115,18 +115,18 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    if (pathname === "/admin/login") {
+    if (pathname === "/login") {
       setReady(true);
       return;
     }
     if (getToken()) {
       setReady(true);
     } else {
-      router.replace("/admin/login");
+      router.replace("/login");
     }
   }, [pathname, router]);
 
-  if (pathname === "/admin/login") {
+  if (pathname === "/login") {
     return <>{children}</>;
   }
 
@@ -134,7 +134,7 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
 
   function handleLogout() {
     clearToken();
-    router.push("/admin/login");
+    router.push("/login");
   }
 
   return (

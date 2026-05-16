@@ -38,7 +38,7 @@ export default async function TournamentPortalPage() {
           </h1>
           <p className="max-w-xl text-lg leading-relaxed text-ink-2">
             Alle edities van het De Flosj petanquetoernooi. Bekijk live standen, het volledige
-            schema en de finale of blader door de archieven van vorige jaren.
+            schema en de finale, of blader door de archieven.
           </p>
         </div>
       </div>
@@ -87,7 +87,7 @@ export default async function TournamentPortalPage() {
           </div>
         )}
 
-        {/* ── Vorige jaren ─────────────────────────────────── */}
+        {/* ── Archief ───────────────────────────────────────── */}
         {past.length > 0 && (
           <div>
             <p className="mb-4 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
