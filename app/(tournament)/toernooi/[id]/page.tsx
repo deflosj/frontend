@@ -76,7 +76,7 @@ export default async function TournamentOverviewPage({
           ].map(({ value, label }) => (
             <div key={label} className="rounded-xl bg-paper px-3 py-3 text-center">
               <p className="text-xl font-bold tabular-nums text-ink">{value}</p>
-              <p className="text-[0.6rem] font-semibold uppercase tracking-widest text-muted">
+              <p className="text-[0.6rem] font-semibold uppercase tracking-widest text-ink-2">
                 {label}
               </p>
             </div>
@@ -108,7 +108,7 @@ export default async function TournamentOverviewPage({
         {recentResults.length > 0 && (
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-muted">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-ink-2">
                 Recente resultaten
               </h2>
               <Link
@@ -130,7 +130,7 @@ export default async function TournamentOverviewPage({
         {nextMatches.length > 0 && (
           <div>
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-sm font-bold uppercase tracking-widest text-muted">
+              <h2 className="text-sm font-bold uppercase tracking-widest text-ink-2">
                 Volgende wedstrijden
               </h2>
               <Link
@@ -153,7 +153,7 @@ export default async function TournamentOverviewPage({
       {groupPoules.length > 0 && (
         <div>
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-widest text-muted">Standen</h2>
+            <h2 className="text-sm font-bold uppercase tracking-widest text-ink-2">Standen</h2>
             <Link
               href={`/toernooi/${id}/poules`}
               className="text-xs font-semibold text-pink hover:underline"
@@ -170,12 +170,12 @@ export default async function TournamentOverviewPage({
                   <div className="border-b border-rule bg-surface px-4 py-3">
                     <h3 className="font-bold text-ink">{poule.name}</h3>
                     {poule.description && (
-                      <p className="mt-0.5 text-xs text-muted">{poule.description}</p>
+                      <p className="mt-0.5 text-xs text-ink-2">{poule.description}</p>
                     )}
                   </div>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-rule text-xs font-semibold uppercase tracking-widest text-muted">
+                      <tr className="border-b border-rule text-xs font-semibold uppercase tracking-widest text-ink-2">
                         <th className="py-2 pl-4 pr-2 text-center">#</th>
                         <th className="px-2 py-2 text-left">Team</th>
                         <th className="px-2 py-2 text-center">G</th>
@@ -189,7 +189,7 @@ export default async function TournamentOverviewPage({
                           key={team.id}
                           className="border-b border-rule/50 last:border-0 hover:bg-surface"
                         >
-                          <td className="py-2.5 pl-4 pr-2 text-center tabular-nums text-muted">
+                          <td className="py-2.5 pl-4 pr-2 text-center tabular-nums text-ink-2">
                             {i + 1}
                           </td>
                           <td className="px-2 py-2.5 font-medium text-ink">{team.name}</td>

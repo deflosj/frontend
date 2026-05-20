@@ -29,7 +29,7 @@ export default async function TeamsPage({
     <div className="flex flex-col gap-10">
       {byPoule.map(({ poule, teams: pouleTeams }) => (
         <div key={poule.id}>
-          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-muted">
+          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-2">
             {poule.name}
           </h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -45,7 +45,7 @@ export default async function TeamsPage({
       ))}
       {noPoule.length > 0 && (
         <div>
-          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-muted">
+          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-2">
             Overige teams
           </h3>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">

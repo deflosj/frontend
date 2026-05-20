@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { IconArrowUp, IconArrowDown } from "../ui/icons";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -51,12 +51,10 @@ function SortIcon({ active, dir }: Readonly<{ active: boolean; dir: SortDir }>) 
 // ── DataTable ─────────────────────────────────────────────────────────────────
 
 export function DataTable<T extends { id: number }>({
-  title,
   data,
   columns,
   loading = false,
   emptyText = "Geen resultaten gevonden.",
-  headerAction,
   toolbar,
   defaultPageSize = 25,
   pageSizeOptions = [10, 25, 50, 100],
@@ -65,11 +63,6 @@ export function DataTable<T extends { id: number }>({
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
-
-  // Reset to page 1 when data set length changes (i.e. filter applied)
-  useEffect(() => {
-    setPage(1);
-  }, [data.length]);
 
   function handleSort(key: string) {
     if (sortKey === key) {

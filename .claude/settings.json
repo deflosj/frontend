@@ -4,11 +4,15 @@
       "Bash(curl -s http://localhost:8000/api/tournaments)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/tournaments)",
       "Bash(npm run *)",
-      "Bash(mkdir -p /Users/persynwannes/Documents/DeFlosj/frontend/components/events)"
+      "Bash(mkdir -p /Users/persynwannes/Documents/DeFlosj/frontend/components/events)",
+      "Bash(grep -E '\\\\.\\(ts|tsx|js|jsx\\)$')",
+      "Bash(grep -n \"\\\\${BASE}\" /Users/persynwannes/Documents/Projects/DeFlosj/frontend/app/\\\\\\(public\\\\\\)/helpers/\\\\[token\\\\]/page.tsx)",
+      "Bash(mkdir -p /Users/persynwannes/Documents/Projects/DeFlosj/frontend/app/\\\\\\(public\\\\\\)/helpers/\\\\[token\\\\]/_components)"
     ],
     "additionalDirectories": [
       "/Users/persynwannes/Documents/DeFlosj/backend",
-      "/Users/persynwannes/Documents/DeFlosj/frontend/components"
+      "/Users/persynwannes/Documents/DeFlosj/frontend/components",
+      "/Users/persynwannes/Documents/Projects/DeFlosj/frontend/app/(public)/helpers/[token]"
     ]
   }
 }

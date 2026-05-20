@@ -15,7 +15,7 @@ export default function InschrijvenPage() {
         <div className="mx-auto max-w-2xl px-5 py-12 sm:px-8">
           <Link
             href="/dorpelingenkoers"
-            className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-muted hover:text-ink"
+            className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-ink-2 hover:text-ink"
           >
             ← Dorpelingenkoers
           </Link>

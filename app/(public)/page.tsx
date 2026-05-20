@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { API_BASE } from "@/lib/api";
 
 type Event = {
   id: number;
@@ -10,7 +11,7 @@ type Event = {
 async function getEvents(): Promise<Event[]> {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/"}content/events`,
+      `${API_BASE}content/events`,
       { next: { revalidate: 3600 } }
     );
     if (!res.ok) return [];
@@ -71,18 +72,18 @@ export default async function HomePage() {
                     key={event.id}
                     className="rounded-2xl border border-rule bg-surface px-4 py-3 lg:px-5 lg:py-4"
                   >
-                    <p className="text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-muted sm:text-[0.625rem]">
+                    <p className="text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-ink-2 sm:text-[0.625rem]">
                       {formatDate(event.startsAt)}
                     </p>
                     <p className="mt-1 text-sm font-bold text-ink lg:text-base">{event.title}</p>
                     {event.location && (
-                      <p className="mt-0.5 text-xs text-muted">{event.location}</p>
+                      <p className="mt-0.5 text-xs text-ink-2">{event.location}</p>
                     )}
                   </div>
                 ))
               ) : (
                 <div className="rounded-2xl border border-rule bg-surface px-4 py-3 lg:px-5 lg:py-4">
-                  <p className="text-xs text-muted">Geen evenementen gepland.</p>
+                  <p className="text-xs text-ink-2">Geen evenementen gepland.</p>
                 </div>
               )}
             </div>

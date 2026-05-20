@@ -19,13 +19,6 @@ const contactDetails = [
     Icon: IconMail,
   },
   {
-    label: "Telefoon",
-    value: siteConfig.phone,
-    href: `tel:${siteConfig.phone}`,
-    description: "Bereikbaar op weekdagen van 9u tot 18u.",
-    Icon: IconPhone,
-  },
-  {
     label: "Locatie",
     value: siteConfig.location,
     href: "https://maps.google.com/?q=Rotselaar",
@@ -72,24 +65,24 @@ export default function ContactPage() {
                 rel={href.startsWith("http") ? "noopener noreferrer" : undefined}
                 className="group flex items-start gap-4 rounded-2xl border border-rule bg-surface px-5 py-4 transition-colors duration-200 hover:border-pink/25 hover:bg-pink-soft/20"
               >
-                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rule bg-paper text-muted transition-colors duration-200 group-hover:border-pink/25 group-hover:bg-pink-soft group-hover:text-pink">
+                <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rule bg-paper text-ink-2 transition-colors duration-200 group-hover:border-pink/25 group-hover:bg-pink-soft group-hover:text-pink">
                   <Icon />
                 </span>
                 <div>
-                  <p className="mb-0.5 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
+                  <p className="mb-0.5 text-[0.625rem] font-semibold uppercase tracking-widest text-ink-2">
                     {label}
                   </p>
                   <p className="text-sm font-medium text-ink group-hover:text-pink">
                     {value}
                   </p>
-                  <p className="mt-0.5 text-xs leading-relaxed text-muted">{description}</p>
+                  <p className="mt-0.5 text-xs leading-relaxed text-ink-2">{description}</p>
                 </div>
               </Link>
             ))}
 
             {/* Social */}
             <div className="mt-2 rounded-2xl border border-rule bg-surface px-5 py-4">
-              <p className="mb-3 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
+              <p className="mb-3 text-[0.625rem] font-semibold uppercase tracking-widest text-ink-2">
                 Volg ons
               </p>
               <div className="flex gap-2">
@@ -100,7 +93,7 @@ export default function ContactPage() {
                     target="_blank"
                     rel="noopener noreferrer"
                     aria-label={label}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-rule bg-paper text-muted transition-all duration-200 hover:border-pink/25 hover:bg-pink-soft hover:text-pink"
+                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-rule bg-paper text-ink-2 transition-all duration-200 hover:border-pink/25 hover:bg-pink-soft hover:text-pink"
                   >
                     <Icon />
                   </Link>

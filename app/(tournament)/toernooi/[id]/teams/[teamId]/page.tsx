@@ -48,7 +48,7 @@ export default async function TeamDetailPage({
           )}
         </div>
 
-        <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-widest text-muted">
+        <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-widest text-ink-2">
           Spelers
         </p>
         <p className="mb-1 font-semibold text-ink">{team.captainName}</p>
@@ -64,7 +64,7 @@ export default async function TeamDetailPage({
       {/* Stats */}
       {team.played > 0 && (
         <div>
-          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-muted">
+          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-2">
             Statistieken
           </h3>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -81,7 +81,7 @@ export default async function TeamDetailPage({
                 className="rounded-xl border border-rule bg-surface px-4 py-4 text-center"
               >
                 <p className="text-2xl font-bold tabular-nums text-ink">{value}</p>
-                <p className="mt-1 text-xs text-muted">{label}</p>
+                <p className="mt-1 text-xs text-ink-2">{label}</p>
               </div>
             ))}
           </div>
@@ -89,17 +89,17 @@ export default async function TeamDetailPage({
           <div className="mt-3 grid grid-cols-3 gap-3">
             <div className="rounded-xl border border-rule bg-surface px-4 py-4 text-center">
               <p className="text-2xl font-bold tabular-nums text-ink">{team.goalsFor}</p>
-              <p className="mt-1 text-xs text-muted">Punten voor</p>
+              <p className="mt-1 text-xs text-ink-2">Punten voor</p>
             </div>
             <div className="rounded-xl border border-rule bg-surface px-4 py-4 text-center">
               <p className="text-2xl font-bold tabular-nums text-ink">{team.goalsAgainst}</p>
-              <p className="mt-1 text-xs text-muted">Punten tegen</p>
+              <p className="mt-1 text-xs text-ink-2">Punten tegen</p>
             </div>
             <div className="rounded-xl border border-rule bg-surface px-4 py-4 text-center">
               <p className={`text-2xl font-bold tabular-nums ${saldoClass(team.saldo)}`}>
                 {team.saldo > 0 ? `+${team.saldo}` : team.saldo}
               </p>
-              <p className="mt-1 text-xs text-muted">Saldo</p>
+              <p className="mt-1 text-xs text-ink-2">Saldo</p>
             </div>
           </div>
 
@@ -115,7 +115,7 @@ export default async function TeamDetailPage({
       {/* Matches */}
       {teamMatches.length > 0 && (
         <div>
-          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-muted">
+          <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-2">
             Wedstrijden
           </h3>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -128,7 +128,7 @@ export default async function TeamDetailPage({
 
       <Link
         href={`/toernooi/${id}/teams`}
-        className="self-start text-sm font-semibold text-muted hover:text-ink"
+        className="self-start text-sm font-semibold text-ink-2 hover:text-ink"
       >
         ← Alle teams
       </Link>

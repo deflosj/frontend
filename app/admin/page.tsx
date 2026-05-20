@@ -52,18 +52,6 @@ const MSG_COLUMNS: ColumnDef<ContactMessage>[] = [
   { key: "createdAt", header: "Datum",      cell: (m) => <MsgDateCell iso={m.createdAt} /> },
 ];
 
-// ── Quick links ───────────────────────────────────────────────────────────────
-
-const QUICK_LINKS = [
-  { href: "/admin/toernooi",       label: "Toernooien beheren" },
-  { href: "/admin/news",           label: "Nieuws beheren"     },
-  { href: "/admin/events",         label: "Events beheren"     },
-  { href: "/admin/sponsors",       label: "Sponsors beheren"   },
-  { href: "/admin/members",        label: "Leden bekijken"     },
-  { href: "/admin/messages",       label: "Berichten lezen"    },
-  { href: "/admin/inschrijvingen", label: "Inschrijvingen"     },
-];
-
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminDashboardPage() {
@@ -107,26 +95,14 @@ export default function AdminDashboardPage() {
 
   return (
     <>
-      <div className="admin-page-header">
-        <h1>Dashboard</h1>
-        <p>Welkom in het beheerderspaneel van De Flosj</p>
+      <div className="mb-2">
+        <h1 className="text-3xl font-medium text-ink" >Dashboard</h1>
+        <p className="mt-1.5 text-base text-ink/75">Welkom in het beheerderspaneel van De Flosj</p>
       </div>
 
       {/* Active tournament banner */}
       {!loading && activeTournament && (
-        <div
-          style={{
-            marginBottom: "1.5rem",
-            padding: "1rem 1.25rem",
-            borderRadius: "var(--radius-lg)",
-            background: "var(--accent-soft)",
-            border: "1px solid color-mix(in srgb, var(--accent) 20%, transparent)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "1rem",
-          }}
-        >
+        <div className="flex items-center justify-between gap-4 rounded-lg bg-ink/5 p-4">
           <div>
             <p style={{ margin: 0, fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--accent-strong)", fontFamily: "var(--font-geist-mono), monospace" }}>
               Actief toernooi
@@ -142,11 +118,11 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Stats */}
-      <div className="admin-stats" style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }}>
+      <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }}>
         {stats.map((s) => (
-          <Link href={s.href} key={s.label} className="admin-stat" style={{ textDecoration: "none", display: "block" }}>
-            <p className="admin-stat__label">{s.label}</p>
-            <p className="admin-stat__value" style={s.accent ? { color: "var(--accent)" } : undefined}>
+          <Link href={s.href} key={s.label} className="bg-surface border border-rule rounded-lg p-5 shadow" style={{ textDecoration: "none", display: "block" }}>
+            <p className="text-xs font-semibold tracking-widest text-ink/75">{s.label}</p>
+            <p className="text-3xl my-2  tracking-tight text-ink" style={s.accent ? { color: "var(--accent)" } : undefined}>
               {loading ? "—" : s.value}
             </p>
           </Link>

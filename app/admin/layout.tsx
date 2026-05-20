@@ -1,101 +1,23 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { clearToken, getToken } from "@/lib/api";
+import AuthService from "@/services/AuthService";
 import { DrawerProvider } from "@/components/admin/drawer-provider";
 import "./admin.css";
 import { Button } from "@/components/ui/button";
-
-// ── Icons ─────────────────────────────────────────────────────────────────────
-
-function IconGrid() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-      <rect x="9" y="9" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.4" />
-    </svg>
-  );
-}
-
-function IconTrophy() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M5 2H3a1 1 0 0 0-1 1v2a3 3 0 0 0 3 3M11 2h2a1 1 0 0 1 1 1v2a3 3 0 0 1-3 3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M5 2h6v5a3 3 0 0 1-6 0V2Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-      <path d="M8 11v2M5 15h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconDocument() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M9 1.5H4a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1V5.5L9 1.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-      <path d="M9 1.5v4H13M5.5 9h5M5.5 11.5h3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconCalendar() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1.5" y="3" width="13" height="11" rx="2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M1.5 7h13M5 1.5V4M11 1.5V4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconStar() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M8 1.5l1.8 3.64 4.01.58-2.9 2.83.68 3.97L8 10.36l-3.58 1.96.68-3.97L2.2 5.72l4-.58L8 1.5Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconUsers() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <circle cx="6" cy="5" r="2.5" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M1 14c0-2.76 2.24-4.5 5-4.5s5 1.74 5 4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-      <path d="M11 7a2.5 2.5 0 1 0 0-5M15 14c0-2.76-1.34-4.5-4-4.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
-function IconMail() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <rect x="1.5" y="3.5" width="13" height="9" rx="2" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M1.5 6.5l6.5 4 6.5-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-function IconLogout() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3M11 11l3-3-3-3M14 8H6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-    </svg>
-  );
-}
-
-// ── Nav config ────────────────────────────────────────────────────────────────
-
-function IconClipboard() {
-  return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-      <path d="M5.5 2H3a1 1 0 0 0-1 1v11a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1V3a1 1 0 0 0-1-1h-2.5" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
-      <path d="M5.5 1.5h5a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-5A.5.5 0 0 1 5 3V2a.5.5 0 0 1 .5-.5Z" stroke="currentColor" strokeWidth="1.4" />
-      <path d="M5 8h6M5 11h4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    </svg>
-  );
-}
+import {
+  IconGrid,
+  IconTrophy,
+  IconDocument,
+  IconCalendar,
+  IconStar,
+  IconUsers,
+  IconMail,
+  IconLogout,
+  IconClipboard,
+} from "@/components/ui/icons";
 
 const navItems = [
   { href: "/admin",                 label: "Dashboard",    exact: true,  Icon: IconGrid      },
@@ -113,28 +35,9 @@ const navItems = [
 export default function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const router = useRouter();
   const pathname = usePathname();
-  const [ready, setReady] = useState(false);
-
-  useEffect(() => {
-    if (pathname === "/login") {
-      setReady(true);
-      return;
-    }
-    if (getToken()) {
-      setReady(true);
-    } else {
-      router.replace("/login");
-    }
-  }, [pathname, router]);
-
-  if (pathname === "/login") {
-    return <>{children}</>;
-  }
-
-  if (!ready) return null;
 
   function handleLogout() {
-    clearToken();
+    AuthService.logout();
     router.push("/login");
   }
 

@@ -29,7 +29,7 @@ export default async function MatchesPage({
           );
         return (
           <div key={phase}>
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-muted">
+            <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-ink-2">
               {PHASE_LABELS[phase]}
             </h3>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

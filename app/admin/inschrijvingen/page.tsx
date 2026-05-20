@@ -12,15 +12,16 @@ import {
   RACE_CATEGORY_LABELS,
   REGISTRATION_STATUS_LABELS,
 } from "@/lib/registration-types";
-import { DataTable, type ColumnDef } from "@/components/admin/data-table";
+import { DataTable } from "@/components/admin/data-table";
 import { TableToolbar, type ColumnDisplay } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
-import { DetailDrawer } from "../../../components/admin/dorpelingenkoers/detail-drawer";
-import { ApproveConfirm } from "../../../components/admin/dorpelingenkoers/approve-confirm";
-import { RejectConfirm } from "../../../components/admin/dorpelingenkoers/reject-confirm";
-import { DeleteConfirm } from "../../../components/admin/dorpelingenkoers/delete-confirm";
-import { SettingsDrawer } from "../../../components/admin/dorpelingenkoers/settings-drawer";
-import { Button } from "@/components/ui/button";
+import { SettingsDrawer } from "@/components/admin/dorpelingenkoers/settings-drawer";
+import {
+  ALL_COLUMN_KEYS,
+  COLUMN_LABELS,
+  STATIC_COLUMNS,
+  makeActionColumn,
+} from "./columns";
 
 // ── CSV export ────────────────────────────────────────────────────────────────
 
@@ -56,7 +57,9 @@ function exportCsv(rows: Registration[]) {
   const a = document.createElement("a");
   a.href = url;
   a.download = `inschrijvingen_${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(a);
   a.click();
+  a.remove();
   URL.revokeObjectURL(url);
 }
 
@@ -72,8 +75,8 @@ function LimitBar({ count, limit }: Readonly<{ count: number; limit: number | nu
   }
   const pct = Math.min(100, Math.round((count / limit) * 100));
   let barColor = "var(--accent)";
-  if (pct >= 100) barColor = "#c5221f";
-  else if (pct >= 80) barColor = "#b37400";
+  if (pct >= 100) barColor = "var(--red)";
+  else if (pct >= 80) barColor = "var(--orange)";
   return (
     <>
       <p className="admin-stat__value">
@@ -85,171 +88,6 @@ function LimitBar({ count, limit }: Readonly<{ count: number; limit: number | nu
       </div>
     </>
   );
-}
-
-// ── Cell components (module scope — required by S6478) ────────────────────────
-
-function fmt(iso: string) {
-  return new Date(iso).toLocaleDateString("nl-BE");
-}
-
-function StatusBadge({ status }: Readonly<{ status: RegistrationStatus }>) {
-  if (status === "APPROVED") return <span className="badge badge--green">Goedgekeurd</span>;
-  if (status === "REJECTED") return <span className="badge badge--red">Afgekeurd</span>;
-  return <span className="badge badge--yellow">In afwachting</span>;
-}
-
-function CategoryBadge({ category }: Readonly<{ category: RaceCategory }>) {
-  return (
-    <span className={`badge ${category === "DORPELINGENKOERS" ? "badge--pink" : "badge--blue"}`}>
-      {RACE_CATEGORY_LABELS[category]}
-    </span>
-  );
-}
-
-function TimestampCell({ timestamp }: Readonly<{ timestamp: string }>) {
-  return <span className="mono">{fmt(timestamp)}</span>;
-}
-
-function NameCell({ firstName, lastName }: Readonly<{ firstName: string; lastName: string }>) {
-  return <strong>{firstName} {lastName}</strong>;
-}
-
-function DobCell({ dateOfBirth }: Readonly<{ dateOfBirth: string }>) {
-  return <span className="mono">{fmt(dateOfBirth)}</span>;
-}
-
-function EmailCell({ email }: Readonly<{ email: string }>) {
-  return (
-    <a href={`mailto:${email}`} style={{ color: "var(--accent)" }}>
-      {email}
-    </a>
-  );
-}
-
-interface ActionCellProps {
-  registration: Registration;
-  onView: () => void;
-  onApprove: () => void;
-  onReject: () => void;
-  onDelete: () => void;
-}
-
-function ActionCell({
-  registration: r,
-  onView,
-  onApprove,
-  onReject,
-  onDelete,
-}: Readonly<ActionCellProps>) {
-  return (
-    <div className="row-actions">
-      <Button className="btn-sm btn-sm--ghost" onClick={onView}>
-        Bekijken
-      </Button>
-      {r.status === "PENDING" && (
-        <>
-          <Button className="btn-sm btn-sm--success" onClick={onApprove}>
-            Goedkeuren
-          </Button>
-          <Button className="btn-sm btn-sm--danger" onClick={onReject}>
-            Afwijzen
-          </Button>
-        </>
-      )}
-      <Button className="btn-sm btn-sm--danger" onClick={onDelete}>
-        Verwijderen
-      </Button>
-    </div>
-  );
-}
-
-// ── Column definitions ────────────────────────────────────────────────────────
-
-const ALL_COLUMN_KEYS = [
-  "timestamp", "name", "dob", "gender", "email", "phone", "category", "status",
-] as const;
-
-type AllColumnKey = typeof ALL_COLUMN_KEYS[number];
-
-const COLUMN_LABELS: Record<AllColumnKey, string> = {
-  timestamp: "Tijdstempel",
-  name:      "Naam",
-  dob:       "Geboortedatum",
-  gender:    "Geslacht",
-  email:     "E-mail",
-  phone:     "Telefoon",
-  category:  "Wedstrijd",
-  status:    "Status",
-};
-
-const STATIC_COLUMNS: ColumnDef<Registration>[] = [
-  {
-    key: "timestamp",
-    header: COLUMN_LABELS.timestamp,
-    sortable: true,
-    sortValue: (r) => r.timestamp,
-    cell: (r) => <TimestampCell timestamp={r.timestamp} />,
-  },
-  {
-    key: "name",
-    header: COLUMN_LABELS.name,
-    sortable: true,
-    sortValue: (r) => `${r.lastName} ${r.firstName}`,
-    cell: (r) => <NameCell firstName={r.firstName} lastName={r.lastName} />,
-  },
-  {
-    key: "dob",
-    header: COLUMN_LABELS.dob,
-    sortable: true,
-    sortValue: (r) => r.dateOfBirth,
-    cell: (r) => <DobCell dateOfBirth={r.dateOfBirth} />,
-  },
-  {
-    key: "gender",
-    header: COLUMN_LABELS.gender,
-    cell: (r) => r.gender,
-  },
-  {
-    key: "email",
-    header: COLUMN_LABELS.email,
-    cell: (r) => <EmailCell email={r.email} />,
-  },
-  {
-    key: "phone",
-    header: COLUMN_LABELS.phone,
-    cell: (r) => r.phone,
-  },
-  {
-    key: "category",
-    header: COLUMN_LABELS.category,
-    cell: (r) => <CategoryBadge category={r.raceCategory} />,
-  },
-  {
-    key: "status",
-    header: COLUMN_LABELS.status,
-    cell: (r) => <StatusBadge status={r.status} />,
-  },
-];
-
-function makeActionColumn(
-  openDrawer: (content: React.ReactNode) => void,
-  onUpdated: (r: Registration) => void,
-  onDeleted: (id: number) => void,
-): ColumnDef<Registration> {
-  return {
-    key: "actions",
-    header: "",
-    cell: (r) => (
-      <ActionCell
-        registration={r}
-        onView={() => openDrawer(<DetailDrawer registration={r} />)}
-        onApprove={() => openDrawer(<ApproveConfirm registration={r} onUpdated={onUpdated} />)}
-        onReject={() => openDrawer(<RejectConfirm registration={r} onUpdated={onUpdated} />)}
-        onDelete={() => openDrawer(<DeleteConfirm registration={r} onDeleted={onDeleted} />)}
-      />
-    ),
-  };
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
@@ -315,7 +153,7 @@ export default function InschrijvingenPage() {
 
   // ── Callbacks ──────────────────────────────────────────────────────────────
 
-  const handleUpdated = useCallback((updated: Registration) => {
+  const handleSaved = useCallback((updated: Registration) => {
     setRegistrations((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   }, []);
 
@@ -334,7 +172,7 @@ export default function InschrijvingenPage() {
 
   // ── Compose columns ────────────────────────────────────────────────────────
 
-  const actionColumn = makeActionColumn(openDrawer, handleUpdated, handleDeleted);
+  const actionColumn = makeActionColumn(openDrawer, handleSaved, handleDeleted);
   const columns = [
     ...STATIC_COLUMNS.filter((c) => visibleKeys.has(c.key)),
     actionColumn,
@@ -470,17 +308,6 @@ export default function InschrijvingenPage() {
                   </svg>
                 ),
                 onClick: () => openDrawer(<SettingsDrawer settings={settings} onSaved={setSettings} />),
-              },
-              {
-                key: "help",
-                label: "Help & documentatie",
-                icon: (
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                    <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.4" />
-                    <path d="M6.5 6a1.5 1.5 0 0 1 3 0c0 1-1.5 1.5-1.5 2.5M8 11.5v.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-                  </svg>
-                ),
-                onClick: () => window.open("https://deflosj.be/admin/help", "_blank", "noopener,noreferrer"),
               },
             ]}
           />

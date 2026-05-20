@@ -16,7 +16,7 @@ import {
   IconClose,
 } from "@/components/ui/icons";
 
-// ── Theme dropdown ────────────────────────────────────────────────────────────
+// ── Theme ─────────────────────────────────────────────────────────────────────
 
 type Theme = "light" | "dark" | "system";
 
@@ -26,19 +26,35 @@ const THEME_OPTIONS: { key: Theme; label: string; Icon: () => React.ReactElement
   { key: "system", label: "Systeem", Icon: IconMonitor },
 ];
 
-function ThemeDropdown() {
+function useTheme() {
   const [theme, setTheme] = useState<Theme>("system");
+  useEffect(() => {
+    const stored = localStorage.getItem("theme") as Theme | null;
+    setTheme(stored === "light" || stored === "dark" ? stored : "system");
+  }, []);
+  function apply(t: Theme) {
+    setTheme(t);
+    if (t === "system") {
+      localStorage.removeItem("theme");
+      document.documentElement.classList.toggle("dark",
+        globalThis.matchMedia("(prefers-color-scheme: dark)").matches);
+    } else {
+      localStorage.setItem("theme", t);
+      document.documentElement.classList.toggle("dark", t === "dark");
+    }
+  }
+  return { theme, apply };
+}
+
+// ── Theme dropdown ────────────────────────────────────────────────────────────
+
+function ThemeDropdown() {
+  const { theme, apply } = useTheme();
   const [isDark, setIsDark] = useState(false);
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored === "light" || stored === "dark") {
-      setTheme(stored);
-    } else {
-      setTheme("system");
-    }
     setIsDark(document.documentElement.classList.contains("dark"));
   }, []);
 
@@ -50,19 +66,14 @@ function ThemeDropdown() {
     return () => document.removeEventListener("pointerdown", onPointerDown);
   }, []);
 
-  function apply(t: Theme) {
-    setTheme(t);
+  function handleApply(t: Theme) {
+    apply(t);
     setOpen(false);
-    if (t === "system") {
-      localStorage.removeItem("theme");
-      const sys = globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
-      document.documentElement.classList.toggle("dark", sys);
-      setIsDark(sys);
-    } else {
-      localStorage.setItem("theme", t);
-      document.documentElement.classList.toggle("dark", t === "dark");
-      setIsDark(t === "dark");
-    }
+    setIsDark(
+      t === "system"
+        ? globalThis.matchMedia("(prefers-color-scheme: dark)").matches
+        : t === "dark"
+    );
   }
 
   const ActiveIcon = isDark ? IconMoon : IconSun;
@@ -75,7 +86,7 @@ function ThemeDropdown() {
         aria-label="Thema wijzigen"
         aria-expanded={open}
         className={`flex h-9 w-9 items-center justify-center rounded-full transition-colors duration-150 ${
-          open ? "bg-ink/8 text-ink" : "text-muted hover:bg-ink/5 hover:text-ink"
+          open ? "bg-ink/8 text-ink" : "text-ink-2 hover:bg-ink/5 hover:text-ink"
         }`}
       >
         <ActiveIcon />
@@ -89,7 +100,7 @@ function ThemeDropdown() {
               <button
                 key={key}
                 type="button"
-                onClick={() => apply(key)}
+                onClick={() => handleApply(key)}
                 className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-sm transition-colors duration-100 hover:bg-ink/5 ${
                   active ? "text-pink" : "text-ink-2 hover:text-ink"
                 }`}
@@ -174,7 +185,7 @@ export function SiteHeader() {
           <Link
             href="/login"
             aria-label="Inloggen"
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-ink/5 hover:text-ink"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-2 transition-colors duration-150 hover:bg-ink/5 hover:text-ink"
           >
             <IconUser />
           </Link>
@@ -185,7 +196,7 @@ export function SiteHeader() {
             onClick={() => setOpen((o) => !o)}
             aria-label={open ? "Menu sluiten" : "Menu openen"}
             aria-expanded={open}
-            className="flex h-9 w-9 items-center justify-center rounded-full text-muted transition-colors duration-150 hover:bg-ink/5 hover:text-ink sm:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-full text-ink-2 transition-colors duration-150 hover:bg-ink/5 hover:text-ink sm:hidden"
           >
             {open ? <IconClose /> : <IconHamburger />}
           </button>
@@ -238,29 +249,11 @@ export function SiteHeader() {
 // ── Mobile theme row (isolated so hooks aren't called in a loop) ──────────────
 
 function MobileThemeRow() {
-  const [theme, setTheme] = useState<Theme>("system");
-
-  useEffect(() => {
-    const stored = localStorage.getItem("theme") as Theme | null;
-    if (stored === "light" || stored === "dark") setTheme(stored);
-    else setTheme("system");
-  }, []);
-
-  function apply(t: Theme) {
-    setTheme(t);
-    if (t === "system") {
-      localStorage.removeItem("theme");
-      const sys = globalThis.matchMedia("(prefers-color-scheme: dark)").matches;
-      document.documentElement.classList.toggle("dark", sys);
-    } else {
-      localStorage.setItem("theme", t);
-      document.documentElement.classList.toggle("dark", t === "dark");
-    }
-  }
+  const { theme, apply } = useTheme();
 
   return (
     <div className="flex items-center gap-1.5">
-      <p className="mr-2 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
+      <p className="mr-2 text-[0.625rem] font-semibold uppercase tracking-widest text-ink-2">
         Thema
       </p>
       {THEME_OPTIONS.map(({ key, label, Icon }) => (

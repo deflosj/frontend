@@ -13,106 +13,6 @@
   --shadow:        0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 }
 
-/* ── Admin shell ─────────────────────────────────────────── */
-
-.admin-shell {
-  display: flex;
-  min-height: 100vh;
-  background: var(--bg-alt);
-}
-
-.admin-sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  background: var(--text);
-  color: rgba(250, 248, 245, 0.9);
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow-y: auto;
-}
-
-.admin-sidebar__brand {
-  padding: 1.25rem 1.5rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.admin-sidebar__brand strong {
-  display: block;
-  font-size: 1rem;
-  font-weight: 600;
-  color: rgba(250, 248, 245, 1);
-}
-
-.admin-sidebar__brand small {
-  display: block;
-  font-size: 0.63rem;
-  color: rgba(250, 248, 245, 0.4);
-  font-family: var(--font-geist-mono), monospace;
-  letter-spacing: 0.1em;
-  margin-top: 0.15rem;
-}
-
-.admin-nav {
-  flex: 1;
-  padding: 0.75rem 0;
-}
-
-.admin-nav__label {
-  padding: 0.4rem 1.5rem 0.2rem;
-  font-size: 0.63rem;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(250, 248, 245, 0.3);
-  font-family: var(--font-geist-mono), monospace;
-}
-
-.admin-nav__link {
-  display: flex;
-  align-items: center;
-  padding: 0.55rem 1.5rem;
-  font-size: 0.875rem;
-  font-weight: 500;
-  color: rgba(250, 248, 245, 0.78);
-  transition: color 120ms ease, background 120ms ease;
-}
-
-.admin-nav__link:hover {
-  color: #faf8f5;
-  background: #252529;
-}
-
-.admin-nav__link.active {
-  color: var(--accent);
-  background: rgba(255, 93, 146, 0.08);
-}
-
-.admin-sidebar__footer {
-  padding: 1rem 1.5rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-}
-
-.admin-logout {
-  width: 100%;
-  padding: 0.55rem 1rem;
-  border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: transparent;
-  color: rgba(250, 248, 245, 0.55);
-  font-size: 0.8rem;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  cursor: pointer;
-  transition: color 120ms ease, border-color 120ms ease;
-}
-
-.admin-logout:hover {
-  color: rgba(250, 248, 245, 0.9);
-  border-color: rgba(255, 255, 255, 0.25);
-}
-
 .admin-content {
   flex: 1;
   min-width: 0;
@@ -135,7 +35,7 @@
 
 .admin-page-header p {
   margin: 0.35rem 0 0;
-  color: var(--muted);
+  color: var(--color-ink-2);
   font-size: 0.9rem;
 }
 
@@ -162,7 +62,7 @@
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: var(--muted);
+  color: var(--color-ink-2);
   font-family: var(--font-geist-mono), monospace;
 }
 
@@ -212,7 +112,7 @@ table.admin-table {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--muted);
+  color: var(--color-ink-2);
   font-family: var(--font-geist-mono), monospace;
   background: var(--bg-alt);
   border-bottom: 1px solid var(--border);
@@ -240,7 +140,7 @@ table.admin-table {
 .admin-table td .mono {
   font-family: var(--font-geist-mono), monospace;
   font-size: 0.8rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
 }
 
 /* ── Badges ──────────────────────────────────────────────── */
@@ -260,7 +160,7 @@ table.admin-table {
 .badge--green  { background: #e6f4ea; color: #1e7e34; }
 .badge--yellow { background: #fff3cc; color: #7a4d00; }
 .badge--red    { background: #fce8e6; color: #c5221f; }
-.badge--gray   { background: var(--bg-alt); color: var(--muted); }
+.badge--gray   { background: var(--bg-alt); color: var(--color-ink-2); }
 .badge--pink   { background: var(--accent-soft); color: var(--accent-strong); }
 .badge--blue   { background: #e8f0fe; color: #1a56db; }
 
@@ -367,7 +267,7 @@ table.admin-table {
   background: transparent;
   cursor: pointer;
   font-size: 1rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -440,7 +340,7 @@ table.admin-table {
 .admin-login__logo small {
   display: block;
   font-size: 0.63rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
   font-family: var(--font-geist-mono), monospace;
   letter-spacing: 0.1em;
 }
@@ -455,7 +355,7 @@ table.admin-table {
 .admin-login__sub {
   margin: 0 0 1.75rem;
   font-size: 0.9rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
 }
 
 .admin-login__form {
@@ -534,7 +434,7 @@ table.admin-table {
 
 .admin-empty {
   padding: 2rem 1.4rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
   font-size: 0.9rem;
 }
 
@@ -592,7 +492,7 @@ table.admin-table {
 .admin-sheet__desc {
   margin: 0.2rem 0 0;
   font-size: 0.75rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
 }
 
 @keyframes sheet-overlay-in  { from { opacity: 0; } to { opacity: 1; } }
@@ -613,7 +513,7 @@ table.admin-table {
   display: block;
   margin: 0 0 1.5rem;
   font-size: 0.875rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
   line-height: 1.6;
 }
 
@@ -652,7 +552,7 @@ table.admin-table {
   gap: 0.4rem;
   font-size: 0.75rem;
   font-weight: 500;
-  color: var(--muted);
+  color: var(--color-ink-2);
 }
 
 .admin-step-labels__item[data-active="true"] {
@@ -818,7 +718,7 @@ dialog::backdrop {
 .tb-search__icon {
   position: absolute;
   left: 0.6rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
   display: flex;
   align-items: center;
   pointer-events: none;
@@ -854,7 +754,7 @@ dialog::backdrop {
   background: none;
   border: none;
   cursor: pointer;
-  color: var(--muted);
+  color: var(--color-ink-2);
   padding: 0.1rem;
   border-radius: 4px;
 }
@@ -885,7 +785,7 @@ dialog::backdrop {
 
 .tb-count {
   font-size: 0.75rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
   padding: 0 0.25rem;
   white-space: nowrap;
 }
@@ -962,7 +862,7 @@ dialog::backdrop {
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: var(--muted);
+  color: var(--color-ink-2);
   font-family: var(--font-geist-mono), monospace;
 }
 
@@ -1052,7 +952,7 @@ dialog::backdrop {
 
 .pagination-info {
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
   font-variant-numeric: tabular-nums;
 }
 
@@ -1105,7 +1005,7 @@ dialog::backdrop {
 
 .pagination-pages {
   font-size: 0.78rem;
-  color: var(--muted);
+  color: var(--color-ink-2);
   min-width: 3rem;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -1114,10 +1014,6 @@ dialog::backdrop {
 /* ── Responsive ──────────────────────────────────────────── */
 
 @media (max-width: 900px) {
-  .admin-sidebar {
-    display: none;
-  }
-
   .admin-stats {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

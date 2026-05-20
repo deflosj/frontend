@@ -1,9 +1,9 @@
 import type { ActiveTournament, TournamentTeam } from "./tournament-types";
+import { API_BASE } from "./api";
 
 export async function getTournament(id: string): Promise<ActiveTournament | null> {
-  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
   try {
-    const res = await fetch(`${base}/tournaments/${id}`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}tournaments/${id}`, { cache: "no-store" });
     if (!res.ok) return null;
     return res.json() as Promise<ActiveTournament>;
   } catch {
@@ -22,18 +22,14 @@ export function teamName(teams: TournamentTeam[], id: number | null): string {
   return teams.find((t) => t.id === id)?.name ?? "TBD";
 }
 
-export function fmt(iso: string): string {
-  return new Date(iso).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
-}
-
 export function saldoClass(saldo: number): string {
   if (saldo > 0) return "text-green-600";
   if (saldo < 0) return "text-red-500";
-  return "text-muted";
+  return "text-ink-2";
 }
 
 export function matchSideClass(isPlayed: boolean, isWinner: boolean): string {
   if (isPlayed && isWinner) return "text-ink";
-  if (isPlayed) return "text-muted";
+  if (isPlayed) return "text-ink-2";
   return "text-ink-2";
 }

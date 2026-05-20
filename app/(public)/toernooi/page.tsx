@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { TournamentListItem } from "@/lib/tournament-types";
+import { API_BASE } from "@/lib/api";
 
 export const metadata: Metadata = {
   title: "Toernooi",
@@ -10,9 +11,8 @@ export const metadata: Metadata = {
 };
 
 async function getTournaments(): Promise<TournamentListItem[]> {
-  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/";
   try {
-    const res = await fetch(`${base}tournaments`, { cache: "no-store" });
+    const res = await fetch(`${API_BASE}tournaments`, { cache: "no-store" });
     if (!res.ok) return [];
     return res.json() as Promise<TournamentListItem[]>;
   } catch {
@@ -45,7 +45,7 @@ export default async function TournamentPortalPage() {
 
       <div className="mx-auto max-w-5xl px-5 py-12 sm:px-8">
         {tournaments.length === 0 && (
-          <p className="text-sm text-muted">Er zijn nog geen toernooien aangemaakt.</p>
+          <p className="text-sm text-ink-2">Er zijn nog geen toernooien aangemaakt.</p>
         )}
 
         {/* ── Actief toernooi ──────────────────────────────── */}
@@ -100,11 +100,11 @@ export default async function TournamentPortalPage() {
                   href={`/toernooi/${t.id}`}
                   className="group flex flex-col rounded-2xl border border-rule bg-surface p-6 transition-colors hover:border-pink/20 hover:bg-pink-soft"
                 >
-                  <span className="mb-2 text-[0.625rem] font-semibold uppercase tracking-widest text-muted">
+                  <span className="mb-2 text-[0.625rem] font-semibold uppercase tracking-widest text-ink-2">
                     {t.year}
                   </span>
                   <h3 className="mb-1 font-semibold text-ink group-hover:underline">{t.name}</h3>
-                  <span className="mt-auto pt-4 text-xs font-semibold text-muted group-hover:text-pink-ink">
+                  <span className="mt-auto pt-4 text-xs font-semibold text-ink-2 group-hover:text-pink-ink">
                     Bekijk archief →
                   </span>
                 </Link>

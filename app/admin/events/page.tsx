@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
@@ -8,6 +8,7 @@ import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
 import { EventDrawer, type CalEvent } from "@/components/admin/events/event-drawer";
 import { Button } from "@/components/ui/button";
+import { SHIFT_LABELS } from "@/constants/shifts";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -47,13 +48,6 @@ function PublishBadge({ isPublished }: Readonly<{ isPublished: boolean }>) {
     <span className="badge badge--yellow">Concept</span>
   );
 }
-
-const SHIFT_SHORT: Record<string, string> = {
-  SETUP: "Opbouw",
-  DURING: "Tijdens",
-  BREAKDOWN: "Afbouw",
-};
-
 function shiftPipClass(total: number, assigned: number): string {
   if (total === 0) return "badge--gray";
   if (assigned === total) return "badge--green";
@@ -81,7 +75,7 @@ function ShiftsCell({ stats, loading }: Readonly<{ stats: ShiftStats | undefined
         {(["SETUP", "DURING", "BREAKDOWN"] as const).map((s) => (
           <ShiftPip
             key={s}
-            label={SHIFT_SHORT[s]}
+            label={SHIFT_LABELS[s]}
             total={stats.byShift![s].total}
             assigned={stats.byShift![s].assigned}
           />
@@ -167,38 +161,42 @@ export default function AdminEventsPage() {
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [statsMap, setStatsMap] = useState<Map<number, ShiftStats>>(new Map());
+  const statsMapRef = useRef<Map<number, ShiftStats>>(new Map());
   const [statsLoading, setStatsLoading] = useState(false);
 
-  async function load() {
-    try {
-      const evs = await apiFetch<CalEvent[]>("content/events/all");
-      setEvents(evs);
-      loadStats(evs);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadStats(evs: CalEvent[]) {
-    if (evs.length === 0) return;
+  const fetchShiftStats = useCallback(async (evs: CalEvent[]) => {
+    const toFetch = evs.filter((ev) => !statsMapRef.current.has(ev.id));
+    if (toFetch.length === 0) return;
     setStatsLoading(true);
     try {
       const results = await Promise.all(
-        evs.map((ev) =>
+        toFetch.map((ev) =>
           apiFetch<ShiftStats>(`events/${ev.id}/portal/stats`).then((s) => [ev.id, s] as const)
         )
       );
-      setStatsMap(new Map(results));
+      const merged = new Map<number, ShiftStats>([...statsMapRef.current, ...results]);
+      statsMapRef.current = merged;
+      setStatsMap(merged);
     } finally {
       setStatsLoading(false);
     }
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  const fetchEvents = useCallback(async () => {
+    try {
+      const evs = await apiFetch<CalEvent[]>("content/events/all");
+      setEvents(evs);
+      fetchShiftStats(evs);
+    } finally {
+      setLoading(false);
+    }
+  }, [fetchShiftStats]);
+
+  useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
   function handleSaved() {
     setLoading(true);
-    load();
+    fetchEvents();
   }
 
   const filtered = useMemo(() => {

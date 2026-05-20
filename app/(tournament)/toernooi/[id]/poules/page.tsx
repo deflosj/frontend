@@ -29,13 +29,13 @@ export default async function PoulesPage({
             <div className="border-b border-rule bg-surface px-4 py-3">
               <h3 className="font-bold text-ink">{poule.name}</h3>
               {poule.description && (
-                <p className="mt-0.5 text-xs text-muted">{poule.description}</p>
+                <p className="mt-0.5 text-xs text-ink-2">{poule.description}</p>
               )}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="border-b border-rule text-xs font-semibold uppercase tracking-widest text-muted">
+                  <tr className="border-b border-rule text-xs font-semibold uppercase tracking-widest text-ink-2">
                     <th className="py-2.5 pl-4 pr-2 text-center">#</th>
                     <th className="px-2 py-2.5 text-left">Team</th>
                     <th className="px-2 py-2.5 text-center">G</th>
@@ -54,7 +54,7 @@ export default async function PoulesPage({
                       key={team.id}
                       className="border-b border-rule/50 last:border-0 hover:bg-surface"
                     >
-                      <td className="py-3 pl-4 pr-2 text-center tabular-nums text-muted">
+                      <td className="py-3 pl-4 pr-2 text-center tabular-nums text-ink-2">
                         {i + 1}
                       </td>
                       <td className="px-2 py-3 font-medium text-ink">{team.name}</td>

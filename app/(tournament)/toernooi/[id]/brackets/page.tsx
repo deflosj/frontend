@@ -43,8 +43,8 @@ function MatchCard({
         style={{ height: CARD_H }}
         className="flex flex-col overflow-hidden rounded-xl border border-dashed border-rule bg-surface"
       >
-        <div className="flex flex-1 items-center px-3 text-xs text-muted">TBD</div>
-        <div className="flex flex-1 items-center border-t border-rule px-3 text-xs text-muted">TBD</div>
+        <div className="flex flex-1 items-center px-3 text-xs text-ink-2">TBD</div>
+        <div className="flex flex-1 items-center border-t border-rule px-3 text-xs text-ink-2">TBD</div>
       </div>
     );
   }
@@ -63,7 +63,7 @@ function MatchCard({
       <div className={`flex flex-1 items-center justify-between gap-2 px-3 ${winA ? "bg-pink/5" : ""}`}>
         <span className={`truncate ${winA ? "font-semibold text-ink" : "text-ink-2"}`}>{nameA}</span>
         {played && (
-          <span className={`shrink-0 tabular-nums ${winA ? "font-bold text-pink" : "font-medium text-muted"}`}>
+          <span className={`shrink-0 tabular-nums ${winA ? "font-bold text-pink" : "font-medium text-ink-2"}`}>
             {match.scoreA}
           </span>
         )}
@@ -71,7 +71,7 @@ function MatchCard({
       <div className={`flex flex-1 items-center justify-between gap-2 border-t border-rule px-3 ${winB ? "bg-pink/5" : ""}`}>
         <span className={`truncate ${winB ? "font-semibold text-ink" : "text-ink-2"}`}>{nameB}</span>
         {played && (
-          <span className={`shrink-0 tabular-nums ${winB ? "font-bold text-pink" : "font-medium text-muted"}`}>
+          <span className={`shrink-0 tabular-nums ${winB ? "font-bold text-pink" : "font-medium text-ink-2"}`}>
             {match.scoreB}
           </span>
         )}
@@ -254,7 +254,7 @@ export default async function BracketsPage({
             {/* Left labels (outer→inner) */}
             {leftPhases.map((phase) => (
               <div key={`lbl-l-${phase}`} style={{ width: COL_W + CONN_W, flexShrink: 0 }}>
-                <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-muted">
+                <p className="text-[0.6875rem] font-bold uppercase tracking-widest text-ink-2">
                   {PHASE_LABELS[phase]}
                 </p>
               </div>
@@ -270,7 +270,7 @@ export default async function BracketsPage({
             {/* Right labels (inner→outer) */}
             {rightPhases.map((phase) => (
               <div key={`lbl-r-${phase}`} style={{ width: COL_W + CONN_W, flexShrink: 0 }}>
-                <p className="text-right text-[0.6875rem] font-bold uppercase tracking-widest text-muted">
+                <p className="text-right text-[0.6875rem] font-bold uppercase tracking-widest text-ink-2">
                   {PHASE_LABELS[phase]}
                 </p>
               </div>
@@ -350,7 +350,7 @@ export default async function BracketsPage({
       {/* ── Consolation final ──────────────────────────── */}
       {consolationMatches.length > 0 && (
         <div>
-          <h3 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-muted">
+          <h3 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-ink-2">
             Troostfinale
           </h3>
           <div style={{ maxWidth: COL_W }} className="flex flex-col gap-2">
@@ -364,7 +364,7 @@ export default async function BracketsPage({
       {/* ── Tiebreaker ─────────────────────────────────── */}
       {tiebreakerMatches.length > 0 && (
         <div>
-          <h3 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-muted">
+          <h3 className="mb-3 text-[0.6875rem] font-bold uppercase tracking-widest text-ink-2">
             Tiebreaker
           </h3>
           <div className="grid gap-2 sm:grid-cols-2" style={{ maxWidth: COL_W * 2 + 16 }}>

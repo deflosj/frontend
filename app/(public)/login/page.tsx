@@ -42,7 +42,7 @@ export default function AdminLoginPage() {
           <div className="w-9 h-9 rounded-xl bg-pink shrink-0" aria-hidden="true" />
           <div className="leading-tight">
             <p className="font-semibold text-ink text-base">De Flosj</p>
-            <p className="text-[0.6rem] font-semibold tracking-widest text-muted uppercase font-mono">Beheer</p>
+            <p className="text-[0.6rem] font-semibold tracking-widest text-ink-2 uppercase font-mono">Beheer</p>
           </div>
         </div>
 
@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
               onChange={(e) => setIdentifier(e.target.value)}
               required
               disabled={loading}
-              className="w-full rounded-xl border border-rule bg-paper px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/15 disabled:bg-surface disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-xl border border-rule bg-paper px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-2 focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/15 disabled:bg-surface disabled:cursor-not-allowed transition-colors"
             />
           </div>
 
@@ -84,7 +84,7 @@ export default function AdminLoginPage() {
               onChange={(e) => setPassword(e.target.value)}
               required
               disabled={loading}
-              className="w-full rounded-xl border border-rule bg-paper px-3.5 py-2.5 text-sm text-ink placeholder:text-muted focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/15 disabled:bg-surface disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-xl border border-rule bg-paper px-3.5 py-2.5 text-sm text-ink placeholder:text-ink-2 focus:outline-none focus:border-pink focus:ring-2 focus:ring-pink/15 disabled:bg-surface disabled:cursor-not-allowed transition-colors"
             />
           </div>
 

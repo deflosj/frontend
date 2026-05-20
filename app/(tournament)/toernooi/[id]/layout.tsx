@@ -33,7 +33,7 @@ export default async function TournamentDetailLayout({
     return (
       <div className="flex min-h-screen items-center justify-center px-5">
         <div className="text-center">
-          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-muted">404</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-ink-2">404</p>
           <h1 className="mb-4 text-2xl font-bold text-ink">Toernooi niet gevonden</h1>
           <Link href="/toernooi" className="text-sm font-semibold text-pink hover:underline">
             ← Terug naar overzicht

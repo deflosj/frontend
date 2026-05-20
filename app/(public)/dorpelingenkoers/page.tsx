@@ -80,7 +80,7 @@ export default function VillageRacePage() {
               { time: "21:00", label: "Huldiging aan Café de Zijbeuk" },
             ].map(({ time, label }) => (
               <div key={time} className="flex gap-6 py-4 first:pt-0 last:pb-0">
-                <p className="w-12 shrink-0 font-mono text-sm font-medium tabular-nums text-muted">
+                <p className="w-12 shrink-0 font-mono text-sm font-medium tabular-nums text-ink-2">
                   {time}
                 </p>
                 <p className="text-sm font-medium text-ink">{label}</p>
@@ -101,7 +101,7 @@ export default function VillageRacePage() {
             Provinciebaan (afslag vóór Hellichstraat) → Dorpsplein → Bergstraat → Vijfde
             Liniestraat → Rodenbachlaan → Provinciebaan.
           </p>
-          <p className="mt-3 text-sm text-muted">
+          <p className="mt-3 text-sm text-ink-2">
             Verkeer verboden van 16:30 tot 21:00.
           </p>
         </div>

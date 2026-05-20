@@ -15,7 +15,7 @@ function Field({
     <div className="group/field flex flex-col gap-2.5">
       <label
         htmlFor={id}
-        className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted transition-colors duration-200 group-focus-within/field:text-ink"
+        className="text-[0.625rem] font-semibold uppercase tracking-widest text-ink-2 transition-colors duration-200 group-focus-within/field:text-ink"
       >
         {label}
       </label>
@@ -106,7 +106,7 @@ export function ContactForm() {
             setSubject("");
             setMessage("");
           }}
-          className="group flex items-center gap-1.5 self-start text-sm font-medium text-muted transition-colors duration-200 hover:text-ink"
+          className="group flex items-center gap-1.5 self-start text-sm font-medium text-ink-2 transition-colors duration-200 hover:text-ink"
         >
           <span>Nieuw bericht sturen</span>
           <span className="transition-transform duration-200 group-hover:translate-x-0.5">→</span>
@@ -116,7 +116,7 @@ export function ContactForm() {
   }
 
   const inputBase =
-    "w-full bg-transparent py-2.5 text-sm text-ink placeholder:text-muted/40 outline-none disabled:cursor-not-allowed disabled:opacity-60";
+    "w-full bg-transparent py-2.5 text-sm text-ink placeholder:text-ink-2/40 outline-none disabled:cursor-not-allowed disabled:opacity-60";
 
   const canSubmit = Boolean(name && email && subject && message);
 
@@ -201,7 +201,7 @@ export function ContactForm() {
         </button>
 
         {state === "loading" && (
-          <span className="text-xs text-muted">Even geduld…</span>
+          <span className="text-xs text-ink-2">Even geduld…</span>
         )}
       </div>
     </form>

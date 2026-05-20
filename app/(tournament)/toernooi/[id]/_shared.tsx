@@ -1,7 +1,8 @@
 import Link from "next/link";
 
-import { fmt, matchSideClass, teamName } from "@/lib/tournament-helpers";
+import { matchSideClass, teamName } from "@/lib/tournament-helpers";
 import { TournamentMatch, TournamentTeam } from "@/lib/tournament-types";
+import { fmtTime } from "@/utils/DateHelpers";
 
 // ── Match block ───────────────────────────────────────────────────────────────
 
@@ -16,7 +17,7 @@ export function MatchBlock({
 }>) {
   if (!match) {
     return (
-      <div className="rounded-xl border border-dashed border-rule bg-surface px-4 py-5 text-center text-xs text-muted">
+      <div className="rounded-xl border border-dashed border-rule bg-surface px-4 py-5 text-center text-xs text-ink-2">
         Nog geen match
       </div>
     );
@@ -43,8 +44,8 @@ export function MatchBlock({
         <div className="flex items-center gap-2 border-b border-rule bg-surface px-4 py-2">
           <span className="text-xs font-bold text-pink">Baan {match.track}</span>
           <span className="text-rule">·</span>
-          <span className="text-xs text-muted">
-            {fmt(match.time ?? new Date().toISOString())}
+          <span className="text-xs text-ink-2">
+            {fmtTime(match.time ?? new Date().toISOString())}
           </span>
         </div>
       )}
@@ -93,7 +94,7 @@ function TeamCardInner({ team }: Readonly<{ team: TournamentTeam }>) {
       </p>
       <div className="flex flex-col gap-0.5">
         {[team.speler1, team.speler2, team.speler3, team.speler4].map((speler) => (
-          <p key={speler} className="text-xs text-muted">
+          <p key={speler} className="text-xs text-ink-2">
             {speler}
           </p>
         ))}
@@ -127,5 +128,5 @@ export function TeamCard({
 // ── Empty state ───────────────────────────────────────────────────────────────
 
 export function Empty({ text }: Readonly<{ text: string }>) {
-  return <p className="text-sm text-muted">{text}</p>;
+  return <p className="text-sm text-ink-2">{text}</p>;
 }

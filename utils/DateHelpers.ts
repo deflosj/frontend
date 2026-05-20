@@ -34,7 +34,7 @@ export function getEventDays(startsAt: string, endsAt: string | null): Date[] {
 }
 
 export function taskMatchesDay(task: Task, day: Date): boolean {
-  if (!task.startAt) return false;
+  if (!task.startAt) return true; // timeless tasks show on every day
   const taskDay = new Date(task.startAt);
   return (
     taskDay.getFullYear() === day.getFullYear() &&

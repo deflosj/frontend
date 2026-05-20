@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import type { RaceCategory } from "@/lib/registration-types";
+import { API_BASE } from "@/lib/api";
 
 type FormState = "idle" | "loading" | "success" | "error";
 
@@ -18,7 +19,7 @@ function Field({
     <div className="group/field flex flex-col gap-2.5">
       <label
         htmlFor={id}
-        className="text-[0.625rem] font-semibold uppercase tracking-widest text-muted transition-colors duration-200 group-focus-within/field:text-ink"
+        className="text-[0.625rem] font-semibold uppercase tracking-widest text-ink-2 transition-colors duration-200 group-focus-within/field:text-ink"
       >
         {label}
         {required && <span className="ml-1 text-pink">*</span>}
@@ -33,7 +34,7 @@ function Field({
 }
 
 const inputBase =
-  "w-full bg-transparent py-2.5 text-sm text-ink placeholder:text-muted/40 outline-none disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full bg-transparent py-2.5 text-sm text-ink placeholder:text-ink-2/40 outline-none disabled:cursor-not-allowed disabled:opacity-60";
 
 // ── Section card ──────────────────────────────────────────────────────────────
 
@@ -81,8 +82,7 @@ export function RegistrationForm() {
     setState("loading");
     setErrorMsg("");
     try {
-      const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
-      const res = await fetch(`${BASE}/registrations`, {
+      const res = await fetch(`${API_BASE}registrations`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -192,7 +192,7 @@ export function RegistrationForm() {
               <p className={`text-sm font-semibold ${raceCategory === value ? "text-pink" : "text-ink"}`}>
                 {label}
               </p>
-              <p className="mt-0.5 text-xs text-muted">{desc}</p>
+              <p className="mt-0.5 text-xs text-ink-2">{desc}</p>
             </button>
           ))}
         </div>
@@ -303,7 +303,7 @@ export function RegistrationForm() {
 
       {/* ── GDPR + submit ──────────────────────────────────── */}
       <div className="flex flex-col gap-5 pt-2">
-        <p className="text-xs leading-relaxed text-muted">
+        <p className="text-xs leading-relaxed text-ink-2">
           Je persoonsgegevens worden uitsluitend gebruikt voor de organisatie van de koers en
           worden na het evenement verwijderd. Vragen?{" "}
           <a href="mailto:info@deflosj.be" className="underline hover:text-ink">
@@ -324,7 +324,7 @@ export function RegistrationForm() {
             )}
           </button>
           {state === "loading" && (
-            <span className="text-xs text-muted">Even geduld…</span>
+            <span className="text-xs text-ink-2">Even geduld…</span>
           )}
         </div>
       </div>
