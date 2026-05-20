@@ -119,7 +119,7 @@ export default function AdminEventsPage() {
 
   async function load() {
     try {
-      const evs = await apiFetch<CalEvent[]>("/content/events");
+      const evs = await apiFetch<CalEvent[]>("content/events");
       setEvents(evs);
       loadStats(evs);
     } finally {
