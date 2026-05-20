@@ -3,10 +3,12 @@
     "allow": [
       "Bash(curl -s http://localhost:8000/api/tournaments)",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8000/api/tournaments)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(mkdir -p /Users/persynwannes/Documents/DeFlosj/frontend/components/events)"
     ],
     "additionalDirectories": [
-      "/Users/persynwannes/Documents/DeFlosj/backend"
+      "/Users/persynwannes/Documents/DeFlosj/backend",
+      "/Users/persynwannes/Documents/DeFlosj/frontend/components"
     ]
   }
 }

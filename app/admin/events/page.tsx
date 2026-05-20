@@ -1,13 +1,21 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
 import { EventDrawer, type CalEvent } from "@/components/events/event-drawer";
 
-// ── Cell components (module scope — required by S6478) ────────────────────────
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+interface ShiftStats {
+  total: number;
+  assigned: number;
+}
+
+// ── Cell components ───────────────────────────────────────────────────────────
 
 function TitleCell({ title }: Readonly<{ title: string }>) {
   return <strong>{title}</strong>;
@@ -29,17 +37,37 @@ function PublishBadge({ isPublished }: Readonly<{ isPublished: boolean }>) {
   );
 }
 
-function EditButton({ onClick }: Readonly<{ onClick: () => void }>) {
+function ShiftsCell({ stats, loading }: Readonly<{ stats: ShiftStats | undefined; loading: boolean }>) {
+  if (loading) return <span className="badge badge--gray">…</span>;
+  if (!stats) return <span className="badge badge--gray">—</span>;
+  if (stats.total === 0) return <span className="badge badge--gray">Geen taken</span>;
+  if (stats.assigned === stats.total)
+    return <span className="badge badge--green">{stats.assigned}/{stats.total} ingevuld</span>;
+  if (stats.assigned > 0)
+    return <span className="badge badge--yellow">{stats.assigned}/{stats.total} ingevuld</span>;
+  return <span className="badge badge--red">0/{stats.total} ingevuld</span>;
+}
+
+function ActionsCell({ ev, onEdit }: Readonly<{ ev: CalEvent; onEdit: () => void }>) {
   return (
-    <button type="button" className="btn-sm btn-sm--ghost" onClick={onClick}>
-      Bewerken
-    </button>
+    <div className="row-actions">
+      <button type="button" className="btn-sm btn-sm--ghost" onClick={onEdit}>
+        Bewerken
+      </button>
+      <Link href={`/admin/events/${ev.id}/helpers`} className="btn-sm btn-sm--ghost">
+        Helpers
+      </Link>
+    </div>
   );
 }
 
 // ── Column factory ────────────────────────────────────────────────────────────
 
-function makeColumns(onEdit: (ev: CalEvent) => void): ColumnDef<CalEvent>[] {
+function makeColumns(
+  onEdit: (ev: CalEvent) => void,
+  statsMap: Map<number, ShiftStats>,
+  statsLoading: boolean
+): ColumnDef<CalEvent>[] {
   return [
     {
       key: "title",
@@ -66,26 +94,51 @@ function makeColumns(onEdit: (ev: CalEvent) => void): ColumnDef<CalEvent>[] {
       cell: (ev) => <PublishBadge isPublished={ev.isPublished} />,
     },
     {
+      key: "shifts",
+      header: "Shifts",
+      cell: (ev) => <ShiftsCell stats={statsMap.get(ev.id)} loading={statsLoading} />,
+    },
+    {
       key: "actions",
       header: "Acties",
-      cell: (ev) => <EditButton onClick={() => onEdit(ev)} />,
+      cell: (ev) => <ActionsCell ev={ev} onEdit={() => onEdit(ev)} />,
     },
   ];
 }
 
 // ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function AdminEventsPage() {
   const { openDrawer } = useDrawer();
   const [events, setEvents] = useState<CalEvent[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [statsMap, setStatsMap] = useState<Map<number, ShiftStats>>(new Map());
+  const [statsLoading, setStatsLoading] = useState(false);
 
   async function load() {
     try {
-      setEvents(await apiFetch<CalEvent[]>("/content/events"));
+      const evs = await apiFetch<CalEvent[]>("/content/events");
+      setEvents(evs);
+      loadStats(evs);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function loadStats(evs: CalEvent[]) {
+    if (evs.length === 0) return;
+    setStatsLoading(true);
+    try {
+      const results = await Promise.all(
+        evs.map((ev) =>
+          apiFetch<ShiftStats>(`/events/${ev.id}/portal/stats`).then((s) => [ev.id, s] as const)
+        )
+      );
+      setStatsMap(new Map(results));
+    } finally {
+      setStatsLoading(false);
     }
   }
 
@@ -106,7 +159,11 @@ export default function AdminEventsPage() {
     });
   }, [events, search, filterStatus]);
 
-  const columns = makeColumns((ev) => openDrawer(<EventDrawer editing={ev} onSaved={handleSaved} />));
+  const columns = makeColumns(
+    (ev) => openDrawer(<EventDrawer editing={ev} onSaved={handleSaved} />),
+    statsMap,
+    statsLoading
+  );
 
   return (
     <>
