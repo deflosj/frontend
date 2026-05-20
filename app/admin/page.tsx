@@ -76,11 +76,11 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     Promise.allSettled([
-      apiFetch<NewsPost[]>("/content/news"),
-      apiFetch<CalEvent[]>("/content/events"),
-      apiFetch<ContactMessage[]>("/contact/messages"),
-      apiFetch<TournamentListItem[]>("/tournaments"),
-      apiFetch<Registration[]>("/registrations"),
+      apiFetch<NewsPost[]>("content/news"),
+      apiFetch<CalEvent[]>("content/events"),
+      apiFetch<ContactMessage[]>("contact/messages"),
+      apiFetch<TournamentListItem[]>("tournaments"),
+      apiFetch<Registration[]>("registrations"),
     ]).then(([n, e, msg, t, r]) => {
       if (n.status   === "fulfilled") setNews(n.value);
       if (e.status   === "fulfilled") setEvents(e.value);

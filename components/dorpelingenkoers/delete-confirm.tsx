@@ -24,7 +24,7 @@ export function DeleteConfirm({ registration: r, onDeleted }: Readonly<Props>) {
   async function handleDelete() {
     setLoading(true);
     try {
-      await apiFetch(`/registrations/${r.id}`, { method: "DELETE" });
+      await apiFetch(`registrations/${r.id}`, { method: "DELETE" });
       onDeleted(r.id);
       close();
     } catch {

@@ -34,7 +34,7 @@ export function SettingsDrawer({ settings, onSaved }: Readonly<Props>) {
     setError("");
     setSaving(true);
     try {
-      const result = await apiFetch<RegistrationSettings>("/registrations/settings", {
+      const result = await apiFetch<RegistrationSettings>("registrations/settings", {
         method: "PATCH",
         body: JSON.stringify({
           isOpen,

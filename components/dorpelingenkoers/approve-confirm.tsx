@@ -24,7 +24,7 @@ export function ApproveConfirm({ registration: r, onUpdated }: Readonly<Props>) 
   async function handleApprove() {
     setLoading(true);
     try {
-      const updated = await apiFetch<Registration>(`/registrations/${r.id}/approve`, { method: "PATCH" });
+      const updated = await apiFetch<Registration>(`registrations/${r.id}/approve`, { method: "PATCH" });
       onUpdated(updated);
       close();
     } catch {

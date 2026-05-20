@@ -79,7 +79,7 @@ export default function AdminMembersPage() {
   const [filterVisible, setFilterVisible] = useState("ALL");
 
   useEffect(() => {
-    apiFetch<MemberProfile[]>("/members")
+    apiFetch<MemberProfile[]>("members")
       .then(setMembers)
       .finally(() => setLoading(false));
   }, []);

@@ -133,7 +133,7 @@ export default function AdminEventsPage() {
     try {
       const results = await Promise.all(
         evs.map((ev) =>
-          apiFetch<ShiftStats>(`/events/${ev.id}/portal/stats`).then((s) => [ev.id, s] as const)
+          apiFetch<ShiftStats>(`events/${ev.id}/portal/stats`).then((s) => [ev.id, s] as const)
         )
       );
       setStatsMap(new Map(results));

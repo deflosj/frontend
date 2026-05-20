@@ -60,7 +60,7 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
     setSaving(true);
     setError("");
     try {
-      const result = await apiFetch<TournamentListItem>("/tournaments", {
+      const result = await apiFetch<TournamentListItem>("tournaments", {
         method: "POST",
         body: JSON.stringify({
           name: name.trim(),

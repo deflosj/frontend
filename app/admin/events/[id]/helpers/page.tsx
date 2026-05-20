@@ -109,7 +109,7 @@ function TaskCard({ task, editing, onStartEdit, onCancelEdit, onSaved, onDelete,
     if (!title.trim()) return;
     setSaving(true); setError("");
     try {
-      const updated = await apiFetch<Task>(`/events/${eventId}/portal/tasks/${task.id}`, {
+      const updated = await apiFetch<Task>(`events/${eventId}/portal/tasks/${task.id}`, {
         method: "PATCH",
         body: JSON.stringify({ title: title.trim(), description: description || null, startAt: startAt || null, endAt: endAt || null, assignEmail: assignEmail || "", assignName, status }),
       });
@@ -123,7 +123,7 @@ function TaskCard({ task, editing, onStartEdit, onCancelEdit, onSaved, onDelete,
   async function doDelete() {
     setDeleting(true);
     try {
-      await apiFetch(`/events/${eventId}/portal/tasks/${task.id}`, { method: "DELETE" });
+      await apiFetch(`events/${eventId}/portal/tasks/${task.id}`, { method: "DELETE" });
       onDelete(task.id);
     } catch { setDeleting(false); }
   }
@@ -248,7 +248,7 @@ function AddTaskForm({ shift, eventId, onAdded, onCancel }: Readonly<AddTaskForm
     if (!title.trim()) return;
     setSaving(true); setError("");
     try {
-      const task = await apiFetch<Task>(`/events/${eventId}/portal/tasks`, {
+      const task = await apiFetch<Task>(`events/${eventId}/portal/tasks`, {
         method: "POST",
         body: JSON.stringify({ title: title.trim(), description: description || null, shift, startAt: startAt || null, endAt: endAt || null, assignEmail: assignEmail || undefined, assignName: assignName || undefined }),
       });
@@ -379,7 +379,7 @@ function AttendancePanel({ eventId }: Readonly<{ eventId: number }>) {
 
   const load = useCallback(async () => {
     try {
-      const rows = await apiFetch<Attendee[]>(`/events/${eventId}/portal/attendance`);
+      const rows = await apiFetch<Attendee[]>(`events/${eventId}/portal/attendance`);
       setList(rows);
     } finally { setLoading(false); }
   }, [eventId]);
@@ -388,7 +388,7 @@ function AttendancePanel({ eventId }: Readonly<{ eventId: number }>) {
 
   async function updateRsvp(id: number, status: RSVPStatus) {
     try {
-      await apiFetch(`/events/${eventId}/portal/attendance/${id}`, {
+      await apiFetch(`events/${eventId}/portal/attendance/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
       });
@@ -398,7 +398,7 @@ function AttendancePanel({ eventId }: Readonly<{ eventId: number }>) {
 
   async function remove(id: number) {
     try {
-      await apiFetch(`/events/${eventId}/portal/attendance/${id}`, { method: "DELETE" });
+      await apiFetch(`events/${eventId}/portal/attendance/${id}`, { method: "DELETE" });
       setList((prev) => prev.filter((a) => a.id !== id));
     } catch { /* ignore */ }
   }
@@ -493,7 +493,7 @@ function AccessPanel({ eventId }: Readonly<{ eventId: number }>) {
   async function generate() {
     setGen(true);
     try {
-      const { token: t } = await apiFetch<{ token: string }>(`/events/${eventId}/portal/invite`, { method: "POST" });
+      const { token: t } = await apiFetch<{ token: string }>(`events/${eventId}/portal/invite`, { method: "POST" });
       setToken(t);
     } finally { setGen(false); }
   }
@@ -572,8 +572,8 @@ export default function EventHelpersPage({
 
   useEffect(() => {
     Promise.all([
-      apiFetch<CalEvent>(`/content/events/${eventId}`),
-      apiFetch<Task[]>(`/events/${eventId}/portal/tasks`),
+      apiFetch<CalEvent>(`content/events/${eventId}`),
+      apiFetch<Task[]>(`events/${eventId}/portal/tasks`),
     ])
       .then(([ev, ts]) => { setEvent(ev); setTasks(ts); })
       .catch((err) => setFetchError(err instanceof Error ? err.message : "Laden mislukt."))

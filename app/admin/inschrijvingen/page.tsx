@@ -275,8 +275,8 @@ export default function InschrijvingenPage() {
 
   useEffect(() => {
     Promise.allSettled([
-      apiFetch<Registration[]>("/registrations"),
-      apiFetch<RegistrationSettings>("/registrations/settings"),
+      apiFetch<Registration[]>("registrations"),
+      apiFetch<RegistrationSettings>("registrations/settings"),
     ]).then(([regs, s]) => {
       if (regs.status === "fulfilled") setRegistrations(regs.value);
       else setFetchError(regs.reason instanceof Error ? regs.reason.message : "Laden mislukt.");

@@ -30,7 +30,7 @@ export function EditDrawer({ tournament, onSaved }: Readonly<Props>) {
     setError("");
     setSaving(true);
     try {
-      const result = await apiFetch<TournamentListItem>(`/tournaments/${tournament.id}`, {
+      const result = await apiFetch<TournamentListItem>(`tournaments/${tournament.id}`, {
         method: "PUT",
         body: JSON.stringify({ name: name.trim(), year: Number.parseInt(year, 10), status }),
       });

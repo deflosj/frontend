@@ -128,7 +128,7 @@ export default function AdminMessagesPage() {
   const [filterStatus, setFilterStatus] = useState("ALL");
 
   useEffect(() => {
-    apiFetch<ContactMessage[]>("/contact/messages")
+    apiFetch<ContactMessage[]>("contact/messages")
       .then(setMessages)
       .finally(() => setLoading(false));
   }, []);
@@ -136,7 +136,7 @@ export default function AdminMessagesPage() {
   async function markRead(id: number) {
     setBusy(id);
     try {
-      await apiFetch(`/contact/messages/${id}/read`, { method: "PATCH" });
+      await apiFetch(`contact/messages/${id}/read`, { method: "PATCH" });
       setMessages((prev) =>
         prev.map((m) => (m.id === id ? { ...m, status: "READ" as const, readAt: new Date().toISOString() } : m))
       );
@@ -148,7 +148,7 @@ export default function AdminMessagesPage() {
   async function archive(id: number) {
     setBusy(id);
     try {
-      await apiFetch(`/contact/messages/${id}/archive`, { method: "PATCH" });
+      await apiFetch(`contact/messages/${id}/archive`, { method: "PATCH" });
       setMessages((prev) =>
         prev.map((m) => (m.id === id ? { ...m, status: "ARCHIVED" as const } : m))
       );

@@ -24,7 +24,7 @@ export function RejectConfirm({ registration: r, onUpdated }: Readonly<Props>) {
   async function handleReject() {
     setLoading(true);
     try {
-      const updated = await apiFetch<Registration>(`/registrations/${r.id}/reject`, { method: "PATCH" });
+      const updated = await apiFetch<Registration>(`registrations/${r.id}/reject`, { method: "PATCH" });
       onUpdated(updated);
       close();
     } catch {

@@ -160,8 +160,8 @@ function TeamDrawer({
         pouleId:     form.pouleId ? Number.parseInt(form.pouleId, 10) : null,
       };
       const result = team
-        ? await apiFetch<TournamentTeam>(`/tournaments/${tournamentId}/teams/${team.id}`, { method: "PATCH", body: JSON.stringify(body) })
-        : await apiFetch<TournamentTeam>(`/tournaments/${tournamentId}/teams`, { method: "POST",  body: JSON.stringify(body) });
+        ? await apiFetch<TournamentTeam>(`tournaments/${tournamentId}/teams/${team.id}`, { method: "PATCH", body: JSON.stringify(body) })
+        : await apiFetch<TournamentTeam>(`tournaments/${tournamentId}/teams`, { method: "POST",  body: JSON.stringify(body) });
       onSaved(result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Opslaan mislukt.");
@@ -288,7 +288,7 @@ function MatchRow({
       if (scoreB !== "") body.scoreB = Number.parseInt(scoreB, 10);
       if (teamAId) body.teamAId = Number.parseInt(teamAId, 10);
       if (teamBId) body.teamBId = Number.parseInt(teamBId, 10);
-      const updated = await apiFetch<TournamentMatch>(`/matches/${match.id}`, {
+      const updated = await apiFetch<TournamentMatch>(`matches/${match.id}`, {
         method: "PATCH", body: JSON.stringify(body),
       });
       onSaved(updated);
@@ -360,7 +360,7 @@ function DelaySection({ tournamentId }: Readonly<{ tournamentId: number }>) {
     if (Number.isNaN(min) || min === 0) return;
     setApplying(true);
     try {
-      await apiFetch(`/tournaments/${tournamentId}/delay`, {
+      await apiFetch(`tournaments/${tournamentId}/delay`, {
         method: "POST", body: JSON.stringify({ minutes: min }),
       });
       setDone(true);
@@ -462,7 +462,7 @@ function OverviewTab({
     e.preventDefault();
     setError(""); setSaving(true);
     try {
-      const updated = await apiFetch<ActiveTournament>(`/tournaments/${tournament.id}`, {
+      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
         method: "PATCH", body: JSON.stringify({ name: name.trim(), year: Number.parseInt(year, 10) }),
       });
       onUpdate(updated);
@@ -473,7 +473,7 @@ function OverviewTab({
   async function generateMatches() {
     setGenError(""); setGenerating(true);
     try {
-      const updated = await apiFetch<ActiveTournament>(`/tournaments/${tournament.id}/generate-matches`, { method: "POST" });
+      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}/generate-matches`, { method: "POST" });
       onUpdate(updated);
     } catch (err) { setGenError(err instanceof Error ? err.message : "Genereren mislukt."); }
     finally { setGenerating(false); }
@@ -576,7 +576,7 @@ function TeamsTab({
   async function togglePresent(team: TournamentTeam) {
     try {
       const updated = await apiFetch<TournamentTeam>(
-        `/tournaments/${tournament.id}/teams/${team.id}`,
+        `tournaments/${tournament.id}/teams/${team.id}`,
         { method: "PATCH", body: JSON.stringify({ isPresent: !team.isPresent }) }
       );
       onUpdate({ ...tournament, teams: tournament.teams.map((t) => (t.id === updated.id ? updated : t)) });
@@ -587,7 +587,7 @@ function TeamsTab({
     if (!deleteTeam) return;
     setDeleting(true);
     try {
-      await apiFetch(`/tournaments/${tournament.id}/teams/${deleteTeam.id}`, { method: "DELETE" });
+      await apiFetch(`tournaments/${tournament.id}/teams/${deleteTeam.id}`, { method: "DELETE" });
       onUpdate({ ...tournament, teams: tournament.teams.filter((t) => t.id !== deleteTeam.id) });
       setDeleteTeam(null);
     } catch { /* ignore */ } finally { setDeleting(false); }
@@ -805,7 +805,7 @@ function ReglementTab({
   async function save() {
     setError(""); setSaving(true);
     try {
-      const updated = await apiFetch<ActiveTournament>(`/tournaments/${tournament.id}`, {
+      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
         method: "PATCH", body: JSON.stringify({ rules: { description: text } }),
       });
       onUpdate(updated);
@@ -878,7 +878,7 @@ export default function TournamentDetailPage({
   const [tab, setTab]               = useState<Tab>("overzicht");
 
   useEffect(() => {
-    apiFetch<ActiveTournament>(`/tournaments/${id}`)
+    apiFetch<ActiveTournament>(`tournaments/${id}`)
       .then(setTournament)
       .catch((e) => setFetchError(e instanceof Error ? e.message : "Niet gevonden."))
       .finally(() => setLoading(false));

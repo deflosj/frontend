@@ -66,9 +66,9 @@ export function SponsorDrawer({ editing, onSaved }: Readonly<Props>) {
         sortOrder: Number.parseInt(form.sortOrder, 10) || 0,
       };
       if (editing) {
-        await apiFetch(`/content/sponsors/${editing.id}`, { method: "PATCH", body: JSON.stringify(payload) });
+        await apiFetch(`content/sponsors/${editing.id}`, { method: "PATCH", body: JSON.stringify(payload) });
       } else {
-        await apiFetch("/content/sponsors", { method: "POST", body: JSON.stringify(payload) });
+        await apiFetch("content/sponsors", { method: "POST", body: JSON.stringify(payload) });
       }
       onSaved();
       close();

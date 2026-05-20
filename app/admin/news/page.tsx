@@ -85,7 +85,7 @@ export default function AdminNewsPage() {
 
   async function load() {
     try {
-      setPosts(await apiFetch<NewsPost[]>("/content/news"));
+      setPosts(await apiFetch<NewsPost[]>("content/news"));
     } finally {
       setLoading(false);
     }

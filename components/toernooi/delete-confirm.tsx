@@ -24,7 +24,7 @@ export function DeleteConfirm({ tournament, onDeleted }: Readonly<Props>) {
   async function handleDelete() {
     setLoading(true);
     try {
-      await apiFetch(`/tournaments/${tournament.id}`, { method: "DELETE" });
+      await apiFetch(`tournaments/${tournament.id}`, { method: "DELETE" });
       onDeleted(tournament.id);
       close();
     } catch {

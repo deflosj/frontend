@@ -178,7 +178,7 @@ export default function AdminTournooisPage() {
   );
 
   useEffect(() => {
-    apiFetch<TournamentListItem[]>("/tournaments")
+    apiFetch<TournamentListItem[]>("tournaments")
       .then(setTournaments)
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -198,7 +198,7 @@ export default function AdminTournooisPage() {
   async function handleActivate(t: TournamentListItem) {
     setActivating(t.id);
     try {
-      const updated = await apiFetch<TournamentListItem>(`/tournaments/${t.id}/activate`, {
+      const updated = await apiFetch<TournamentListItem>(`tournaments/${t.id}/activate`, {
         method: "POST",
       });
       setTournaments((prev) =>

@@ -71,9 +71,9 @@ export function EventDrawer({ editing, onSaved }: Readonly<Props>) {
         isPublished: form.isPublished,
       };
       if (editing) {
-        await apiFetch(`/content/events/${editing.id}`, { method: "PATCH", body: JSON.stringify(payload) });
+        await apiFetch(`content/events/${editing.id}`, { method: "PATCH", body: JSON.stringify(payload) });
       } else {
-        await apiFetch("/content/events", { method: "POST", body: JSON.stringify(payload) });
+        await apiFetch("content/events", { method: "POST", body: JSON.stringify(payload) });
       }
       onSaved();
       close();

@@ -63,9 +63,9 @@ export function NewsDrawer({ editing, onSaved }: Readonly<Props>) {
         isPublished: form.isPublished,
       };
       if (editing) {
-        await apiFetch(`/content/news/${editing.id}`, { method: "PATCH", body: JSON.stringify(payload) });
+        await apiFetch(`content/news/${editing.id}`, { method: "PATCH", body: JSON.stringify(payload) });
       } else {
-        await apiFetch("/content/news", { method: "POST", body: JSON.stringify(payload) });
+        await apiFetch("content/news", { method: "POST", body: JSON.stringify(payload) });
       }
       onSaved();
       close();

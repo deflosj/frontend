@@ -110,7 +110,7 @@ export default function AdminSponsorsPage() {
 
   async function load() {
     try {
-      setSponsors(await apiFetch<Sponsor[]>("/content/sponsors"));
+      setSponsors(await apiFetch<Sponsor[]>("content/sponsors"));
     } finally {
       setLoading(false);
     }
