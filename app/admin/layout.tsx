@@ -7,6 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { clearToken, getToken } from "@/lib/api";
 import { DrawerProvider } from "@/components/admin/drawer-provider";
 import "./admin.css";
+import { Button } from "@/components/ui/button";
 
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
@@ -188,14 +189,10 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
 
         {/* Logout */}
         <div className="border-t border-white/8 px-3 py-3">
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-sm font-medium text-white/40 transition-colors duration-150 hover:bg-white/6 hover:text-white/75"
-          >
+          <Button onClick={handleLogout} >
             <IconLogout />
             Afmelden
-          </button>
+          </Button>
         </div>
       </aside>
 

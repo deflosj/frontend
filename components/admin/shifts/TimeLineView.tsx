@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalEvent } from "@/components/events/event-drawer";
+import { CalEvent } from "@/components/admin/events/event-drawer";
 import { SHIFTS, SHIFT_COLORS, SHIFT_LABELS, STATUS_META } from "@/constants/shifts";
 import { Task } from "@/types/shifts";
 import { fmtTime, getEventDays, taskMatchesDay, fmtDayTab } from "@/utils/DateHelpers";

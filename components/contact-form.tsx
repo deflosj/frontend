@@ -59,11 +59,15 @@ export function ContactForm() {
     e.preventDefault();
     setState("loading");
     try {
-      await fetch("/api/contact", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name, email, subject, message }),
       });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { message?: string };
+        throw new Error(body.message ?? `HTTP ${res.status}`);
+      }
       setState("success");
     } catch {
       setState("error");

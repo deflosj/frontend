@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
-import { NewsDrawer, type NewsPost } from "../../../components/news/news-drawer";
+import { NewsDrawer, type NewsPost } from "../../../components/admin/news/news-drawer";
 
 // ── Cell components (module scope — required by S6478) ────────────────────────
 

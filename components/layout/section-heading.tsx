@@ -4,7 +4,7 @@ type SectionHeadingProps = {
   description?: string;
 };
 
-export function SectionHeading({ eyebrow, title, description }: SectionHeadingProps) {
+export function SectionHeading({ eyebrow, title, description }: Readonly<SectionHeadingProps>) {
   return (
     <div className="mb-8">
       {eyebrow && (

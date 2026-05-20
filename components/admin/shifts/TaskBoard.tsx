@@ -1,4 +1,4 @@
-import { CalEvent } from "@/components/events/event-drawer";
+import { CalEvent } from "@/components/admin/events/event-drawer";
 import { SHIFTS } from "@/constants/shifts";
 import { Task } from "@/types/shifts";
 import { getEventDays, taskMatchesDay, fmtDayTab } from "@/utils/DateHelpers";

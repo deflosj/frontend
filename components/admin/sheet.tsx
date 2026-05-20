@@ -1,7 +1,7 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import { IconClose } from "@/components/icons";
+import { IconClose } from "@/components/ui/icons";
 
 // ── Sheet (right-side drawer using Radix Dialog) ──────────────────────────────
 

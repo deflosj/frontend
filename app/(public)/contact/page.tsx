@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { ContactForm } from "@/components/contact-form";
 import { siteConfig } from "@/lib/site-config";
-import { IconFacebook, IconInstagram, IconMail, IconPhone, IconPin } from "@/components/icons";
+import { IconFacebook, IconInstagram, IconMail, IconPhone, IconPin } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
   title: "Contact",

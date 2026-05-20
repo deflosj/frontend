@@ -1,4 +1,4 @@
-import { IconX } from "@/components/icons";
+import { IconX } from "@/components/ui/icons";
 import { SHIFT_COLORS, STATUS_META } from "@/constants/shifts";
 import { apiFetch } from "@/lib/api";
 import { Task } from "@/types/shifts";

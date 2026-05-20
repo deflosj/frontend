@@ -4,6 +4,10 @@ import { GeistMono } from "geist/font/mono";
 import "./styles/globals.css";
 
 import { siteConfig } from "@/lib/site-config";
+import { Inter } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: {
@@ -15,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="nl" suppressHydrationWarning>
+    <html lang="nl" suppressHydrationWarning className={cn("font-sans", inter.variable)}>
       <head>
         {/* Prevent flash of wrong theme on load */}
         <script

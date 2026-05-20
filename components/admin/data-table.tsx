@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { IconArrowUp, IconArrowDown } from "../icons";
+import { IconArrowUp, IconArrowDown } from "../ui/icons";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 

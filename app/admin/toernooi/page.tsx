@@ -7,10 +7,10 @@ import type { TournamentListItem } from "@/lib/tournament-types";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar, type ColumnDisplay } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
-import { IconCheck, IconEdit, IconTrash } from "@/components/icons";
-import { CreateDrawer } from "../../../components/toernooi/create-drawer";
-import { EditDrawer } from "../../../components/toernooi/edit-drawer";
-import { DeleteConfirm } from "../../../components/toernooi/delete-confirm";
+import { IconCheck, IconEdit, IconTrash } from "@/components/ui/icons";
+import { CreateDrawer } from "../../../components/admin/toernooi/create-drawer";
+import { EditDrawer } from "../../../components/admin/toernooi/edit-drawer";
+import { DeleteConfirm } from "../../../components/admin/toernooi/delete-confirm";
 
 // ── CSV export ────────────────────────────────────────────────────────────────
 

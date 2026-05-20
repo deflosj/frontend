@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { ThemeToggle } from "@/components/theme-toggle";
-import { IconUser } from "@/components/icons/IconUser";
+import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { IconUser } from "@/components/ui/icons/IconUser";
 import { getTournament } from "@/lib/tournament-helpers";
 import { TournamentNav } from "./tournament-nav";
 

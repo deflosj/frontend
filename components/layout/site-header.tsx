@@ -14,7 +14,7 @@ import {
   IconCheck,
   IconHamburger,
   IconClose,
-} from "@/components/icons";
+} from "@/components/ui/icons";
 
 // ── Theme dropdown ────────────────────────────────────────────────────────────
 

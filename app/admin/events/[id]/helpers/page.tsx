@@ -3,11 +3,12 @@
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
-import type { CalEvent } from "@/components/events/event-drawer";
+import type { CalEvent } from "@/components/admin/events/event-drawer";
 import { Task } from "@/types/shifts";
 import { TaskBoard } from "@/components/admin/shifts/TaskBoard";
 import { TimelineView } from "@/components/admin/shifts/TimeLineView";
 import { AccessPanel } from "@/components/admin/shifts/AccessPanel";
+import { Button } from "@/components/ui/button";
 
 
 const inputStyle: React.CSSProperties = {
@@ -91,26 +92,13 @@ export default function EventHelpersPage({
         <div className="admin-table-wrapper" style={{ overflow: "visible" }}>
           <div style={{ display: "flex", borderBottom: "1px solid var(--border)", padding: "0 1.4rem" }}>
             {TABS.map((t) => (
-              <button
+              <Button
                 key={t.id}
-                type="button"
                 onClick={() => setTab(t.id)}
-                style={{
-                  padding: "0.85rem 1rem 0.8rem",
-                  border: "none",
-                  background: "none",
-                  fontSize: "0.875rem",
-                  fontWeight: tab === t.id ? 600 : 400,
-                  color: tab === t.id ? "var(--text)" : "var(--muted)",
-                  borderBottom: tab === t.id ? "2px solid var(--text)" : "2px solid transparent",
-                  cursor: "pointer",
-                  fontFamily: "inherit",
-                  marginBottom: "-1px",
-                  transition: "color 120ms",
-                }}
+                variant={tab === t.id ? "outlineBottom" : "ghost"}
               >
                 {t.label}
-              </button>
+              </Button>
             ))}
             {tasksLoading && (
               <span style={{ marginLeft: "auto", padding: "0.85rem 0", fontSize: "0.72rem", color: "var(--muted)" }}>Laden…</span>

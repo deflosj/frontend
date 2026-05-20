@@ -6,7 +6,8 @@ import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
-import { EventDrawer, type CalEvent } from "@/components/events/event-drawer";
+import { EventDrawer, type CalEvent } from "@/components/admin/events/event-drawer";
+import { Button } from "@/components/ui/button";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -99,9 +100,12 @@ function ShiftsCell({ stats, loading }: Readonly<{ stats: ShiftStats | undefined
 function ActionsCell({ ev, onEdit }: Readonly<{ ev: CalEvent; onEdit: () => void }>) {
   return (
     <div className="row-actions">
-      <button type="button" className="btn-sm btn-sm--ghost" onClick={onEdit}>
+      <Button 
+        variant="outline"
+        onClick={onEdit}
+      >
         Bewerken
-      </button>
+      </Button>
       <Link href={`/admin/events/${ev.id}/helpers`} className="btn-sm btn-sm--ghost">
         Helpers
       </Link>

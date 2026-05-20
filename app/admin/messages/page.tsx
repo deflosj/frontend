@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
-import { MessageDetailDrawer, type ContactMessage } from "../../../components/messages/message-detail-drawer";
+import { MessageDetailDrawer, type ContactMessage } from "../../../components/admin/messages/message-detail-drawer";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 

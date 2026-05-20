@@ -9,7 +9,7 @@ import type {
   TournamentPoule,
   TournamentTeam,
 } from "@/lib/tournament-types";
-import { IconClock, IconEdit, IconPlus, IconSave, IconTrash, IconX,  } from "@/components/icons";
+import { IconClock, IconEdit, IconPlus, IconSave, IconTrash, IconX,  } from "@/components/ui/icons";
 
 // ── Default rules text ────────────────────────────────────────────────────────
 

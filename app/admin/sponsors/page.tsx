@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
-import { SponsorDrawer, type Sponsor } from "../../../components/sponsors/sponsor-drawer";
+import { SponsorDrawer, type Sponsor } from "../../../components/admin/sponsors/sponsor-drawer";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 

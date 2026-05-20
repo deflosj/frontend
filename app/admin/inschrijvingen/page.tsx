@@ -15,11 +15,12 @@ import {
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar, type ColumnDisplay } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
-import { DetailDrawer } from "../../../components/dorpelingenkoers/detail-drawer";
-import { ApproveConfirm } from "../../../components/dorpelingenkoers/approve-confirm";
-import { RejectConfirm } from "../../../components/dorpelingenkoers/reject-confirm";
-import { DeleteConfirm } from "../../../components/dorpelingenkoers/delete-confirm";
-import { SettingsDrawer } from "../../../components/dorpelingenkoers/settings-drawer";
+import { DetailDrawer } from "../../../components/admin/dorpelingenkoers/detail-drawer";
+import { ApproveConfirm } from "../../../components/admin/dorpelingenkoers/approve-confirm";
+import { RejectConfirm } from "../../../components/admin/dorpelingenkoers/reject-confirm";
+import { DeleteConfirm } from "../../../components/admin/dorpelingenkoers/delete-confirm";
+import { SettingsDrawer } from "../../../components/admin/dorpelingenkoers/settings-drawer";
+import { Button } from "@/components/ui/button";
 
 // ── CSV export ────────────────────────────────────────────────────────────────
 
@@ -143,22 +144,22 @@ function ActionCell({
 }: Readonly<ActionCellProps>) {
   return (
     <div className="row-actions">
-      <button type="button" className="btn-sm btn-sm--ghost" onClick={onView}>
+      <Button className="btn-sm btn-sm--ghost" onClick={onView}>
         Bekijken
-      </button>
+      </Button>
       {r.status === "PENDING" && (
         <>
-          <button type="button" className="btn-sm btn-sm--success" onClick={onApprove}>
+          <Button className="btn-sm btn-sm--success" onClick={onApprove}>
             Goedkeuren
-          </button>
-          <button type="button" className="btn-sm btn-sm--danger" onClick={onReject}>
+          </Button>
+          <Button className="btn-sm btn-sm--danger" onClick={onReject}>
             Afwijzen
-          </button>
+          </Button>
         </>
       )}
-      <button type="button" className="btn-sm btn-sm--danger" onClick={onDelete}>
+      <Button className="btn-sm btn-sm--danger" onClick={onDelete}>
         Verwijderen
-      </button>
+      </Button>
     </div>
   );
 }
