@@ -13,7 +13,7 @@ export interface AuthUser {
 
 const AuthService = {
   async login(identifier: string, password: string): Promise<AuthUser> {
-    const data = await apiFetch<LoginResponse>("/auth/login", {
+    const data = await apiFetch<LoginResponse>("auth/login", {
       method: "POST",
       body: JSON.stringify({ identifier, password }),
     });
