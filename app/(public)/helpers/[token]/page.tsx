@@ -8,14 +8,20 @@ type Shift = "SETUP" | "DURING" | "BREAKDOWN";
 type TaskStatus = "OPEN" | "IN_PROGRESS" | "DONE";
 type RSVPStatus = "NO_RESPONSE" | "YES" | "NO";
 
+interface TaskAssignee {
+  id: number;
+  name: string;
+  email: string | null;
+}
+
 interface Task {
   id: number;
   eventId: number;
   title: string;
   description: string | null;
   shift: Shift;
-  assignedToId: number | null;
-  assignedTo: { id: number; username: string; email: string } | null;
+  maxHelpers: number | null;
+  assignees: TaskAssignee[];
   startAt: string | null;
   endAt: string | null;
   status: TaskStatus;
@@ -40,7 +46,38 @@ const SHIFT_LABELS: Record<Shift, string> = {
   BREAKDOWN: "Afbouw",
 };
 
-const BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+const BASE = (process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api").replace(/\/$/, "");
+
+// ── Utilities ─────────────────────────────────────────────────────────────────
+
+function fmtTime(iso: string | null): string {
+  if (!iso) return "";
+  return new Date(iso).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
+}
+
+function getEventDays(startsAt: string, endsAt: string | null): Date[] {
+  const start = new Date(startsAt);
+  start.setHours(0, 0, 0, 0);
+  const end = endsAt ? new Date(endsAt) : new Date(startsAt);
+  end.setHours(0, 0, 0, 0);
+  const days: Date[] = [];
+  const cur = new Date(start);
+  while (cur <= end) {
+    days.push(new Date(cur));
+    cur.setDate(cur.getDate() + 1);
+  }
+  return days;
+}
+
+function taskMatchesDay(task: Task, day: Date): boolean {
+  if (!task.startAt) return true; // timeless tasks show on every day
+  const d = new Date(task.startAt);
+  return (
+    d.getFullYear() === day.getFullYear() &&
+    d.getMonth() === day.getMonth() &&
+    d.getDate() === day.getDate()
+  );
+}
 
 // ── Claim modal ───────────────────────────────────────────────────────────────
 
@@ -82,6 +119,8 @@ function ClaimForm({ task, token, onClaimed, onCancel }: Readonly<ClaimFormProps
     } finally { setSaving(false); }
   }
 
+  const spotsLeft = task.maxHelpers === null ? null : task.maxHelpers - task.assignees.length;
+
   return (
     <div style={{
       position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)", zIndex: 50,
@@ -94,9 +133,14 @@ function ClaimForm({ task, token, onClaimed, onCancel }: Readonly<ClaimFormProps
         <h2 style={{ margin: "0 0 0.35rem", fontSize: "1.2rem", fontWeight: 600, color: "var(--ink, #1a1a1a)" }}>
           Taak overnemen
         </h2>
-        <p style={{ margin: "0 0 1.25rem", fontSize: "0.9rem", color: "var(--ink-2, #666)" }}>
+        <p style={{ margin: "0 0 0.4rem", fontSize: "0.9rem", color: "var(--ink-2, #666)" }}>
           <strong style={{ color: "var(--ink, #1a1a1a)" }}>{task.title}</strong> — vul je gegevens in.
         </p>
+        {spotsLeft !== null && (
+          <p style={{ margin: "0 0 1.25rem", fontSize: "0.8rem", color: "#888" }}>
+            Nog {spotsLeft} {spotsLeft === 1 ? "plek" : "plekken"} beschikbaar
+          </p>
+        )}
 
         {error && (
           <p style={{ margin: "0 0 1rem", padding: "0.6rem 0.875rem", borderRadius: "8px", background: "#fce8e6", color: "#c5221f", fontSize: "0.85rem" }}>
@@ -106,10 +150,11 @@ function ClaimForm({ task, token, onClaimed, onCancel }: Readonly<ClaimFormProps
 
         <div style={{ display: "grid", gap: "0.75rem", marginBottom: "1.25rem" }}>
           <div>
-            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 500, color: "var(--ink-2, #666)", marginBottom: "0.3rem" }}>
+            <label htmlFor="claim-name" style={{ display: "block", fontSize: "0.8rem", fontWeight: 500, color: "var(--ink-2, #666)", marginBottom: "0.3rem" }}>
               Naam *
             </label>
             <input
+              id="claim-name"
               ref={nameRef}
               type="text"
               value={name}
@@ -121,10 +166,11 @@ function ClaimForm({ task, token, onClaimed, onCancel }: Readonly<ClaimFormProps
             />
           </div>
           <div>
-            <label style={{ display: "block", fontSize: "0.8rem", fontWeight: 500, color: "var(--ink-2, #666)", marginBottom: "0.3rem" }}>
+            <label htmlFor="claim-email" style={{ display: "block", fontSize: "0.8rem", fontWeight: 500, color: "var(--ink-2, #666)", marginBottom: "0.3rem" }}>
               E-mail (optioneel)
             </label>
             <input
+              id="claim-email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
@@ -267,6 +313,100 @@ function RsvpForm({ eventId, token }: Readonly<RsvpFormProps>) {
   );
 }
 
+// ── Task card ─────────────────────────────────────────────────────────────────
+
+interface TaskItemProps {
+  task: Task;
+  onClaim: () => void;
+}
+
+function TaskItem({ task, onClaim }: Readonly<TaskItemProps>) {
+  const assigneeCount = task.assignees?.length ?? 0;
+  const isFull = task.maxHelpers !== null && assigneeCount >= task.maxHelpers;
+
+  function spotsLabel(): string {
+    if (task.maxHelpers === null) {
+      return assigneeCount === 0 ? "Open" : `${assigneeCount} helper${assigneeCount > 1 ? "s" : ""}`;
+    }
+    const left = task.maxHelpers - assigneeCount;
+    if (left <= 0) return "Vol";
+    return `${left} plek${left === 1 ? "" : "ken"} vrij`;
+  }
+
+  return (
+    <div style={{
+      padding: "1rem 1.25rem",
+      border: `1px solid ${isFull ? "#c3e6cb" : "#e5e5e5"}`,
+      borderRadius: "0.875rem",
+      background: isFull ? "#f0faf3" : "#fff",
+    }}>
+      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <p style={{ margin: 0, fontWeight: 600, fontSize: "0.975rem", color: "#1a1a1a" }}>
+            {task.title}
+          </p>
+          {task.description && (
+            <p style={{ margin: "0.2rem 0 0", fontSize: "0.82rem", color: "#666" }}>
+              {task.description}
+            </p>
+          )}
+          {(task.startAt || task.endAt) && (
+            <p style={{ margin: "0.3rem 0 0", fontSize: "0.78rem", color: "#999", fontFamily: "monospace" }}>
+              {fmtTime(task.startAt)}{task.startAt && task.endAt ? " – " : ""}{fmtTime(task.endAt)}
+            </p>
+          )}
+
+          {/* Assignees */}
+          {task.assignees?.length > 0 && (
+            <div style={{ marginTop: "0.5rem", display: "flex", flexWrap: "wrap", gap: "0.3rem" }}>
+              {task.assignees.map((a) => (
+                <span
+                  key={a.id}
+                  style={{ padding: "0.2rem 0.55rem", background: "#e8f5e9", color: "#2e7d32", borderRadius: "999px", fontSize: "0.75rem", fontWeight: 500 }}
+                >
+                  ✓ {a.name}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: "0.4rem" }}>
+          {/* Capacity badge */}
+          {task.maxHelpers !== null && (
+            <span style={{
+              fontSize: "0.72rem",
+              fontWeight: 600,
+              padding: "0.2rem 0.55rem",
+              borderRadius: "999px",
+              background: isFull ? "#c3e6cb" : "#f3f3f3",
+              color: isFull ? "#1e7e34" : "#666",
+            }}>
+              {assigneeCount}/{task.maxHelpers}
+            </span>
+          )}
+
+          {!isFull ? (
+            <button
+              type="button"
+              onClick={onClaim}
+              style={{ padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "#1a1a1a", color: "#fff", fontSize: "0.82rem", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
+            >
+              Taak overnemen
+            </button>
+          ) : (
+            <span style={{ padding: "0.4rem 0.8rem", borderRadius: "8px", background: "#c3e6cb", color: "#1e7e34", fontSize: "0.78rem", fontWeight: 600 }}>
+              Vol
+            </span>
+          )}
+
+          <span style={{ fontSize: "0.72rem", color: "#999" }}>{spotsLabel()}</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 
 export default function HelperPortalPage({
@@ -274,11 +414,12 @@ export default function HelperPortalPage({
 }: Readonly<{ params: Promise<{ token: string }> }>) {
   const { token } = use(params);
 
-  const [event, setEvent]         = useState<PortalEvent | null>(null);
-  const [tasks, setTasks]         = useState<Task[]>([]);
-  const [loading, setLoading]     = useState(true);
-  const [fetchError, setFetchError] = useState("");
+  const [event, setEvent]               = useState<PortalEvent | null>(null);
+  const [tasks, setTasks]               = useState<Task[]>([]);
+  const [loading, setLoading]           = useState(true);
+  const [fetchError, setFetchError]     = useState("");
   const [claimingTask, setClaimingTask] = useState<Task | null>(null);
+  const [selectedDayIdx, setSelectedDayIdx] = useState(0);
 
   useEffect(() => {
     fetch(`${BASE}/events/portal/invite/${encodeURIComponent(token)}`)
@@ -298,7 +439,7 @@ export default function HelperPortalPage({
     setTasks((prev) =>
       prev.map((t) =>
         t.id === taskId
-          ? { ...t, assignedToId: -1, assignedTo: { id: -1, username: assigneeName, email: "" } }
+          ? { ...t, assignees: [...t.assignees, { id: -Date.now(), name: assigneeName, email: null }] }
           : t
       )
     );
@@ -321,6 +462,9 @@ export default function HelperPortalPage({
       </div>
     );
   }
+
+  const days = getEventDays(event.startsAt, event.endsAt);
+  const selectedDay = days[selectedDayIdx] ?? days[0];
 
   return (
     <>
@@ -345,6 +489,7 @@ export default function HelperPortalPage({
           <div style={{ display: "flex", gap: "1rem", flexWrap: "wrap", fontSize: "0.875rem", color: "#666" }}>
             <span>
               {new Date(event.startsAt).toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+              {event.endsAt && ` – ${new Date(event.endsAt).toLocaleDateString("nl-BE", { day: "numeric", month: "long", year: "numeric" })}`}
             </span>
             {event.location && <span>📍 {event.location}</span>}
           </div>
@@ -358,94 +503,72 @@ export default function HelperPortalPage({
         {/* Intro */}
         <div style={{ padding: "1rem 1.25rem", background: "#f0f4ff", borderRadius: "0.875rem", marginBottom: "2rem", border: "1px solid #d0d8ff" }}>
           <p style={{ margin: 0, fontSize: "0.875rem", color: "#3355cc" }}>
-            <strong>Bedankt dat je wil helpen!</strong> Klik op een taak om die over te nemen. Je kan slechts één keer per taak klikken — daarna staat jouw naam erop.
+            <strong>Bedankt dat je wil helpen!</strong> Klik op een taak om die over te nemen. Als een taak vol is kan je hem niet meer claimen.
           </p>
         </div>
+
+        {/* Day tabs for multi-day events */}
+        {days.length > 1 && (
+          <div style={{ display: "flex", gap: "0.5rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
+            {days.map((day, i) => {
+              const isActive = i === selectedDayIdx;
+              const label = day.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric", month: "short" });
+              return (
+                <button
+                  key={day.toISOString()}
+                  type="button"
+                  onClick={() => setSelectedDayIdx(i)}
+                  style={{
+                    padding: "0.4rem 1rem",
+                    borderRadius: "999px",
+                    border: `2px solid ${isActive ? "#1a1a1a" : "#ddd"}`,
+                    background: isActive ? "#1a1a1a" : "transparent",
+                    color: isActive ? "#fff" : "#666",
+                    fontSize: "0.82rem",
+                    fontWeight: isActive ? 600 : 400,
+                    cursor: "pointer",
+                    fontFamily: "inherit",
+                  }}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        )}
 
         {/* Task board by shift */}
         <div style={{ display: "grid", gap: "2rem" }}>
           {SHIFTS.map((shift) => {
-            const shiftTasks = tasks.filter((t) => t.shift === shift);
+            const shiftTasks = tasks.filter((t) => t.shift === shift && taskMatchesDay(t, selectedDay));
+            if (shiftTasks.length === 0) return null;
+            const filled = shiftTasks.reduce((acc, t) => acc + (t.assignees?.length ?? 0), 0);
+            const capacity = shiftTasks.reduce<number | null>((acc, t) => {
+              if (acc === null || t.maxHelpers === null) return null;
+              return acc + t.maxHelpers;
+            }, 0);
+            const capacityLabel = capacity === null ? `${filled} helper${filled !== 1 ? "s" : ""}` : `${filled}/${capacity} ingevuld`;
+
             return (
               <div key={shift}>
                 <h2 style={{ margin: "0 0 1rem", fontSize: "1rem", fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#1a1a1a" }}>
                   {SHIFT_LABELS[shift]}
                   <span style={{ marginLeft: "0.6rem", fontSize: "0.72rem", fontWeight: 400, color: "#999", textTransform: "none", letterSpacing: 0 }}>
-                    ({shiftTasks.filter((t) => t.assignedToId !== null).length}/{shiftTasks.length} ingevuld)
+                    ({capacityLabel})
                   </span>
                 </h2>
-                {shiftTasks.length === 0 ? (
-                  <p style={{ color: "#999", fontSize: "0.875rem" }}>Geen taken voor deze shift.</p>
-                ) : (
-                  <div style={{ display: "grid", gap: "0.75rem" }}>
-                    {shiftTasks.map((task) => {
-                      const taken = task.assignedToId !== null;
-                      return (
-                        <div
-                          key={task.id}
-                          style={{
-                            padding: "1rem 1.25rem",
-                            border: `1px solid ${taken ? "#c3e6cb" : "#e5e5e5"}`,
-                            borderRadius: "0.875rem",
-                            background: taken ? "#f0faf3" : "#fff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "space-between",
-                            gap: "1rem",
-                          }}
-                        >
-                          <div style={{ flex: 1, minWidth: 0 }}>
-                            <p style={{ margin: 0, fontWeight: 600, fontSize: "0.975rem", color: "#1a1a1a" }}>
-                              {task.title}
-                            </p>
-                            {task.description && (
-                              <p style={{ margin: "0.2rem 0 0", fontSize: "0.82rem", color: "#666" }}>
-                                {task.description}
-                              </p>
-                            )}
-                            {(task.startAt || task.endAt) && (
-                              <p style={{ margin: "0.3rem 0 0", fontSize: "0.78rem", color: "#999", fontFamily: "monospace" }}>
-                                {task.startAt
-                                  ? new Date(task.startAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })
-                                  : ""}
-                                {task.startAt && task.endAt ? " – " : ""}
-                                {task.endAt
-                                  ? new Date(task.endAt).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })
-                                  : ""}
-                              </p>
-                            )}
-                            {taken && task.assignedTo && (
-                              <p style={{ margin: "0.3rem 0 0", fontSize: "0.8rem", color: "#1e7e34", fontWeight: 500 }}>
-                                ✓ Overgenomen door {task.assignedTo.username}
-                              </p>
-                            )}
-                          </div>
-                          {!taken ? (
-                            <button
-                              type="button"
-                              onClick={() => setClaimingTask(task)}
-                              style={{ flexShrink: 0, padding: "0.5rem 1rem", borderRadius: "8px", border: "none", background: "#1a1a1a", color: "#fff", fontSize: "0.82rem", fontWeight: 500, cursor: "pointer", fontFamily: "inherit", whiteSpace: "nowrap" }}
-                            >
-                              Taak overnemen
-                            </button>
-                          ) : (
-                            <span style={{ flexShrink: 0, padding: "0.4rem 0.8rem", borderRadius: "8px", background: "#c3e6cb", color: "#1e7e34", fontSize: "0.78rem", fontWeight: 600 }}>
-                              Ingevuld
-                            </span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <div style={{ display: "grid", gap: "0.75rem" }}>
+                  {shiftTasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onClaim={() => setClaimingTask(task)}
+                    />
+                  ))}
+                </div>
               </div>
             );
           })}
-        </div>
-
-        {/* RSVP section */}
-        <div style={{ marginTop: "3rem", paddingTop: "2rem", borderTop: "1px solid #eee" }}>
-          <RsvpForm eventId={event.id} token={token} />
         </div>
       </div>
     </>

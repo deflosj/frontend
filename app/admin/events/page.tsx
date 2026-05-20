@@ -10,9 +10,19 @@ import { EventDrawer, type CalEvent } from "@/components/events/event-drawer";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface ShiftBreakdown {
+  total: number;
+  assigned: number;
+}
+
 interface ShiftStats {
   total: number;
   assigned: number;
+  byShift?: {
+    SETUP: ShiftBreakdown;
+    DURING: ShiftBreakdown;
+    BREAKDOWN: ShiftBreakdown;
+  };
 }
 
 // ── Cell components ───────────────────────────────────────────────────────────
@@ -37,10 +47,48 @@ function PublishBadge({ isPublished }: Readonly<{ isPublished: boolean }>) {
   );
 }
 
+const SHIFT_SHORT: Record<string, string> = {
+  SETUP: "Opbouw",
+  DURING: "Tijdens",
+  BREAKDOWN: "Afbouw",
+};
+
+function shiftPipClass(total: number, assigned: number): string {
+  if (total === 0) return "badge--gray";
+  if (assigned === total) return "badge--green";
+  if (assigned > 0) return "badge--yellow";
+  return "badge--red";
+}
+
+function ShiftPip({ label, total, assigned }: Readonly<{ label: string; total: number; assigned: number }>) {
+  const cls = shiftPipClass(total, assigned);
+  return (
+    <span className={`badge ${cls}`} style={{ fontSize: "0.65rem", padding: "0.15rem 0.4rem" }}>
+      {label} {assigned}/{total}
+    </span>
+  );
+}
+
 function ShiftsCell({ stats, loading }: Readonly<{ stats: ShiftStats | undefined; loading: boolean }>) {
   if (loading) return <span className="badge badge--gray">…</span>;
   if (!stats) return <span className="badge badge--gray">—</span>;
   if (stats.total === 0) return <span className="badge badge--gray">Geen taken</span>;
+
+  if (stats.byShift) {
+    return (
+      <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
+        {(["SETUP", "DURING", "BREAKDOWN"] as const).map((s) => (
+          <ShiftPip
+            key={s}
+            label={SHIFT_SHORT[s]}
+            total={stats.byShift![s].total}
+            assigned={stats.byShift![s].assigned}
+          />
+        ))}
+      </div>
+    );
+  }
+
   if (stats.assigned === stats.total)
     return <span className="badge badge--green">{stats.assigned}/{stats.total} ingevuld</span>;
   if (stats.assigned > 0)
@@ -119,7 +167,7 @@ export default function AdminEventsPage() {
 
   async function load() {
     try {
-      const evs = await apiFetch<CalEvent[]>("content/events");
+      const evs = await apiFetch<CalEvent[]>("content/events/all");
       setEvents(evs);
       loadStats(evs);
     } finally {

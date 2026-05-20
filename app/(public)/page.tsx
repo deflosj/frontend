@@ -10,7 +10,7 @@ type Event = {
 async function getEvents(): Promise<Event[]> {
   try {
     const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api"}/content/events`,
+      `${process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/"}content/events`,
       { next: { revalidate: 3600 } }
     );
     if (!res.ok) return [];

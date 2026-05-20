@@ -10,9 +10,9 @@ export const metadata: Metadata = {
 };
 
 async function getTournaments(): Promise<TournamentListItem[]> {
-  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api";
+  const base = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000/api/";
   try {
-    const res = await fetch(`${base}/tournaments`, { cache: "no-store" });
+    const res = await fetch(`${base}tournaments`, { cache: "no-store" });
     if (!res.ok) return [];
     return res.json() as Promise<TournamentListItem[]>;
   } catch {
