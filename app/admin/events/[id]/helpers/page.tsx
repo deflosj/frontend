@@ -95,7 +95,7 @@ export default function EventHelpersPage({
               <Button
                 key={t.id}
                 onClick={() => setTab(t.id)}
-                variant={tab === t.id ? "outlineBottom" : "ghost"}
+                variant={tab === t.id ? "outline" : "ghost"}
               >
                 {t.label}
               </Button>
