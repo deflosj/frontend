@@ -7,101 +7,133 @@ import { TableToolbar } from "@/components/admin/table-toolbar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface MemberProfile {
+type UserRole = "MEMBER" | "CAPTAIN" | "REFEREE" | "ADMIN" | "SUPERADMIN";
+
+interface AdminUser {
   id: number;
-  firstName: string;
-  lastName: string;
-  phone: string | null;
-  bio: string | null;
-  joinedAt: string | null;
-  isPublic: boolean;
+  email: string;
+  username: string;
+  role: UserRole;
+  avatarUrl: string | null;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
+
+const ROLE_LABELS: Record<UserRole, string> = {
+  MEMBER: "Lid",
+  CAPTAIN: "Kapitein",
+  REFEREE: "Scheidsrechter",
+  ADMIN: "Beheerder",
+  SUPERADMIN: "Hoofdbeheerder",
+};
 
 // ── Cell components (module scope — required by S6478) ────────────────────────
 
-function NameCell({ firstName, lastName }: Readonly<{ firstName: string; lastName: string }>) {
-  return <strong>{firstName} {lastName}</strong> ;
+function UsernameCell({ username }: Readonly<{ username: string }>) {
+  return <strong>{username}</strong>;
 }
 
-function PhoneCell({ phone }: Readonly<{ phone: string | null }>) {
-  return <>{phone ?? "—"}</>;
+function EmailCell({ email }: Readonly<{ email: string }>) {
+  return <>{email}</>;
 }
 
-function JoinedCell({ joinedAt }: Readonly<{ joinedAt: string | null }>) {
-  if (!joinedAt) return <>—</>;
-  return <>{new Date(joinedAt).toLocaleDateString("nl-BE")}</>;
+function RoleBadge({ role }: Readonly<{ role: UserRole }>) {
+  if (role === "SUPERADMIN") return <span className="badge badge--red">{ROLE_LABELS[role]}</span>;
+  if (role === "ADMIN") return <span className="badge badge--yellow">{ROLE_LABELS[role]}</span>;
+  if (role === "REFEREE") return <span className="badge badge--blue">{ROLE_LABELS[role]}</span>;
+  if (role === "CAPTAIN") return <span className="badge badge--pink">{ROLE_LABELS[role]}</span>;
+  return <span className="badge badge--gray">{ROLE_LABELS[role]}</span>;
 }
 
-function VisibilityBadge({ isPublic }: Readonly<{ isPublic: boolean }>) {
-  return isPublic ? (
-    <span className="badge badge--green">Openbaar</span>
+function ActiveBadge({ isActive }: Readonly<{ isActive: boolean }>) {
+  return isActive ? (
+    <span className="badge badge--green">Actief</span>
   ) : (
-    <span className="badge badge--gray">Privé</span>
+    <span className="badge badge--gray">Inactief</span>
   );
+}
+
+function DateCell({ iso }: Readonly<{ iso: string }>) {
+  return <>{new Date(iso).toLocaleDateString("nl-BE")}</>;
 }
 
 // ── Columns ───────────────────────────────────────────────────────────────────
 
-const COLUMNS: ColumnDef<MemberProfile>[] = [
+const COLUMNS: ColumnDef<AdminUser>[] = [
   {
-    key: "name",
-    header: "Naam",
+    key: "username",
+    header: "Gebruiker",
     sortable: true,
-    sortValue: (m) => `${m.lastName} ${m.firstName}`,
-    cell: (m) => <NameCell firstName={m.firstName} lastName={m.lastName} />,
+    sortValue: (u) => u.username.toLowerCase(),
+    cell: (u) => <UsernameCell username={u.username} />,
   },
   {
-    key: "phone",
-    header: "Telefoon",
-    cell: (m) => <PhoneCell phone={m.phone} />,
-  },
-  {
-    key: "joinedAt",
-    header: "Lid sinds",
+    key: "email",
+    header: "E-mail",
     sortable: true,
-    sortValue: (m) => m.joinedAt ?? "",
-    cell: (m) => <JoinedCell joinedAt={m.joinedAt} />,
+    sortValue: (u) => u.email.toLowerCase(),
+    cell: (u) => <EmailCell email={u.email} />,
   },
   {
-    key: "isPublic",
-    header: "Zichtbaar",
-    cell: (m) => <VisibilityBadge isPublic={m.isPublic} />,
+    key: "role",
+    header: "Rol",
+    sortable: true,
+    sortValue: (u) => u.role,
+    cell: (u) => <RoleBadge role={u.role} />,
+  },
+  {
+    key: "isActive",
+    header: "Status",
+    sortable: true,
+    sortValue: (u) => (u.isActive ? 1 : 0),
+    cell: (u) => <ActiveBadge isActive={u.isActive} />,
+  },
+  {
+    key: "createdAt",
+    header: "Aangemaakt",
+    sortable: true,
+    sortValue: (u) => u.createdAt,
+    cell: (u) => <DateCell iso={u.createdAt} />,
   },
 ];
 
 // ── Page ──────────────────────────────────────────────────────────────────────
 
 export default function AdminMembersPage() {
-  const [members, setMembers] = useState<MemberProfile[]>([]);
+  const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const [search, setSearch]           = useState("");
-  const [filterVisible, setFilterVisible] = useState("ALL");
+  const [search, setSearch] = useState("");
+  const [filterRole, setFilterRole] = useState("ALL");
+  const [filterStatus, setFilterStatus] = useState("ALL");
 
   useEffect(() => {
-    apiFetch<MemberProfile[]>("members")
-      .then(setMembers)
+    apiFetch<AdminUser[]>("members/all")
+      .then(setUsers)
       .finally(() => setLoading(false));
   }, []);
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return members.filter((m) => {
-      if (filterVisible === "PUBLIC" && !m.isPublic) return false;
-      if (filterVisible === "PRIVATE" && m.isPublic) return false;
+    return users.filter((u) => {
+      if (filterRole !== "ALL" && u.role !== filterRole) return false;
+      if (filterStatus === "ACTIVE" && !u.isActive) return false;
+      if (filterStatus === "INACTIVE" && u.isActive) return false;
       if (q) {
-        const name = `${m.firstName} ${m.lastName}`.toLowerCase();
-        if (!name.includes(q)) return false;
+        const inUsername = u.username.toLowerCase().includes(q);
+        const inEmail = u.email.toLowerCase().includes(q);
+        if (!inUsername && !inEmail) return false;
       }
       return true;
     });
-  }, [members, search, filterVisible]);
+  }, [users, search, filterRole, filterStatus]);
 
   return (
     <>
       <div className="admin-page-header">
         <h1>Leden</h1>
-        <p>Overzicht van alle ledenprofielen</p>
+        <p>Overzicht van alle gebruikersaccounts</p>
       </div>
 
       <DataTable
@@ -109,30 +141,45 @@ export default function AdminMembersPage() {
           <TableToolbar
             search={search}
             onSearch={setSearch}
-            searchPlaceholder="Zoek op naam…"
+            searchPlaceholder="Zoek op gebruikersnaam of e-mail…"
             filters={[
               {
-                key: "visible",
-                label: "Zichtbaar",
-                value: filterVisible,
+                key: "role",
+                label: "Rol",
+                value: filterRole,
                 defaultValue: "ALL",
                 options: [
-                  { value: "ALL",     label: "Alle leden"  },
-                  { value: "PUBLIC",  label: "Openbaar"    },
-                  { value: "PRIVATE", label: "Privé"       },
+                  { value: "ALL", label: "Alle rollen" },
+                  { value: "MEMBER", label: ROLE_LABELS.MEMBER },
+                  { value: "CAPTAIN", label: ROLE_LABELS.CAPTAIN },
+                  { value: "REFEREE", label: ROLE_LABELS.REFEREE },
+                  { value: "ADMIN", label: ROLE_LABELS.ADMIN },
+                  { value: "SUPERADMIN", label: ROLE_LABELS.SUPERADMIN },
                 ],
-                onChange: setFilterVisible,
+                onChange: setFilterRole,
+              },
+              {
+                key: "status",
+                label: "Status",
+                value: filterStatus,
+                defaultValue: "ALL",
+                options: [
+                  { value: "ALL", label: "Alle statussen" },
+                  { value: "ACTIVE", label: "Actief" },
+                  { value: "INACTIVE", label: "Inactief" },
+                ],
+                onChange: setFilterStatus,
               },
             ]}
             resultCount={filtered.length}
-            totalCount={members.length}
+            totalCount={users.length}
           />
         }
-        title={`Leden (${loading ? "…" : members.length})`}
+        title={`Leden (${loading ? "…" : users.length})`}
         data={filtered}
         columns={COLUMNS}
         loading={loading}
-        emptyText="Geen ledenprofielen gevonden."
+        emptyText="Geen gebruikers gevonden."
       />
     </>
   );

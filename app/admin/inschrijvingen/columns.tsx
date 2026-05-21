@@ -19,7 +19,7 @@ function fmtDate(iso: string) {
 export function StatusBadge({ status }: Readonly<{ status: RegistrationStatus }>) {
   if (status === "APPROVED") return <span className="badge badge--green">Goedgekeurd</span>;
   if (status === "REJECTED") return <span className="badge badge--red">Afgekeurd</span>;
-  return <span className="badge badge--yellow">In afwachting</span>;
+  return <span className="badge badge--yellow">In_afwachting</span>;
 }
 
 function CategoryBadge({ category }: Readonly<{ category: RaceCategory }>) {
