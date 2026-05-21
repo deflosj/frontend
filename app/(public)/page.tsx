@@ -8,6 +8,15 @@ type Event = {
   location: string | null;
 };
 
+type NewsPost = {
+  id: number;
+  title: string;
+  slug: string | null;
+  body: string;
+  coverUrl: string | null;
+  publishedAt: string | null;
+};
+
 async function getEvents(): Promise<Event[]> {
   try {
     const res = await fetch(
@@ -16,6 +25,22 @@ async function getEvents(): Promise<Event[]> {
     );
     if (!res.ok) return [];
     return res.json() as Promise<Event[]>;
+  } catch {
+    return [];
+  }
+}
+
+async function getNews(): Promise<NewsPost[]> {
+  try {
+    const res = await fetch(
+      `${API_BASE}content/news`,
+      { next: { revalidate: 3600 } }
+    );
+    if (!res.ok) return [];
+    const all = (await res.json()) as NewsPost[];
+    return all
+      .filter((n) => n.publishedAt)
+      .sort((a, b) => (new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime()));
   } catch {
     return [];
   }
@@ -30,7 +55,7 @@ function formatDate(iso: string): string {
 }
 
 export default async function HomePage() {
-  const events = await getEvents();
+  const [events, news] = await Promise.all([getEvents(), getNews()]);
 
   return (
     <div>
@@ -88,6 +113,49 @@ export default async function HomePage() {
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* News */}
+      <section className="border-t border-rule">
+        <div className="mx-auto max-w-5xl px-5 py-14 sm:px-8 sm:py-24">
+          <div className="mb-6">
+            <p className="mb-1 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">Nieuws</p>
+            <p className="text-ink-2">Laatste berichten en aankondigingen</p>
+          </div>
+
+          {news.length > 0 ? (
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              {news.slice(0, 3).map((post) => (
+                <article key={post.id} className="rounded-2xl border border-rule bg-surface overflow-hidden">
+                  {post.coverUrl && (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={post.coverUrl} alt={post.title} className="w-full h-44 object-cover" />
+                  )}
+                  <div className="p-4">
+                    {post.publishedAt && (
+                      <p className="text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-ink-2 sm:text-[0.625rem]">
+                        {new Date(post.publishedAt).toLocaleDateString("nl-BE", { day: "numeric", month: "short", year: "numeric" })}
+                      </p>
+                    )}
+                    <h3 className="mt-1 text-sm font-bold text-ink lg:text-base">{post.title}</h3>
+                    <p className="mt-2 text-sm text-ink-2">
+                      {(post.body ?? "").replace(/\n+/g, " ").slice(0, 140).replace(/\s+\S*$/, "")}{(post.body ?? "").length > 140 ? "…" : ""}
+                    </p>
+                    <div className="mt-3">
+                      <Link href={`/news/${post.slug ?? post.id}`} className="text-sm font-semibold text-ink transition-colors hover:underline">
+                        Lees meer →
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-rule bg-surface px-4 py-3 lg:px-5 lg:py-4">
+              <p className="text-xs text-ink-2">Nog geen nieuwsartikelen.</p>
+            </div>
+          )}
         </div>
       </section>
     </div>
