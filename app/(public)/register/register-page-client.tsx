@@ -96,7 +96,7 @@ export default function RegisterPageClient() {
 
       const data = (await res.json()) as { token: string };
       setToken(data.token);
-      router.push("/admin");
+      globalThis.location.replace("/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registratie mislukt");
     } finally {

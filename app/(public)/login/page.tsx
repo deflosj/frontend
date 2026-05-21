@@ -26,7 +26,7 @@ export default function AdminLoginPage() {
         setError("Uw account heeft geen beheerderstoegang.");
         return;
       }
-      router.push("/admin");
+      globalThis.location.replace("/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Aanmelden mislukt.");
     } finally {
