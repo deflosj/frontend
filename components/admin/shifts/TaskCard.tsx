@@ -66,12 +66,12 @@ export function TaskCard({ task, eventId, onEdit, onTasksUpdated }: Readonly<Tas
             {task.title}
           </p>
           {task.description && (
-            <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: "var(--muted)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+            <p style={{ margin: "0.15rem 0 0", fontSize: "0.75rem", color: "var(--ink-2)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
               {task.description}
             </p>
           )}
           {hasTime && (
-            <p style={{ margin: "0.25rem 0 0", fontSize: "0.72rem", color: "var(--muted)", fontFamily: "monospace" }}>
+            <p style={{ margin: "0.25rem 0 0", fontSize: "0.72rem", color: "var(--ink-2)", fontFamily: "monospace" }}>
               {fmtTime(task.startAt)}{task.startAt && task.endAt ? " – " : ""}{fmtTime(task.endAt)}
             </p>
           )}
@@ -91,7 +91,7 @@ export function TaskCard({ task, eventId, onEdit, onTasksUpdated }: Readonly<Tas
               <button
                 type="button"
                 onClick={(e) => { e.stopPropagation(); removeAssignee(a.id); }}
-                style={{ background: "none", border: "none", cursor: "pointer", padding: "0.1rem", color: "var(--muted)", lineHeight: 1 }}
+                style={{ background: "none", border: "none", cursor: "pointer", padding: "0.1rem", color: "var(--ink-2)", lineHeight: 1 }}
                 title="Verwijder helper"
               >
                 <IconX />
@@ -102,10 +102,10 @@ export function TaskCard({ task, eventId, onEdit, onTasksUpdated }: Readonly<Tas
       )}
 
       {task.assignees?.length === 0 && (
-        <p style={{ margin: "0.4rem 0 0", fontSize: "0.72rem", color: "var(--muted)", fontStyle: "italic" }}>Geen helpers</p>
+        <p style={{ margin: "0.4rem 0 0", fontSize: "0.72rem", color: "var(--ink-2)", fontStyle: "italic" }}>Geen helpers</p>
       )}
 
-      <p style={{ margin: "0.5rem 0 0", fontSize: "0.65rem", color: "var(--muted)", opacity: 0.6 }}>
+      <p style={{ margin: "0.5rem 0 0", fontSize: "0.65rem", color: "var(--ink-2)", opacity: 0.6 }}>
         Klik om te bewerken
       </p>
     </div>

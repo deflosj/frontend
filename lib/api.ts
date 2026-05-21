@@ -22,6 +22,20 @@ export function clearToken(): void {
   document.cookie = `${COOKIE}=; ${COOKIE_OPTS}; max-age=0`;
 }
 
+export function getTokenPayload(): { role?: string; username?: string } | null {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const part = token.split(".")[1];
+    return JSON.parse(atob(part.replaceAll("-", "+").replaceAll("_", "/"))) as {
+      role?: string;
+      username?: string;
+    };
+  } catch {
+    return null;
+  }
+}
+
 export async function apiFetch<T = unknown>(path: string, init?: RequestInit): Promise<T> {
   const token = getToken();
   const res = await fetch(`${BASE}${path}`, {

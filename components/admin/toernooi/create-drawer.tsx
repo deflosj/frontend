@@ -222,7 +222,7 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
               </li>
             </ul>
           </div>
-          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--muted)" }}>
+          <p style={{ margin: 0, fontSize: "0.8rem", color: "var(--ink-2)" }}>
             Teams en wedstrijden voeg je toe via de beheerpagina na het aanmaken.
           </p>
         </>

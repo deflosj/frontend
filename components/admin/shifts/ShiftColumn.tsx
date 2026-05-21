@@ -68,7 +68,7 @@ export function ShiftColumn({ shift, tasks, eventId, selectedDay, onTasksUpdated
           background: bg,
           textAlign: "center",
         }}>
-          <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--muted)" }}>Nog geen taken</p>
+          <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--ink-2)" }}>Nog geen taken</p>
         </div>
       )}
 

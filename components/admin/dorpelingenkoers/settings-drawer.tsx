@@ -71,7 +71,7 @@ export function SettingsDrawer({ settings, onSaved }: Readonly<Props>) {
                 Inschrijvingen zijn open
               </span>
             </label>
-            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginTop: "0.25rem" }}>
+            <p style={{ fontSize: "0.75rem", color: "var(--ink-2)", marginTop: "0.25rem" }}>
               Zet dit uit om alle nieuwe inschrijvingen te blokkeren.
             </p>
           </div>
@@ -90,7 +90,7 @@ export function SettingsDrawer({ settings, onSaved }: Readonly<Props>) {
               disabled={saving}
               onChange={(e) => setDorpLimit(e.target.value)}
             />
-            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginTop: "0.25rem" }}>
+            <p style={{ fontSize: "0.75rem", color: "var(--ink-2)", marginTop: "0.25rem" }}>
               Laat leeg voor geen limiet.
             </p>
           </div>
@@ -108,7 +108,7 @@ export function SettingsDrawer({ settings, onSaved }: Readonly<Props>) {
               disabled={saving}
               onChange={(e) => setFunLimit(e.target.value)}
             />
-            <p style={{ fontSize: "0.75rem", color: "var(--muted)", marginTop: "0.25rem" }}>
+            <p style={{ fontSize: "0.75rem", color: "var(--ink-2)", marginTop: "0.25rem" }}>
               Laat leeg voor geen limiet.
             </p>
           </div>

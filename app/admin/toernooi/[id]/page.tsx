@@ -313,7 +313,7 @@ function MatchRow({
           <input type="number" value={scoreA} min="0" max="99" aria-label="Score A"
             onChange={(e) => setScoreA(e.target.value)}
             style={{ ...smallInput, width: 38 }} />
-          <span style={{ color: "var(--muted)", fontWeight: 600 }}>–</span>
+          <span style={{ color: "var(--ink-2)", fontWeight: 600 }}>–</span>
           <input type="number" value={scoreB} min="0" max="99" aria-label="Score B"
             onChange={(e) => setScoreB(e.target.value)}
             style={{ ...smallInput, width: 38 }} />
@@ -413,7 +413,7 @@ function StandingsTable({ teams }: Readonly<{ teams: TournamentTeam[] }>) {
       <tbody>
         {sorted.map((t, i) => (
           <tr key={t.id}>
-            <td style={{ color: "var(--muted)", fontSize: "0.75rem" }}>{i + 1}</td>
+            <td style={{ color: "var(--ink-2)", fontSize: "0.75rem" }}>{i + 1}</td>
             <td>
               <strong>{t.name}</strong>
               {t.isPresent === false && (
@@ -539,7 +539,7 @@ function OverviewTab({
             {generating ? "Genereren…" : "Genereer wedstrijden"}
           </button>
           {teamCount === 0 && (
-            <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "var(--muted)" }}>
+            <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "var(--ink-2)" }}>
               Voeg eerst teams toe via het tabblad &quot;Teams&quot;.
             </p>
           )}
@@ -618,12 +618,12 @@ function TeamsTab({
               {tournament.teams.map((team) => (
                 <tr key={team.id}>
                   <td><strong>{team.name}</strong></td>
-                  <td>{team.captainName || <span style={{ color: "var(--muted)" }}>—</span>}</td>
+                  <td>{team.captainName || <span style={{ color: "var(--ink-2)" }}>—</span>}</td>
                   <td>
                     {team.pouleId ? (
                       <span className="badge badge--blue">{pouleMap.get(team.pouleId) ?? `#${team.pouleId}`}</span>
                     ) : (
-                      <span style={{ color: "var(--muted)", fontSize: "0.8rem" }}>Niet toegewezen</span>
+                      <span style={{ color: "var(--ink-2)", fontSize: "0.8rem" }}>Niet toegewezen</span>
                     )}
                   </td>
                   <td>
@@ -694,7 +694,7 @@ function DeleteTeamConfirm({
       <h2 style={{ margin: "0 0 0.5rem", fontSize: "1.1rem", fontWeight: 500, color: "var(--text)" }}>
         Team verwijderen?
       </h2>
-      <p style={{ margin: "0 0 1.5rem", fontSize: "0.875rem", color: "var(--muted)" }}>
+      <p style={{ margin: "0 0 1.5rem", fontSize: "0.875rem", color: "var(--ink-2)" }}>
         <strong style={{ color: "var(--text)" }}>{team.name}</strong> en alle bijbehorende
         data worden permanent verwijderd.
       </p>
@@ -893,14 +893,14 @@ export default function TournamentDetailPage({
       {/* Back + Header */}
       <div style={{ marginBottom: "1.5rem" }}>
         <Link href="/admin/toernooi"
-          style={{ fontSize: "0.8rem", color: "var(--muted)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.3rem", marginBottom: "0.75rem" }}>
+          style={{ fontSize: "0.8rem", color: "var(--ink-2)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.3rem", marginBottom: "0.75rem" }}>
           ← Alle toernooien
         </Link>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
           <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 500, letterSpacing: "-0.03em", color: "var(--text)" }}>
             {tournament.name}
           </h1>
-          <span className="mono" style={{ color: "var(--muted)", fontSize: "0.9rem" }}>{tournament.year}</span>
+          <span className="mono" style={{ color: "var(--ink-2)", fontSize: "0.9rem" }}>{tournament.year}</span>
           {tournament.isActive && <span className="badge badge--pink">Actief</span>}
         </div>
       </div>
@@ -933,7 +933,7 @@ export default function TournamentDetailPage({
               <span style={{
                 marginLeft: "0.4rem", fontSize: "0.7rem", fontWeight: 600,
                 background: "var(--bg-alt)", border: "1px solid var(--border)",
-                borderRadius: "99px", padding: "0.1rem 0.4rem", color: "var(--muted)",
+                borderRadius: "99px", padding: "0.1rem 0.4rem", color: "var(--ink-2)",
               }}>
                 {tournament.teams.length}
               </span>

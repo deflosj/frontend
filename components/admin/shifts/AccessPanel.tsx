@@ -43,7 +43,7 @@ export function AccessPanel({ eventId }: Readonly<{ eventId: number }>) {
 
           {inviteUrl && (
             <div style={{ marginTop: "0.75rem", display: "grid", gap: "0.4rem" }}>
-              <p style={{ margin: 0, fontSize: "0.72rem", color: "var(--muted)" }}>Deel met je helpers:</p>
+              <p style={{ margin: 0, fontSize: "0.72rem", color: "var(--ink-2)" }}>Deel met je helpers:</p>
               <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
                 <code style={{ flex: 1, padding: "0.35rem 0.55rem", background: "var(--bg-alt)", border: "1px solid var(--border)", borderRadius: "7px", fontSize: "0.65rem", color: "var(--text-2)", wordBreak: "break-all" }}>
                   {inviteUrl}

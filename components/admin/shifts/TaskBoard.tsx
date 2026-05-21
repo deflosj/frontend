@@ -33,7 +33,7 @@ export function TaskBoard({ tasks, eventId, event, onTasksUpdated }: Readonly<Ta
           borderBottom: "1px solid var(--border)",
           background: "var(--bg-alt)",
           fontSize: "0.78rem",
-          color: "var(--muted)",
+          color: "var(--ink-2)",
         }}>
           <span><strong style={{ color: "var(--text)" }}>{total}</strong> taken</span>
           <span><strong style={{ color: "var(--text)" }}>{assigned}</strong> toegewezen</span>
@@ -79,7 +79,7 @@ export function TaskBoard({ tasks, eventId, event, onTasksUpdated }: Readonly<Ta
                 {dayTasks.length > 0 && (
                   <span style={{
                     background: isActive ? "rgba(255,255,255,0.25)" : "var(--border)",
-                    color: isActive ? "var(--bg)" : "var(--muted)",
+                    color: isActive ? "var(--bg)" : "var(--ink-2)",
                     borderRadius: "999px",
                     padding: "0 0.35rem",
                     fontSize: "0.65rem",

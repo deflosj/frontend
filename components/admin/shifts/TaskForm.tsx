@@ -126,17 +126,17 @@ export function TaskForm({ eventId, selectedDay, initial, taskId, onSaved, onCan
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
         <div>
-          <label htmlFor="tf-start" style={{ display: "block", fontSize: "0.68rem", color: "var(--muted)", marginBottom: "0.2rem" }}>Van</label>
+          <label htmlFor="tf-start" style={{ display: "block", fontSize: "0.68rem", color: "var(--ink-2)", marginBottom: "0.2rem" }}>Van</label>
           <input id="tf-start" type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} style={inputStyle} disabled={saving} />
         </div>
         <div>
-          <label htmlFor="tf-end" style={{ display: "block", fontSize: "0.68rem", color: "var(--muted)", marginBottom: "0.2rem" }}>Tot</label>
+          <label htmlFor="tf-end" style={{ display: "block", fontSize: "0.68rem", color: "var(--ink-2)", marginBottom: "0.2rem" }}>Tot</label>
           <input id="tf-end" type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} style={inputStyle} disabled={saving} />
         </div>
       </div>
 
       <div>
-        <label style={{ display: "block", fontSize: "0.68rem", color: "var(--muted)", marginBottom: "0.3rem" }}>
+        <label style={{ display: "block", fontSize: "0.68rem", color: "var(--ink-2)", marginBottom: "0.3rem" }}>
           Max. helpers
         </label>
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>

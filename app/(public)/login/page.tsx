@@ -21,7 +21,7 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const user = await AuthService.login(identifier, password);
-      if (user.role !== "ADMIN") {
+      if (user.role !== "ADMIN" && user.role !== "SUPERADMIN") {
         AuthService.logout();
         setError("Uw account heeft geen beheerderstoegang.");
         return;

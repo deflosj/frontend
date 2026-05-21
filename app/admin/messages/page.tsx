@@ -19,7 +19,7 @@ function NameCell({ name }: Readonly<{ name: string }>) {
 }
 
 function SubjectCell({ subject }: Readonly<{ subject: string | null }>) {
-  return <>{subject ?? <span style={{ color: "var(--muted)" }}>—</span>}</>;
+  return <>{subject ?? <span style={{ color: "var(--ink-2)" }}>—</span>}</>;
 }
 
 function StatusBadge({ status }: Readonly<{ status: string }>) {
@@ -122,6 +122,7 @@ export default function AdminMessagesPage() {
   const { openDrawer } = useDrawer();
   const [messages, setMessages] = useState<ContactMessage[]>([]);
   const [loading, setLoading]   = useState(true);
+  const [fetchError, setFetchError] = useState("");
   const [busy, setBusy]         = useState<number | null>(null);
 
   const [search, setSearch]           = useState("");
@@ -130,6 +131,7 @@ export default function AdminMessagesPage() {
   useEffect(() => {
     apiFetch<ContactMessage[]>("contact/messages")
       .then(setMessages)
+      .catch((err) => setFetchError(err instanceof Error ? err.message : "Laden mislukt."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -189,6 +191,11 @@ export default function AdminMessagesPage() {
             </span>
           )}
         </p>
+        {fetchError && (
+          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "#fdecea", color: "#c5221f", fontSize: "0.875rem", fontWeight: 500 }}>
+            Kon berichten niet laden: <strong>{fetchError}</strong>
+          </div>
+        )}
       </div>
 
       <DataTable

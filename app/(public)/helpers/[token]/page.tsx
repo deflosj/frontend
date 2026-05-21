@@ -1,9 +1,9 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useState } from "react";
 import { IconPin } from "@/components/ui/icons";
 import { API_BASE } from "@/lib/api";
-import { Task } from "@/types/shifts";
+import { ShiftGroup, ShiftSlot } from "@/types/shifts";
 import { ClaimForm } from "./_components/ClaimForm";
 import { TaskBoard } from "./_components/TaskBoard";
 
@@ -16,43 +16,41 @@ interface PortalEvent {
   endsAt: string | null;
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-
 export default function HelperPortalPage({
   params,
 }: Readonly<{ params: Promise<{ token: string }> }>) {
   const { token } = use(params);
 
-  const [event, setEvent]               = useState<PortalEvent | null>(null);
-  const [tasks, setTasks]               = useState<Task[]>([]);
-  const [loading, setLoading]           = useState(true);
-  const [fetchError, setFetchError]     = useState("");
-  const [claimingTask, setClaimingTask] = useState<Task | null>(null);
-  const fakeIdRef = useRef(0);
+  const [event, setEvent]                       = useState<PortalEvent | null>(null);
+  const [groups, setGroups]                     = useState<ShiftGroup[]>([]);
+  const [loading, setLoading]                   = useState(true);
+  const [fetchError, setFetchError]             = useState("");
+  const [registeringSlot, setRegisteringSlot]   = useState<ShiftSlot | null>(null);
+  const [registeringGroup, setRegisteringGroup] = useState<ShiftGroup | null>(null);
 
   useEffect(() => {
-    fetch(`${API_BASE}events/portal/invite/${encodeURIComponent(token)}`)
+    fetch(`${API_BASE}events/shifts/invite/${encodeURIComponent(token)}`)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({})) as { error?: string };
           throw new Error(body.error ?? "Ongeldige link");
         }
-        return res.json() as Promise<{ event: PortalEvent; tasks: Task[] }>;
+        return res.json() as Promise<{ event: PortalEvent; groups: ShiftGroup[] }>;
       })
-      .then(({ event: ev, tasks: ts }) => { setEvent(ev); setTasks(ts); })
+      .then(({ event: ev, groups: gs }) => { setEvent(ev); setGroups(gs); })
       .catch((err) => setFetchError(err instanceof Error ? err.message : "Laden mislukt."))
       .finally(() => setLoading(false));
   }, [token]);
 
-  function handleClaimed(taskId: number, assigneeName: string) {
-    setTasks((prev) =>
-      prev.map((t) =>
-        t.id === taskId
-          ? { ...t, assignees: [...t.assignees, { id: --fakeIdRef.current, userId: null, name: assigneeName, email: null }] }
-          : t
-      )
-    );
-    setClaimingTask(null);
+  function handleRegister(slot: ShiftSlot, group: ShiftGroup) {
+    setRegisteringSlot(slot);
+    setRegisteringGroup(group);
+  }
+
+  function handleRegistered(updatedGroups: ShiftGroup[]) {
+    setGroups(updatedGroups);
+    setRegisteringSlot(null);
+    setRegisteringGroup(null);
   }
 
   if (loading) {
@@ -74,12 +72,14 @@ export default function HelperPortalPage({
 
   return (
     <>
-      {claimingTask && (
+      {registeringSlot && registeringGroup && event && (
         <ClaimForm
-          task={claimingTask}
+          slot={registeringSlot}
+          group={registeringGroup}
+          eventId={event.id}
           token={token}
-          onClaimed={handleClaimed}
-          onCancel={() => setClaimingTask(null)}
+          onRegistered={handleRegistered}
+          onCancel={() => { setRegisteringSlot(null); setRegisteringGroup(null); }}
         />
       )}
 
@@ -107,11 +107,11 @@ export default function HelperPortalPage({
 
         <div className="px-5 py-4 bg-blue-50 rounded-[0.875rem] mb-8 border border-blue-200 dark:bg-blue-950/40 dark:border-blue-900">
           <p className="m-0 text-[0.875rem] text-blue-700 dark:text-blue-300">
-            <strong>Bedankt dat je wil helpen!</strong> Klik op een taak om die over te nemen. Als een taak vol is kan je hem niet meer claimen.
+            <strong>Bedankt dat je wil helpen!</strong> Klik op een shift om je in te schrijven. Als een slot vol is kan je je niet meer inschrijven.
           </p>
         </div>
 
-        <TaskBoard tasks={tasks} event={event} onClaim={setClaimingTask} />
+        <TaskBoard groups={groups} onRegister={handleRegister} />
       </div>
     </>
   );

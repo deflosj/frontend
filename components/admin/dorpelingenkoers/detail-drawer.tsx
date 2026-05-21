@@ -11,7 +11,7 @@ import { RACE_CATEGORY_LABELS, REGISTRATION_STATUS_LABELS } from "@/lib/registra
 function Row({ label, value }: Readonly<{ label: string; value: React.ReactNode }>) {
   return (
     <div style={{ display: "grid", gridTemplateColumns: "10rem 1fr", gap: "0.5rem", padding: "0.6rem 0", borderBottom: "1px solid var(--border)" }}>
-      <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--muted)", textTransform: "uppercase", letterSpacing: "0.08em", paddingTop: "0.1rem" }}>
+      <span style={{ fontSize: "0.75rem", fontWeight: 600, color: "var(--ink-2)", textTransform: "uppercase", letterSpacing: "0.08em", paddingTop: "0.1rem" }}>
         {label}
       </span>
       <span style={{ fontSize: "0.875rem", color: "var(--text)", wordBreak: "break-word" }}>
@@ -75,7 +75,7 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
 
           {/* Wedstrijd */}
           <div>
-            <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--muted)", marginBottom: "0.75rem" }}>
+            <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-2)", marginBottom: "0.75rem" }}>
               Wedstrijd
             </p>
             <Row label="Type" value={RACE_CATEGORY_LABELS[r.raceCategory]} />
@@ -84,7 +84,7 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
 
           {/* Persoonsgegevens */}
           <div>
-            <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--muted)", marginBottom: "0.75rem" }}>
+            <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-2)", marginBottom: "0.75rem" }}>
               Persoonsgegevens
             </p>
             <Row label="Voornaam" value={r.firstName} />
@@ -95,7 +95,7 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
 
           {/* Contact */}
           <div>
-            <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--muted)", marginBottom: "0.75rem" }}>
+            <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-2)", marginBottom: "0.75rem" }}>
               Contact &amp; adres
             </p>
             <Row label="Adres" value={r.address} />
@@ -105,7 +105,7 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
 
           {/* Overige */}
           <div>
-            <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--muted)", marginBottom: "0.75rem" }}>
+            <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-2)", marginBottom: "0.75rem" }}>
               Overige
             </p>
             <Row label="Rijksregisternr." value={r.nationalRegisterNumber} />

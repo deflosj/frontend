@@ -22,21 +22,21 @@ function MessageDetail({ message }: Readonly<{ message: ContactMessage }>) {
   return (
     <div>
       <dl style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "0.5rem 1rem", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
-        <dt style={{ color: "var(--muted)", fontWeight: 500 }}>Van</dt>
+        <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>Van</dt>
         <dd style={{ margin: 0 }}>{message.name}</dd>
-        <dt style={{ color: "var(--muted)", fontWeight: 500 }}>E-mail</dt>
+        <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>E-mail</dt>
         <dd style={{ margin: 0 }}>
           <a href={`mailto:${message.email}`} style={{ color: "var(--accent)" }}>{message.email}</a>
         </dd>
         {message.subject && (
           <>
-            <dt style={{ color: "var(--muted)", fontWeight: 500 }}>Onderwerp</dt>
+            <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>Onderwerp</dt>
             <dd style={{ margin: 0 }}>{message.subject}</dd>
           </>
         )}
-        <dt style={{ color: "var(--muted)", fontWeight: 500 }}>Datum</dt>
+        <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>Datum</dt>
         <dd style={{ margin: 0 }}>{new Date(message.createdAt).toLocaleString("nl-BE")}</dd>
-        <dt style={{ color: "var(--muted)", fontWeight: 500 }}>Status</dt>
+        <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>Status</dt>
         <dd style={{ margin: 0 }}>
           <span className={`badge badge--${STATUS_BADGE[message.status]}`}>{STATUS_LABELS[message.status]}</span>
         </dd>

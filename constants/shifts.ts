@@ -1,4 +1,6 @@
-import { Shift, TaskStatus, RSVPStatus } from "@/types/shifts";
+import { Shift, TaskStatus, RSVPStatus, SlotStatus } from "@/types/shifts";
+
+// ── Legacy task constants ─────────────────────────────────────────────────────
 
 export const SHIFTS: Shift[] = ["SETUP", "DURING", "BREAKDOWN"];
 
@@ -13,6 +15,7 @@ export const SHIFT_LABELS: Record<Shift, string> = {
   DURING: "Tijdens",
   BREAKDOWN: "Afbouw",
 };
+
 export const STATUS_META: Record<TaskStatus, { label: string; badge: string }> = {
   OPEN:        { label: "Open",     badge: "badge--gray"   },
   IN_PROGRESS: { label: "Bezig",    badge: "badge--yellow" },
@@ -30,3 +33,23 @@ export const RSVP_LABEL: Record<RSVPStatus, string> = {
   YES:         "Aanwezig",
   NO:          "Afwezig",
 };
+
+// ── Shift slot status helpers ─────────────────────────────────────────────────
+
+export const SLOT_STATUS_META: Record<SlotStatus, { label: string; badge: string }> = {
+  OPEN:        { label: "Open",       badge: "badge--green"  },
+  ALMOST_FULL: { label: "Bijna vol",  badge: "badge--yellow" },
+  FULL:        { label: "Vol",        badge: "badge--red"    },
+  CLOSED:      { label: "Gesloten",   badge: "badge--gray"   },
+};
+
+export const DEFAULT_GROUP_COLORS = [
+  "#3b82f6", // blue
+  "#22c55e", // green
+  "#f59e0b", // amber
+  "#ef4444", // red
+  "#8b5cf6", // violet
+  "#06b6d4", // cyan
+  "#f97316", // orange
+  "#ec4899", // pink
+];

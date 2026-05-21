@@ -69,7 +69,7 @@ function LimitBar({ count, limit }: Readonly<{ count: number; limit: number | nu
   if (limit === null) {
     return (
       <p className="admin-stat__value">
-        {count} <span style={{ fontSize: "1rem", color: "var(--muted)" }}>/ ∞</span>
+        {count} <span style={{ fontSize: "1rem", color: "var(--ink-2)" }}>/ ∞</span>
       </p>
     );
   }
@@ -81,7 +81,7 @@ function LimitBar({ count, limit }: Readonly<{ count: number; limit: number | nu
     <>
       <p className="admin-stat__value">
         {count}{" "}
-        <span style={{ fontSize: "1rem", color: "var(--muted)" }}>/ {limit}</span>
+        <span style={{ fontSize: "1rem", color: "var(--ink2)" }}>/ {limit}</span>
       </p>
       <div style={{ marginTop: "0.5rem", height: "4px", borderRadius: 99, background: "var(--border)" }}>
         <div style={{ height: "100%", width: `${pct}%`, borderRadius: 99, background: barColor, transition: "width 300ms" }} />

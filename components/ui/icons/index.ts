@@ -30,3 +30,4 @@ export { IconSearch } from "./IconSearch";
 export { IconChevronDown } from "./IconChevronDown";
 export { IconColumns } from "./IconColumns";
 export { IconDotsH } from "./IconDotsH";
+export { IconKey } from "./IconKey";

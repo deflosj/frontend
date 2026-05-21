@@ -158,6 +158,7 @@ export default function AdminEventsPage() {
   const { openDrawer } = useDrawer();
   const [events, setEvents] = useState<CalEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState("");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [statsMap, setStatsMap] = useState<Map<number, ShiftStats>>(new Map());
@@ -187,6 +188,8 @@ export default function AdminEventsPage() {
       const evs = await apiFetch<CalEvent[]>("content/events/all");
       setEvents(evs);
       fetchShiftStats(evs);
+    } catch (err) {
+      setFetchError(err instanceof Error ? err.message : "Laden mislukt.");
     } finally {
       setLoading(false);
     }
@@ -220,6 +223,11 @@ export default function AdminEventsPage() {
       <div className="admin-page-header">
         <h1>Events</h1>
         <p>Beheer evenementen voor de website</p>
+        {fetchError && (
+          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "#fdecea", color: "#c5221f", fontSize: "0.875rem", fontWeight: 500 }}>
+            Kon events niet laden: <strong>{fetchError}</strong>
+          </div>
+        )}
       </div>
 
       <DataTable

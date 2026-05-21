@@ -27,7 +27,7 @@ function MsgNameCell({ name }: Readonly<{ name: string }>) {
 }
 
 function MsgSubjectCell({ subject }: Readonly<{ subject: string | null }>) {
-  return <>{subject ?? <span style={{ color: "var(--muted)" }}>—</span>}</>;
+  return <>{subject ?? <span style={{ color: "var(--ink-2)" }}>—</span>}</>;
 }
 
 function MsgStatusBadge({ status }: Readonly<{ status: ContactMessage["status"] }>) {
