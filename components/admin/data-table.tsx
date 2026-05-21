@@ -51,11 +51,13 @@ function SortIcon({ active, dir }: Readonly<{ active: boolean; dir: SortDir }>) 
 // ── DataTable ─────────────────────────────────────────────────────────────────
 
 export function DataTable<T extends { id: number }>({
+  title,
   data,
   columns,
   loading = false,
   emptyText = "Geen resultaten gevonden.",
   toolbar,
+  headerAction,
   defaultPageSize = 25,
   pageSizeOptions = [10, 25, 50, 100],
 }: Readonly<DataTableProps<T>>) {
@@ -103,6 +105,12 @@ export function DataTable<T extends { id: number }>({
       {toolbar && <div className="admin-table-toolbar-row">{toolbar}</div>}
 
       <div className="admin-table-wrapper">
+      {(title || headerAction) && (
+        <div className="admin-table-header">
+          {title && <h2>{title}</h2>}
+          {headerAction}
+        </div>
+      )}
       {loading && <p className="admin-empty">Laden…</p>}
 
       {!loading && data.length === 0 && <p className="admin-empty">{emptyText}</p>}

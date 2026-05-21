@@ -96,13 +96,13 @@ export default function AdminDashboardPage() {
   return (
     <>
       <div className="mb-2">
-        <h1 className="text-3xl font-medium text-ink" >Dashboard</h1>
+        <h1 className="mt-12 md:mt-0 text-3xl font-medium text-ink" >Dashboard</h1>
         <p className="mt-1.5 text-base text-ink/75">Welkom in het beheerderspaneel van De Flosj</p>
       </div>
 
       {/* Active tournament banner */}
       {!loading && activeTournament && (
-        <div className="flex items-center justify-between gap-4 rounded-lg bg-ink/5 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-ink/5 p-4">
           <div>
             <p style={{ margin: 0, fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--accent-strong)", fontFamily: "var(--font-geist-mono), monospace" }}>
               Actief toernooi
@@ -118,7 +118,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Stats */}
-      <div className="grid gap-4 mb-8" style={{ gridTemplateColumns: "repeat(6, minmax(0, 1fr))" }}>
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
         {stats.map((s) => (
           <Link href={s.href} key={s.label} className="bg-surface border border-rule rounded-lg p-5 shadow" style={{ textDecoration: "none", display: "block" }}>
             <p className="text-xs font-semibold tracking-widest text-ink/75">{s.label}</p>

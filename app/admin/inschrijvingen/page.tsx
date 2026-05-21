@@ -192,7 +192,7 @@ export default function InschrijvingenPage() {
   return (
     <>
       <div className="admin-page-header">
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "1rem" }}>
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <h1>Inschrijvingen</h1>
             <p>Beheer inschrijvingen voor de dorpelingenkoers en fun wedstrijd.</p>
@@ -233,7 +233,7 @@ export default function InschrijvingenPage() {
       </div>
 
       {/* Stats */}
-      <div className="admin-stats" style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}>
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="admin-stat">
           <p className="admin-stat__label">Totaal</p>
           <p className="admin-stat__value">{stats.total}</p>
@@ -312,7 +312,6 @@ export default function InschrijvingenPage() {
             ]}
           />
         }
-        title="Inschrijvingen"
         data={filtered}
         columns={columns}
         loading={loading}

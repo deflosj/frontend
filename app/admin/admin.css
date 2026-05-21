@@ -1022,3 +1022,19 @@ dialog::backdrop {
     padding: 1.5rem 1rem;
   }
 }
+
+@media (max-width: 480px) {
+  .admin-table-header {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .admin-table-pagination {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .form-grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
