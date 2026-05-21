@@ -21,9 +21,10 @@ async function fetchAll(): Promise<NewsPost[]> {
   }
 }
 
-export default async function NewsArticlePage({ params }: { params: { slug: string } }) {
+export default async function NewsArticlePage(props: any) {
+  const { params } = props ?? {};
   const all = await fetchAll();
-  const slug = params.slug;
+  const slug = params?.slug;
   const post = all.find((p) => p.slug === slug) ?? all.find((p) => String(p.id) === slug);
   if (!post) return notFound();
 
