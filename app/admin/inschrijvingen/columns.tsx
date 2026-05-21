@@ -8,9 +8,6 @@ import type {
 import { RACE_CATEGORY_LABELS } from "@/lib/registration-types";
 import { type ColumnDef } from "@/components/admin/data-table";
 import { DetailDrawer } from "@/components/admin/dorpelingenkoers/detail-drawer";
-import { ApproveConfirm } from "@/components/admin/dorpelingenkoers/approve-confirm";
-import { RejectConfirm } from "@/components/admin/dorpelingenkoers/reject-confirm";
-import { DeleteConfirm } from "@/components/admin/dorpelingenkoers/delete-confirm";
 import { Button } from "@/components/ui/button";
 
 // ── Cell components (module scope — required by S6478) ────────────────────────
@@ -53,38 +50,19 @@ function EmailCell({ email }: Readonly<{ email: string }>) {
   );
 }
 
-interface ActionCellProps {
-  registration: Registration;
-  onView: () => void;
-  onApprove: () => void;
-  onReject: () => void;
-  onDelete: () => void;
+function NationalRegisterCell({ nationalRegisterNumber }: Readonly<{ nationalRegisterNumber: string }>) {
+  return <span className="mono">{nationalRegisterNumber}</span>;
 }
 
-function ActionCell({
-  registration: r,
-  onView,
-  onApprove,
-  onReject,
-  onDelete,
-}: Readonly<ActionCellProps>) {
+interface ActionCellProps {
+  onView: () => void;
+}
+
+function ActionCell({ onView }: Readonly<ActionCellProps>) {
   return (
     <div className="row-actions">
       <Button className="btn-sm btn-sm--ghost" onClick={onView}>
         Bekijken
-      </Button>
-      {r.status === "PENDING" && (
-        <>
-          <Button className="btn-sm btn-sm--success" onClick={onApprove}>
-            Goedkeuren
-          </Button>
-          <Button className="btn-sm btn-sm--danger" onClick={onReject}>
-            Afwijzen
-          </Button>
-        </>
-      )}
-      <Button className="btn-sm btn-sm--danger" onClick={onDelete}>
-        Verwijderen
       </Button>
     </div>
   );
@@ -93,7 +71,7 @@ function ActionCell({
 // ── Column definitions ────────────────────────────────────────────────────────
 
 export const ALL_COLUMN_KEYS = [
-  "timestamp", "name", "dob", "gender", "email", "phone", "category", "status",
+  "timestamp", "name", "dob", "gender", "email", "phone", "category", "status", "nationalRegisterNumber", 
 ] as const;
 
 export type AllColumnKey = typeof ALL_COLUMN_KEYS[number];
@@ -104,6 +82,7 @@ export const COLUMN_LABELS: Record<AllColumnKey, string> = {
   dob:       "Geboortedatum",
   gender:    "Geslacht",
   email:     "E-mail",
+  nationalRegisterNumber: "Rijksregisternummer",
   phone:     "Telefoon",
   category:  "Wedstrijd",
   status:    "Status",
@@ -142,6 +121,11 @@ export const STATIC_COLUMNS: ColumnDef<Registration>[] = [
     cell: (r) => <EmailCell email={r.email} />,
   },
   {
+    key: "nationalRegisterNumber",
+    header: COLUMN_LABELS.nationalRegisterNumber,
+    cell: (r) => <NationalRegisterCell nationalRegisterNumber={r.nationalRegisterNumber} />,
+  },
+  {
     key: "phone",
     header: COLUMN_LABELS.phone,
     cell: (r) => r.phone,
@@ -168,11 +152,11 @@ export function makeActionColumn(
     header: "",
     cell: (r) => (
       <ActionCell
-        registration={r}
-        onView={() => openDrawer(<DetailDrawer registration={r} />)}
-        onApprove={() => openDrawer(<ApproveConfirm registration={r} onUpdated={onUpdated} />)}
-        onReject={() => openDrawer(<RejectConfirm registration={r} onUpdated={onUpdated} />)}
-        onDelete={() => openDrawer(<DeleteConfirm registration={r} onDeleted={onDeleted} />)}
+        onView={() =>
+          openDrawer(
+            <DetailDrawer registration={r} onUpdated={onUpdated} onDeleted={onDeleted} />,
+          )
+        }
       />
     ),
   };

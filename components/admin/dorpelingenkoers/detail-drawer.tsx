@@ -3,6 +3,11 @@
 import { useState } from "react";
 import { Sheet, SheetContent } from "@/components/admin/sheet";
 import { useDrawer } from "@/components/admin/drawer-provider";
+import { ApproveConfirm } from "@/components/admin/dorpelingenkoers/approve-confirm";
+import { RejectConfirm } from "@/components/admin/dorpelingenkoers/reject-confirm";
+import { DeleteConfirm } from "@/components/admin/dorpelingenkoers/delete-confirm";
+import { ChangeCategoryConfirm } from "@/components/admin/dorpelingenkoers/change-category-confirm";
+import { Button } from "@/components/ui/button";
 import type { Registration } from "@/lib/registration-types";
 import { RACE_CATEGORY_LABELS, REGISTRATION_STATUS_LABELS } from "@/lib/registration-types";
 
@@ -36,15 +41,28 @@ function fmtDateTime(iso: string) {
 
 interface Props {
   registration: Registration;
+  onUpdated: (registration: Registration) => void;
+  onDeleted: (id: number) => void;
 }
 
-export function DetailDrawer({ registration: r }: Readonly<Props>) {
-  const { closeDrawer } = useDrawer();
+export function DetailDrawer({ registration: initialRegistration, onUpdated, onDeleted }: Readonly<Props>) {
+  const { openDrawer, closeDrawer } = useDrawer();
   const [open, setOpen] = useState(true);
+  const [registration, setRegistration] = useState(initialRegistration);
 
   function close() {
     setOpen(false);
     closeDrawer();
+  }
+
+  function handleUpdated(updated: Registration) {
+    setRegistration(updated);
+    onUpdated(updated);
+  }
+
+  function handleDeleted(id: number) {
+    onDeleted(id);
+    close();
   }
 
   const statusColors: Record<string, string> = {
@@ -58,9 +76,18 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
     REJECTED: "#fce8e6",
   };
 
+  const targetCategory: Registration["raceCategory"] =
+    registration.raceCategory === "DORPELINGENKOERS" ? "FUN_WEDSTRIJD" : "DORPELINGENKOERS";
+  let genderLabel = "X";
+  if (registration.gender === "M") {
+    genderLabel = "Man";
+  } else if (registration.gender === "V") {
+    genderLabel = "Vrouw";
+  }
+
   return (
     <Sheet open={open} onOpenChange={(o) => { if (!o) close(); }}>
-      <SheetContent title={`${r.firstName} ${r.lastName}`} description="Volledige inschrijvingsgegevens" width="min(560px, 100vw)">
+      <SheetContent title={`${registration.firstName} ${registration.lastName}`} description="Volledige inschrijvingsgegevens" width="min(560px, 100vw)">
         <div style={{ display: "flex", flexDirection: "column", gap: "1.5rem" }}>
 
           {/* Status badge */}
@@ -68,9 +95,9 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
             display: "inline-flex", alignSelf: "flex-start",
             padding: "0.25rem 0.75rem", borderRadius: 999,
             fontSize: "0.7rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase",
-            background: statusBg[r.status], color: statusColors[r.status],
+            background: statusBg[registration.status], color: statusColors[registration.status],
           }}>
-            {REGISTRATION_STATUS_LABELS[r.status]}
+            {REGISTRATION_STATUS_LABELS[registration.status]}
           </span>
 
           {/* Wedstrijd */}
@@ -78,8 +105,8 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
             <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-2)", marginBottom: "0.75rem" }}>
               Wedstrijd
             </p>
-            <Row label="Type" value={RACE_CATEGORY_LABELS[r.raceCategory]} />
-            <Row label="Tijdstempel" value={fmtDateTime(r.timestamp)} />
+            <Row label="Type" value={RACE_CATEGORY_LABELS[registration.raceCategory]} />
+            <Row label="Tijdstempel" value={fmtDateTime(registration.timestamp)} />
           </div>
 
           {/* Persoonsgegevens */}
@@ -87,10 +114,10 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
             <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-2)", marginBottom: "0.75rem" }}>
               Persoonsgegevens
             </p>
-            <Row label="Voornaam" value={r.firstName} />
-            <Row label="Achternaam" value={r.lastName} />
-            <Row label="Geboortedatum" value={fmtDate(r.dateOfBirth)} />
-            <Row label="Geslacht" value={r.gender === "M" ? "Man" : r.gender === "V" ? "Vrouw" : "X"} />
+            <Row label="Voornaam" value={registration.firstName} />
+            <Row label="Achternaam" value={registration.lastName} />
+            <Row label="Geboortedatum" value={fmtDate(registration.dateOfBirth)} />
+            <Row label="Geslacht" value={genderLabel} />
           </div>
 
           {/* Contact */}
@@ -98,9 +125,9 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
             <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-2)", marginBottom: "0.75rem" }}>
               Contact &amp; adres
             </p>
-            <Row label="Adres" value={r.address} />
-            <Row label="E-mail" value={<a href={`mailto:${r.email}`} style={{ color: "var(--accent)", textDecoration: "underline" }}>{r.email}</a>} />
-            <Row label="Telefoon" value={r.phone} />
+            <Row label="Adres" value={registration.address} />
+            <Row label="E-mail" value={<a href={`mailto:${registration.email}`} style={{ color: "var(--accent)", textDecoration: "underline" }}>{registration.email}</a>} />
+            <Row label="Telefoon" value={registration.phone} />
           </div>
 
           {/* Overige */}
@@ -108,14 +135,49 @@ export function DetailDrawer({ registration: r }: Readonly<Props>) {
             <p style={{ fontSize: "0.63rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--ink-2)", marginBottom: "0.75rem" }}>
               Overige
             </p>
-            <Row label="Rijksregisternr." value={r.nationalRegisterNumber} />
-            <Row label="Wielerclub" value={r.wielerclub ?? "—"} />
+            <Row label="Rijksregisternr." value={registration.nationalRegisterNumber} />
+            <Row label="Wielerclub" value={registration.wielerclub ?? "—"} />
           </div>
 
         </div>
 
-        <div className="admin-drawer__actions" style={{ marginTop: "2rem" }}>
-          <button type="button" className="btn-sm btn-sm--ghost" onClick={close}>Sluiten</button>
+        <div className="flex w-full mt-8 gap-3">
+          {registration.status === "PENDING" && (
+            <>
+              <Button
+                className="btn-sm btn-sm--success"
+                onClick={() => openDrawer(<ApproveConfirm registration={registration} onUpdated={handleUpdated} />)}
+              >
+                Goedkeuren
+              </Button>
+              <Button
+                className="btn-sm btn-sm--danger"
+                onClick={() => openDrawer(<RejectConfirm registration={registration} onUpdated={handleUpdated} />)}
+              >
+                Afwijzen
+              </Button>
+            </>
+          )}
+          <Button
+            className="btn-sm btn-sm--ghost"
+            onClick={() =>
+              openDrawer(
+                <ChangeCategoryConfirm
+                  registration={registration}
+                  targetCategory={targetCategory}
+                  onUpdated={handleUpdated}
+                />,
+              )
+            }
+          >
+            {registration.raceCategory === "DORPELINGENKOERS" ? "Naar fun wedstrijd" : "Naar dorpelingenkoers"}
+          </Button>
+          <Button
+            className="btn-sm btn-sm--danger"
+            onClick={() => openDrawer(<DeleteConfirm registration={registration} onDeleted={handleDeleted} />)}
+          >
+            Verwijderen
+          </Button>
         </div>
       </SheetContent>
     </Sheet>
