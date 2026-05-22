@@ -10,10 +10,12 @@ export function MatchBlock({
   match,
   teams,
   size = "sm",
+  pouleName,
 }: Readonly<{
   match: TournamentMatch | undefined;
   teams: TournamentTeam[];
   size?: "sm" | "lg";
+  pouleName?: string;
 }>) {
   if (!match) {
     return (
@@ -39,14 +41,24 @@ export function MatchBlock({
         size === "lg" ? "border-pink/30" : "border-rule"
       }`}
     >
-      {/* Track / time bar */}
-      {match.track !== null && (
+      {/* Track / time / poule bar */}
+      {(match.track !== null || pouleName) && (
         <div className="flex items-center gap-2 border-b border-rule bg-surface px-4 py-2">
-          <span className="text-xs font-bold text-pink">Baan {match.track}</span>
-          <span className="text-rule">·</span>
-          <span className="text-xs text-ink-2">
-            {fmtTime(match.time ?? new Date().toISOString())}
-          </span>
+          {pouleName && (
+            <span className="text-xs font-semibold text-ink-2">{pouleName}</span>
+          )}
+          {pouleName && match.track !== null && (
+            <span className="text-rule">·</span>
+          )}
+          {match.track !== null && (
+            <>
+              <span className="text-xs font-bold text-pink">Baan {match.track}</span>
+              <span className="text-rule">·</span>
+              <span className="text-xs text-ink-2">
+                {fmtTime(match.time ?? new Date().toISOString())}
+              </span>
+            </>
+          )}
         </div>
       )}
 
@@ -93,7 +105,7 @@ function TeamCardInner({ team }: Readonly<{ team: TournamentTeam }>) {
         Kapitein: {team.captainName}
       </p>
       <div className="flex flex-col gap-0.5">
-        {[team.speler1, team.speler2, team.speler3, team.speler4].map((speler) => (
+        {[team.speler1, team.speler2, team.speler3, team.speler4].filter(Boolean).map((speler) => (
           <p key={speler} className="text-xs text-ink-2">
             {speler}
           </p>

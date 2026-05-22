@@ -42,7 +42,7 @@ export default async function TournamentPortalPage() {
           </p>
         </div>
       </div>
-
+      
       <div className="mx-auto max-w-5xl px-5 py-12 sm:px-8">
         {tournaments.length === 0 && (
           <p className="text-sm text-ink-2">Er zijn nog geen toernooien aangemaakt.</p>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { API_BASE } from "@/lib/api";
 
 type FormState = "idle" | "loading" | "success" | "error";
 
@@ -59,10 +60,10 @@ export function ContactForm() {
     e.preventDefault();
     setState("loading");
     try {
-      const res = await fetch("/api/contact", {
+      const res = await fetch(`${API_BASE}contact/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, subject, message }),
+        body: JSON.stringify({ name, email, subject, body:message }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({})) as { message?: string };

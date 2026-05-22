@@ -109,7 +109,6 @@
   --surface:   #1f1f25;
   --ink:       #f4f1ec;
   --ink-2:     #b8b4ad;
-  --ink-2: oklch(0.269 0 0);
   --rule:      #2c2c32;
   --pink-soft: color-mix(in srgb, #ff5d92 14%, transparent);
   --pink-ink:  #ffc5d8;

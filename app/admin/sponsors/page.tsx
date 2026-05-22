@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { usePageSize } from "@/hooks/use-page-size";
 import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
@@ -107,6 +108,7 @@ export default function AdminSponsorsPage() {
   const [search, setSearch] = useState("");
   const [filterTier, setFilterTier] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [pageSize, savePageSize] = usePageSize("sponsors");
 
   async function load() {
     try {
@@ -186,6 +188,8 @@ export default function AdminSponsorsPage() {
         data={filtered}
         columns={columns}
         loading={loading}
+        defaultPageSize={pageSize}
+        onPageSizeChange={savePageSize}
         emptyText="Nog geen sponsors aangemaakt."
       />
     </>

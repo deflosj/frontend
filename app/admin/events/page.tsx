@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { usePageSize } from "@/hooks/use-page-size";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
@@ -164,6 +165,7 @@ export default function AdminEventsPage() {
   const [statsMap, setStatsMap] = useState<Map<number, ShiftStats>>(new Map());
   const statsMapRef = useRef<Map<number, ShiftStats>>(new Map());
   const [statsLoading, setStatsLoading] = useState(false);
+  const [pageSize, savePageSize] = usePageSize("events");
 
   const fetchShiftStats = useCallback(async (evs: CalEvent[]) => {
     const toFetch = evs.filter((ev) => !statsMapRef.current.has(ev.id));
@@ -260,6 +262,8 @@ export default function AdminEventsPage() {
         data={filtered}
         columns={columns}
         loading={loading}
+        defaultPageSize={pageSize}
+        onPageSizeChange={savePageSize}
         emptyText="Nog geen events aangemaakt."
       />
     </>

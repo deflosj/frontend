@@ -24,6 +24,7 @@ interface DataTableProps<T> {
   toolbar?: React.ReactNode;
   defaultPageSize?: number;
   pageSizeOptions?: number[];
+  onPageSizeChange?: (size: number) => void;
 }
 
 type SortDir = "asc" | "desc";
@@ -60,11 +61,18 @@ export function DataTable<T extends { id: number }>({
   headerAction,
   defaultPageSize = 25,
   pageSizeOptions = [10, 25, 50, 100],
+  onPageSizeChange,
 }: Readonly<DataTableProps<T>>) {
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
+
+  function handlePageSizeChange(size: number) {
+    setPageSize(size);
+    setPage(1);
+    onPageSizeChange?.(size);
+  }
 
   function handleSort(key: string) {
     if (sortKey === key) {
@@ -173,10 +181,7 @@ export function DataTable<T extends { id: number }>({
                 <select
                   className="pagination-size"
                   value={pageSize}
-                  onChange={(e) => {
-                    setPageSize(Number(e.target.value));
-                    setPage(1);
-                  }}
+                  onChange={(e) => handlePageSizeChange(Number(e.target.value))}
                   aria-label="Rijen per pagina"
                 >
                   {pageSizeOptions.map((s) => (

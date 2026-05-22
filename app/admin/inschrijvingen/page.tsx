@@ -13,7 +13,7 @@ import {
   REGISTRATION_STATUS_LABELS,
 } from "@/lib/registration-types";
 import { DataTable } from "@/components/admin/data-table";
-import { TableToolbar, type ColumnDisplay } from "@/components/admin/table-toolbar";
+import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
 import { SettingsDrawer } from "@/components/admin/dorpelingenkoers/settings-drawer";
 import {
@@ -22,6 +22,13 @@ import {
   STATIC_COLUMNS,
   makeActionColumn,
 } from "./columns";
+import { useColumnPrefs, type ColSpec } from "@/hooks/use-column-prefs";
+import { usePageSize } from "@/hooks/use-page-size";
+
+const COL_SPECS: ColSpec[] = [
+  ...ALL_COLUMN_KEYS.map((k) => ({ key: k, label: COLUMN_LABELS[k] })),
+  { key: "actions", label: "Acties", fixed: true },
+];
 
 // ── CSV export ────────────────────────────────────────────────────────────────
 
@@ -108,7 +115,8 @@ export default function InschrijvingenPage() {
   const [search, setSearch]               = useState("");
   const [filterCategory, setFilterCategory] = useState<RaceCategory | "ALL">("ALL");
   const [filterStatus, setFilterStatus]     = useState<RegistrationStatus | "ALL">("ALL");
-  const [visibleKeys, setVisibleKeys] = useState(() => new Set<string>(ALL_COLUMN_KEYS));
+  const { columnDisplay, visibleKeys, toggle } = useColumnPrefs("inschrijvingen", COL_SPECS);
+  const [pageSize, savePageSize] = usePageSize("inschrijvingen");
 
   // ── Fetch ─────────────────────────────────────────────────────────────────
 
@@ -161,30 +169,12 @@ export default function InschrijvingenPage() {
     setRegistrations((prev) => prev.filter((r) => r.id !== id));
   }, []);
 
-  function toggleColumn(key: string) {
-    setVisibleKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
-      return next;
-    });
-  }
-
   // ── Compose columns ────────────────────────────────────────────────────────
 
   const actionColumn = makeActionColumn(openDrawer, handleSaved, handleDeleted);
   const columns = [
     ...STATIC_COLUMNS.filter((c) => visibleKeys.has(c.key)),
     actionColumn,
-  ];
-
-  const columnDisplay: ColumnDisplay[] = [
-    ...ALL_COLUMN_KEYS.map((k) => ({
-      key: k,
-      label: COLUMN_LABELS[k],
-      visible: visibleKeys.has(k),
-    })),
-    { key: "actions", label: "Acties", visible: true, fixed: true },
   ];
 
   // ── Render ─────────────────────────────────────────────────────────────────
@@ -283,7 +273,7 @@ export default function InschrijvingenPage() {
               },
             ]}
             columns={columnDisplay}
-            onColumnToggle={toggleColumn}
+            onColumnToggle={toggle}
             resultCount={filtered.length}
             totalCount={registrations.length}
             menuItems={[
@@ -315,6 +305,8 @@ export default function InschrijvingenPage() {
         data={filtered}
         columns={columns}
         loading={loading}
+        defaultPageSize={pageSize}
+        onPageSizeChange={savePageSize}
         emptyText="Geen inschrijvingen gevonden."
       />
     </>

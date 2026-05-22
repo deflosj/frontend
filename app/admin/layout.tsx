@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AuthService from "@/services/AuthService";
 import { DrawerProvider } from "@/components/admin/drawer-provider";
 import { getTokenPayload } from "@/lib/api";
@@ -24,7 +24,71 @@ import {
   IconHamburger,
   IconClose,
   IconEdit,
+  IconSun,
+  IconMoon,
+  IconMonitor,
+  IconCheck,
 } from "@/components/ui/icons";
+import { useTheme, type Theme } from "@/hooks/use-theme";
+
+const THEME_OPTIONS: { key: Theme; label: string; Icon: () => React.ReactElement }[] = [
+  { key: "light",  label: "Licht",   Icon: IconSun     },
+  { key: "dark",   label: "Donker",  Icon: IconMoon    },
+  { key: "system", label: "Systeem", Icon: IconMonitor },
+];
+
+function AdminThemeDropdown() {
+  const { theme, apply } = useTheme();
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function onPointerDown(e: PointerEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    }
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, []);
+
+  let ActiveIcon = IconMonitor;
+  if (theme === "dark") ActiveIcon = IconMoon;
+  else if (theme === "light") ActiveIcon = IconSun;
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-label="Thema wijzigen"
+        aria-expanded={open}
+        className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors duration-150 ${
+          open ? "bg-white/12 text-white" : "text-white/50 hover:bg-white/8 hover:text-white/80"
+        }`}
+      >
+        <ActiveIcon />
+      </button>
+
+      {open && (
+        <div className="animate-dropdown absolute right-0 top-full z-50 mt-2 w-40 overflow-hidden rounded-xl border border-white/10 bg-[#1f1f25] shadow-lg shadow-black/30">
+          {THEME_OPTIONS.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              type="button"
+              onClick={() => { apply(key); setOpen(false); }}
+              className={`flex w-full items-center gap-3 px-3.5 py-2.5 text-sm transition-colors duration-100 hover:bg-white/6 ${
+                theme === key ? "text-pink" : "text-white/55 hover:text-white/85"
+              }`}
+            >
+              <Icon />
+              <span className="flex-1 text-left">{label}</span>
+              {theme === key && <IconCheck />}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 type NavItem = {
   href: string;
@@ -71,7 +135,6 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
   const pathname = usePathname();
   const [role, setRole] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
-
   useEffect(() => {
     setRole(getTokenPayload()?.role ?? "");
   }, []);
@@ -96,14 +159,17 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
       {/* ── Mobile top bar ─────────────────────────────────── */}
       <div className="fixed inset-x-0 top-0 z-30 flex items-center justify-between border-b border-white/10 bg-[#16161a] px-4 py-3 lg:hidden">
         <p className="text-sm font-semibold text-white/90">De Flosj Beheer</p>
-        <button
-          type="button"
-          onClick={() => setMobileNavOpen(true)}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 text-white/80 transition-colors hover:text-white"
-          aria-label="Open admin menu"
-        >
-          <IconHamburger />
-        </button>
+        <div className="flex items-center gap-1">
+          <AdminThemeDropdown />
+          <button
+            type="button"
+            onClick={() => setMobileNavOpen(true)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 text-white/80 transition-colors hover:text-white"
+            aria-label="Open admin menu"
+          >
+            <IconHamburger />
+          </button>
+        </div>
       </div>
 
       {/* ── Mobile sidebar ─────────────────────────────────── */}
@@ -184,7 +250,7 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
         aria-label="Beheerpaneel navigatie"
       >
         {/* Brand */}
-        <div className="flex items-center gap-2.5 border-b border-white/8 px-5 py-4">
+        <div className="flex items-center gap-2.5 border-b border-white/8 px-4 py-4">
           <Image
             src="/logo.jpg"
             alt="De Flosj"
@@ -192,12 +258,13 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
             height={26}
             className="rounded-md opacity-85"
           />
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-semibold text-white/90 leading-none">De Flosj</p>
             <p className="mt-0.5 font-mono text-[0.55rem] font-semibold uppercase tracking-widest text-white/35">
               Beheer
             </p>
           </div>
+          <AdminThemeDropdown />
         </div>
 
         {/* Nav */}
@@ -242,7 +309,7 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
 
         {/* Logout */}
         <div className="border-t border-white/8 px-3 py-3">
-          <Button onClick={handleLogout} >
+          <Button onClick={handleLogout}>
             <IconLogout />
             Afmelden
           </Button>

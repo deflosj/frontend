@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { ContactForm } from "@/components/contact-form";
 import { siteConfig } from "@/lib/site-config";
-import { IconFacebook, IconInstagram, IconMail, IconPhone, IconPin } from "@/components/ui/icons";
+import { IconFacebook, IconInstagram, IconMail, IconPin } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -85,19 +85,29 @@ export default function ContactPage() {
               <p className="mb-3 text-[0.625rem] font-semibold uppercase tracking-widest text-ink-2">
                 Volg ons
               </p>
-              <div className="flex gap-2">
-                {socialLinks.map(({ label, href, Icon }) => (
-                  <Link
-                    key={label}
-                    href={href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={label}
-                    className="flex h-9 w-9 items-center justify-center rounded-xl border border-rule bg-paper text-ink-2 transition-all duration-200 hover:border-pink/25 hover:bg-pink-soft hover:text-pink"
-                  >
-                    <Icon />
-                  </Link>
-                ))}
+              {/* Social icons */}
+              <div className="flex items-center gap-2">
+                {/* Facebook — hover: brand blue */}
+                <a
+                  href={siteConfig.socials.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Facebook"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink/20 text-ink transition-all duration-200 hover:border-[#1877F2]/50 hover:bg-[#1877F2]/15 hover:text-[#1877F2]"
+                >
+                  <IconFacebook />
+                </a>
+
+                {/* Instagram — hover: brand magenta */}
+                <a
+                  href={siteConfig.socials.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Instagram"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-ink/20 text-ink transition-all duration-200 hover:border-[#E1306C]/50 hover:bg-[#E1306C]/15 hover:text-[#E1306C]"
+                >
+                  <IconInstagram />
+                </a>
               </div>
             </div>
           </div>

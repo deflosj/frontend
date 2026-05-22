@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
+import { usePageSize } from "@/hooks/use-page-size";
+import { useColumnPrefs, type ColSpec } from "@/hooks/use-column-prefs";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -58,6 +60,16 @@ function DateCell({ iso }: Readonly<{ iso: string }>) {
   return <>{new Date(iso).toLocaleDateString("nl-BE")}</>;
 }
 
+// ── Column specs ──────────────────────────────────────────────────────────────
+
+const COL_SPECS: ColSpec[] = [
+  { key: "username",  label: "Gebruiker",  fixed: true },
+  { key: "email",     label: "E-mail" },
+  { key: "role",      label: "Rol" },
+  { key: "isActive",  label: "Status" },
+  { key: "createdAt", label: "Aangemaakt" },
+];
+
 // ── Columns ───────────────────────────────────────────────────────────────────
 
 const COLUMNS: ColumnDef<AdminUser>[] = [
@@ -107,6 +119,8 @@ export default function AdminMembersPage() {
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("ALL");
   const [filterStatus, setFilterStatus] = useState("ALL");
+  const [pageSize, savePageSize] = usePageSize("members");
+  const { columnDisplay, visibleKeys, toggle } = useColumnPrefs("members", COL_SPECS);
 
   useEffect(() => {
     apiFetch<AdminUser[]>("members/all")
@@ -171,14 +185,18 @@ export default function AdminMembersPage() {
                 onChange: setFilterStatus,
               },
             ]}
+            columns={columnDisplay}
+            onColumnToggle={toggle}
             resultCount={filtered.length}
             totalCount={users.length}
           />
         }
         title={`Leden (${loading ? "…" : users.length})`}
         data={filtered}
-        columns={COLUMNS}
+        columns={COLUMNS.filter((c) => visibleKeys.has(c.key))}
         loading={loading}
+        defaultPageSize={pageSize}
+        onPageSizeChange={savePageSize}
         emptyText="Geen gebruikers gevonden."
       />
     </>
