@@ -1,51 +1,8 @@
 import Link from "next/link";
-import { API_BASE } from "@/lib/api";
+import EventService from "@/services/EventService";
+import NewsService from "@/services/NewsService";
 
-type Event = {
-  id: number;
-  title: string;
-  startsAt: string;
-  location: string | null;
-};
-
-type NewsPost = {
-  id: number;
-  title: string;
-  slug: string | null;
-  body: string;
-  coverUrl: string | null;
-  publishedAt: string | null;
-};
-
-async function getEvents(): Promise<Event[]> {
-  try {
-    const res = await fetch(
-      `${API_BASE}content/events`,
-      { next: { revalidate: 3600 } }
-    );
-    if (!res.ok) return [];
-    return res.json() as Promise<Event[]>;
-  } catch {
-    return [];
-  }
-}
-
-async function getNews(): Promise<NewsPost[]> {
-  try {
-    const res = await fetch(
-      `${API_BASE}content/news`,
-      { next: { revalidate: 3600 } }
-    );
-    if (!res.ok) return [];
-    const all = (await res.json()) as NewsPost[];
-    return all
-      .filter((n) => n.publishedAt)
-      .sort((a, b) => (new Date(b.publishedAt!).getTime() - new Date(a.publishedAt!).getTime()));
-  } catch {
-    return [];
-  }
-}
-
+//TODO: move to utils
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString("nl-BE", {
     day: "numeric",
@@ -55,7 +12,15 @@ function formatDate(iso: string): string {
 }
 
 export default async function HomePage() {
-  const [events, news] = await Promise.all([getEvents(), getNews()]);
+  const [events, rawNews] = await Promise.all([
+    EventService.getEvents(),
+    NewsService.getNews(),
+  ]);
+
+  // Filter out news without a published date and sort by published date descending
+  const news = rawNews
+    .filter((n): n is typeof n & { publishedAt: string } => n.publishedAt !== null)
+    .sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
 
   return (
     <div>

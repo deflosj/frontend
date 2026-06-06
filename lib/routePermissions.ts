@@ -9,6 +9,7 @@ export const ADMIN_ROLES: AdminRole[] = ["ADMIN", "SUPERADMIN"];
 export const PAGE_PERMISSIONS: Array<{ prefix: string; roles: AdminRole[] }> = [
   { prefix: "/admin/uitnodigingen",  roles: ["ADMIN", "SUPERADMIN"] },
   { prefix: "/admin/inschrijvingen", roles: ["ADMIN", "SUPERADMIN"] },
+  { prefix: "/admin/helpers",        roles: ["ADMIN", "SUPERADMIN"] },
   { prefix: "/admin/messages",       roles: ["ADMIN", "SUPERADMIN"] },
   { prefix: "/admin/events",         roles: ["ADMIN", "SUPERADMIN"] },
   { prefix: "/admin/news",           roles: ["ADMIN", "SUPERADMIN"] },

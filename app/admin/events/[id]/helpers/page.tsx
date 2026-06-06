@@ -62,11 +62,16 @@ export default function EventHelpersPage({
         <Link href="/admin/events" style={{ fontSize: "0.8rem", color: "var(--ink-2)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.3rem", marginBottom: "0.75rem" }}>
           ← Alle events
         </Link>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-          <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 500, letterSpacing: "-0.03em", color: "var(--text)" }}>
-            {event.title}
-          </h1>
-          <span className="badge badge--pink">Shifts</span>
+        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", justifyContent: "space-between" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
+            <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 500, letterSpacing: "-0.03em", color: "var(--text)" }}>
+              {event.title}
+            </h1>
+            <span className="badge badge--pink">Shifts</span>
+          </div>
+          <Link href="/admin/helpers" className="btn-sm btn-sm--ghost">
+            Jaarhelpers
+          </Link>
         </div>
         {(event.location || event.startsAt) && (
           <p style={{ margin: "0.35rem 0 0", fontSize: "0.875rem", color: "var(--ink-2)" }}>

@@ -102,6 +102,9 @@ function ActionsCell({ ev, onEdit }: Readonly<{ ev: CalEvent; onEdit: () => void
         Bewerken
       </Button>
       <Link href={`/admin/events/${ev.id}/helpers`} className="btn-sm btn-sm--ghost">
+        Shifts
+      </Link>
+      <Link href="/admin/helpers" className="btn-sm btn-sm--ghost">
         Helpers
       </Link>
     </div>

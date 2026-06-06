@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { ShiftGroup, ShiftSlot, SlotFormData } from "@/types/shifts";
 import { apiFetch } from "@/lib/api";
-import { timeInputToISO, isoToTimeInput } from "@/utils/DateHelpers";
+import { isoToTimeInput, isoToDateInput, dateTimeToISO, addDays } from "@/utils/DateHelpers";
 
 const inputStyle: React.CSSProperties = {
   width: "100%",
@@ -21,7 +21,7 @@ const inputStyle: React.CSSProperties = {
 interface SlotFormProps {
   eventId: number;
   groupId: number;
-  /** Base date used to build ISO strings from time inputs. */
+  /** ISO datetime of the event start — used as the default date for new slots. */
   baseDate: string;
   initial?: ShiftSlot;
   onSaved: (groups: ShiftGroup[]) => void;
@@ -31,6 +31,7 @@ interface SlotFormProps {
 
 export function SlotForm({ eventId, groupId, baseDate, initial, onSaved, onCancel, onDelete }: Readonly<SlotFormProps>) {
   const [form, setForm] = useState<SlotFormData>({
+    date: isoToDateInput(initial?.startAt ?? null) || isoToDateInput(baseDate) || "",
     title: initial?.title ?? "",
     startTime: isoToTimeInput(initial?.startAt ?? null),
     endTime: isoToTimeInput(initial?.endAt ?? null),
@@ -46,15 +47,20 @@ export function SlotForm({ eventId, groupId, baseDate, initial, onSaved, onCance
 
   const isEdit = !!initial;
 
+  // Detect overnight: end time is on the next day
+  const isOvernight =
+    !!form.startTime && !!form.endTime && form.endTime <= form.startTime;
+
   async function save() {
-    if (!form.startTime || !form.endTime) return;
+    if (!form.date || !form.startTime || !form.endTime) return;
     setSaving(true);
     setError("");
     try {
+      const endDate = isOvernight ? addDays(form.date, 1) : form.date;
       const payload = {
         title: form.title.trim() || null,
-        startAt: timeInputToISO(baseDate, form.startTime),
-        endAt: timeInputToISO(baseDate, form.endTime),
+        startAt: dateTimeToISO(form.date, form.startTime),
+        endAt: dateTimeToISO(endDate, form.endTime),
         maxPersons: form.isUnlimited ? null : form.maxPersons,
         isUnlimited: form.isUnlimited,
         description: form.description.trim() || null,
@@ -102,21 +108,41 @@ export function SlotForm({ eventId, groupId, baseDate, initial, onSaved, onCance
         disabled={saving}
       />
 
+      <div>
+        <label htmlFor="slot-date" style={{ display: "block", fontSize: "0.68rem", color: "var(--ink-2)", marginBottom: "0.2rem" }}>Datum *</label>
+        <input
+          id="slot-date"
+          type="date"
+          value={form.date}
+          onChange={(e) => setForm({ ...form, date: e.target.value })}
+          style={inputStyle}
+          disabled={saving}
+        />
+      </div>
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem" }}>
         <div>
           <label htmlFor="slot-start" style={{ display: "block", fontSize: "0.68rem", color: "var(--ink-2)", marginBottom: "0.2rem" }}>Van *</label>
           <input id="slot-start" type="time" value={form.startTime} onChange={(e) => setForm({ ...form, startTime: e.target.value })} style={inputStyle} disabled={saving} />
         </div>
         <div>
-          <label htmlFor="slot-end" style={{ display: "block", fontSize: "0.68rem", color: "var(--ink-2)", marginBottom: "0.2rem" }}>Tot *</label>
+          <label htmlFor="slot-end" style={{ display: "block", fontSize: "0.68rem", color: "var(--ink-2)", marginBottom: "0.2rem" }}>
+            Tot *
+            {isOvernight && form.date && (
+              <span style={{ marginLeft: "0.4rem", color: "var(--accent, #6b7280)", fontStyle: "italic" }}>
+                (volgende dag)
+              </span>
+            )}
+          </label>
           <input id="slot-end" type="time" value={form.endTime} onChange={(e) => setForm({ ...form, endTime: e.target.value })} style={inputStyle} disabled={saving} />
         </div>
       </div>
 
       <div>
-        <label style={{ display: "block", fontSize: "0.68rem", color: "var(--ink-2)", marginBottom: "0.3rem" }}>Max. personen</label>
+        <label htmlFor="slot-max" style={{ display: "block", fontSize: "0.68rem", color: "var(--ink-2)", marginBottom: "0.3rem" }}>Max. personen</label>
         <div style={{ display: "flex", alignItems: "center", gap: "0.6rem" }}>
           <input
+            id="slot-max"
             type="number"
             min={1}
             value={form.isUnlimited ? "" : (form.maxPersons ?? "")}
@@ -125,14 +151,15 @@ export function SlotForm({ eventId, groupId, baseDate, initial, onSaved, onCance
             disabled={saving || form.isUnlimited}
             style={{ ...inputStyle, width: "90px" }}
           />
-          <label style={{ display: "flex", alignItems: "center", gap: "0.35rem", fontSize: "0.78rem", color: "var(--text)", cursor: "pointer", userSelect: "none" }}>
-            <input
-              type="checkbox"
-              checked={form.isUnlimited}
-              onChange={(e) => setForm({ ...form, isUnlimited: e.target.checked, maxPersons: e.target.checked ? null : form.maxPersons })}
-              disabled={saving}
-              style={{ cursor: "pointer" }}
-            />
+          <input
+            id="slot-unlimited"
+            type="checkbox"
+            checked={form.isUnlimited}
+            onChange={(e) => setForm({ ...form, isUnlimited: e.target.checked, maxPersons: e.target.checked ? null : form.maxPersons })}
+            disabled={saving}
+            style={{ cursor: "pointer" }}
+          />
+          <label htmlFor="slot-unlimited" style={{ fontSize: "0.78rem", color: "var(--text)", cursor: "pointer", userSelect: "none" }}>
             Onbeperkt
           </label>
         </div>
@@ -176,7 +203,7 @@ export function SlotForm({ eventId, groupId, baseDate, initial, onSaved, onCance
             type="button"
             className="btn-sm btn-sm--primary"
             onClick={save}
-            disabled={saving || !form.startTime || !form.endTime}
+            disabled={saving || !form.date || !form.startTime || !form.endTime}
             style={{ fontSize: "0.78rem" }}
           >
             {saving ? "Opslaan…" : isEdit ? "Bijwerken" : "Slot toevoegen"}

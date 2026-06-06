@@ -4,7 +4,15 @@ import { useState } from "react";
 import { ShiftGroup, ShiftSlot } from "@/types/shifts";
 import { SLOT_STATUS_META } from "@/constants/shifts";
 import { apiFetch } from "@/lib/api";
-import { fmtTime } from "@/utils/DateHelpers";
+import { fmtTime, isoToDateInput } from "@/utils/DateHelpers";
+
+function slotTabLabel(slot: ShiftSlot, baseDate: string): string {
+  const timeRange = `${fmtTime(slot.startAt)}–${fmtTime(slot.endAt)}`;
+  if (isoToDateInput(slot.startAt) === isoToDateInput(baseDate)) return timeRange;
+  const d = new Date(slot.startAt);
+  const shortDate = d.toLocaleDateString("nl-BE", { weekday: "short", day: "numeric", month: "numeric" });
+  return `${shortDate} · ${timeRange}`;
+}
 import { IconX, IconEdit, IconTrash } from "@/components/ui/icons";
 import { SlotForm } from "./SlotForm";
 import { ShiftGroupForm } from "./ShiftGroupForm";
@@ -160,7 +168,7 @@ export function ShiftGroupCard({ group, eventId, baseDate, onGroupsUpdated }: Re
                   gap: "0.3rem",
                 }}
               >
-                {fmtTime(slot.startAt)}–{fmtTime(slot.endAt)}
+                {slotTabLabel(slot, baseDate)}
                 <span className={`badge ${badge}`} style={{ fontSize: "0.52rem" }}>
                   {capacityLabel(slot)}
                 </span>
