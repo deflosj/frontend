@@ -91,6 +91,7 @@ export interface ShiftGroupFormData {
 }
 
 export interface SlotFormData {
+  date: string;
   title: string;
   startTime: string;
   endTime: string;

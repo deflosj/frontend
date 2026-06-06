@@ -111,6 +111,7 @@ const navSections: Array<{ title: string; items: NavItem[] }> = [
     items: [
       { href: "/admin/toernooi", label: "Toernooi", exact: false, Icon: IconTrophy },
       { href: "/admin/inschrijvingen", label: "Inschrijvingen", exact: false, Icon: IconClipboard },
+      { href: "/admin/helpers", label: "Helpers", exact: false, Icon: IconUsers },
       { href: "/admin/uitnodigingen", label: "Uitnodigingen", exact: false, Icon: IconKey },
       { href: "/admin/members", label: "Leden", exact: false, Icon: IconUsers },
       { href: "/admin/messages", label: "Berichten", exact: false, Icon: IconMail },

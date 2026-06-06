@@ -11,6 +11,28 @@ export function isoToTimeInput(iso: string | null): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+/** Converts an ISO datetime string to a "YYYY-MM-DD" value for a date input (local time). */
+export function isoToDateInput(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Combines a "YYYY-MM-DD" date and "HH:MM" time into a UTC ISO string using local time. */
+export function dateTimeToISO(dateStr: string, timeStr: string): string | null {
+  if (!dateStr || !timeStr) return null;
+  const [y, mo, d] = dateStr.split("-").map(Number);
+  const [h, m] = timeStr.split(":").map(Number);
+  return new Date(y, mo - 1, d, h, m, 0, 0).toISOString();
+}
+
+/** Returns a new "YYYY-MM-DD" string offset by n days. */
+export function addDays(dateStr: string, n: number): string {
+  const [y, mo, d] = dateStr.split("-").map(Number);
+  const dt = new Date(y, mo - 1, d + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+}
+
 export function timeInputToISO(dayISO: string, time: string): string | null {
   if (!time) return null;
   const base = new Date(dayISO);

@@ -1,7 +1,7 @@
 import { apiFetch, getToken, setToken, clearToken } from "@/lib/api";
 
 interface LoginResponse {
-  token: string;
+  accessToken: string;
   user: { id: number; username: string; role: string };
 }
 
@@ -17,7 +17,7 @@ const AuthService = {
       method: "POST",
       body: JSON.stringify({ identifier, password }),
     });
-    setToken(data.token);
+    setToken(data.accessToken);
     return data.user;
   },
 
