@@ -14,7 +14,7 @@ export default async function PoulesPage({
   if (!tournament) notFound();
 
   const { poules, teams, matches } = tournament;
-  const groupPoules = poules.filter((p) => p.phase === "GROUP");
+  const groupPoules = poules.filter((p) => p.phase === "GROUP_STAGE");
 
   if (!groupPoules.length) {
     return <Empty text="Nog geen poules of teams ingevoerd." />;

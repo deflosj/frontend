@@ -1,9 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 
-import { ThemeDropdown } from "@/components/layout/theme-dropdown";
 import { getTournament } from "@/lib/tournament-helpers";
-import { TournamentNav } from "./tournament-nav";
+import { TournamentHeader } from "./tournament-header";
 
 export async function generateMetadata({
   params,
@@ -30,7 +29,7 @@ export default async function TournamentDetailLayout({
 
   if (!tournament) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-5">
+      <div className="flex min-h-[60vh] items-center justify-center px-5">
         <div className="text-center">
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-ink-2">404</p>
           <h1 className="mb-4 text-2xl font-bold text-ink">Toernooi niet gevonden</h1>
@@ -44,24 +43,14 @@ export default async function TournamentDetailLayout({
 
   return (
     <div>
-      {/* ── Sticky header — desktop only ──────────────────────── */}
-      <div className="sticky top-0 z-40 hidden border-b border-white/6 bg-paper md:block">
-        <div className="mx-auto flex h-11 max-w-5xl items-center px-8">
-          <TournamentNav id={id} className="min-w-0 flex-1 self-stretch" />
+      <TournamentHeader
+        id={id}
+        name={tournament.name}
+        year={tournament.year}
+        isActive={tournament.isActive}
+      />
 
-          {tournament.isActive && (
-            <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-pink/15 px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-widest text-pink">
-              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-pink" />
-              {"Live"}
-            </span>
-          )}
-
-          <ThemeDropdown />
-        </div>
-      </div>
-
-      {/* ── Page content ─────────────────────────────────────── */}
-      <div className="mx-auto max-w-5xl px-5 py-10 pb-24 sm:px-8 md:pb-10">{children}</div>
+      <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">{children}</div>
     </div>
   );
 }

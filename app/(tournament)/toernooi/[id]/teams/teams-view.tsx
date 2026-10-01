@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 
+import { IconSearch } from "@/components/ui/icons/IconSearch";
 import { sortStandings } from "@/lib/tournament-helpers";
 import { TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
-import { TeamCard } from "../_shared";
+import { PageHead, SectionHead, TabStrip, TeamCard } from "../_shared";
 
 interface Props {
   teams: TournamentTeam[];
@@ -16,7 +17,7 @@ export function TeamsView({ teams, poules, tournamentId }: Readonly<Props>) {
   const [search, setSearch] = useState("");
   const [activePouleId, setActivePouleId] = useState<number | null>(null);
 
-  const groupPoules = poules.filter((p) => p.phase === "GROUP");
+  const groupPoules = poules.filter((p) => p.phase === "GROUP_STAGE");
 
   const filtered = useMemo(() => {
     return teams.filter((t) => {
@@ -46,26 +47,29 @@ export function TeamsView({ teams, poules, tournamentId }: Readonly<Props>) {
   );
 
   const noPoule = filtered.filter((t) => !t.pouleId);
+  const grid = "grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4";
 
   function renderTeams() {
     if (filtered.length === 0) return <p className="text-sm text-ink-2">Geen teams gevonden.</p>;
     if (isFiltering) {
       return (
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+        <div className={grid}>
           {filtered.map((team) => (
-            <TeamCard key={team.id} team={team} href={`/toernooi/${tournamentId}/teams/${team.id}`} />
+            <TeamCard
+              key={team.id}
+              team={team}
+              href={`/toernooi/${tournamentId}/teams/${team.id}`}
+            />
           ))}
         </div>
       );
     }
     return (
-      <div className="flex flex-col gap-10">
+      <div className="flex flex-col gap-8">
         {byPoule.map(({ poule, teams: pouleTeams }) => (
           <div key={poule.id}>
-            <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-2">
-              {poule.name}
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <SectionHead title={poule.name} />
+            <div className={grid}>
               {pouleTeams.map((team) => (
                 <TeamCard
                   key={team.id}
@@ -78,10 +82,8 @@ export function TeamsView({ teams, poules, tournamentId }: Readonly<Props>) {
         ))}
         {noPoule.length > 0 && (
           <div>
-            <h3 className="mb-4 text-sm font-bold uppercase tracking-widest text-ink-2">
-              Overige teams
-            </h3>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            <SectionHead title="Overige teams" />
+            <div className={grid}>
               {noPoule.map((team) => (
                 <TeamCard
                   key={team.id}
@@ -98,56 +100,48 @@ export function TeamsView({ teams, poules, tournamentId }: Readonly<Props>) {
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Search */}
-      <input
-        type="search"
-        placeholder="Zoek op team of speler..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="h-11 w-full rounded-xl border border-rule bg-surface px-4 text-sm text-ink placeholder:text-ink-2 focus:outline-none focus:ring-2 focus:ring-pink/30"
+      <PageHead
+        title="Teams"
+        subtitle={
+          groupPoules.length > 0
+            ? `${teams.length} teams verdeeld over ${groupPoules.length} ${
+                groupPoules.length === 1 ? "poule" : "poules"
+              }`
+            : `${teams.length} ingeschreven teams`
+        }
       />
+
+      {/* Zoeken */}
+      <div className="flex h-11 items-center gap-2.5 rounded-xl border border-rule bg-surface px-4 focus-within:ring-2 focus-within:ring-pink/30">
+        <span className="shrink-0 text-ink-2">
+          <IconSearch />
+        </span>
+        <input
+          type="search"
+          placeholder="Zoek op team of speler..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="h-full min-w-0 flex-1 bg-transparent text-sm text-ink placeholder:text-ink-2 focus:outline-none"
+        />
+      </div>
 
       {/* Poule tab strip */}
       {groupPoules.length > 1 && (
-        <div className="-mx-5 flex overflow-x-auto border-b border-rule px-5 sm:-mx-8 sm:px-8">
-          <button
-            onClick={() => setActivePouleId(null)}
-            className={`relative shrink-0 px-3 py-2.5 text-sm font-semibold transition-colors ${
-              activePouleId === null ? "text-ink" : "text-ink/35 hover:text-ink/60"
-            }`}
-          >
-            {"Alle"}
-            <span
-              className={`absolute bottom-0 left-1 right-1 h-0.5 rounded-full bg-pink transition-opacity ${
-                activePouleId === null ? "opacity-100" : "opacity-0"
-              }`}
-            />
-          </button>
-          {groupPoules.map((p) => (
-            <button
-              key={p.id}
-              onClick={() => setActivePouleId(p.id)}
-              className={`relative shrink-0 px-3 py-2.5 text-sm font-semibold transition-colors ${
-                activePouleId === p.id ? "text-ink" : "text-ink/35 hover:text-ink/60"
-              }`}
-            >
-              {p.name}
-              <span
-                className={`absolute bottom-0 left-1 right-1 h-0.5 rounded-full bg-pink transition-opacity ${
-                  activePouleId === p.id ? "opacity-100" : "opacity-0"
-                }`}
-              />
-            </button>
-          ))}
-        </div>
+        <TabStrip
+          tabs={[
+            { key: "ALL", label: "Alle" },
+            ...groupPoules.map((p) => ({ key: String(p.id), label: p.name })),
+          ]}
+          active={activePouleId === null ? "ALL" : String(activePouleId)}
+          onSelect={(key) => setActivePouleId(key === "ALL" ? null : Number(key))}
+          compact
+        />
       )}
 
-      {/* Count */}
       <p className="text-xs text-ink-2">
         <span className="font-semibold text-ink">{filtered.length}</span> teams
       </p>
 
-      {/* Results */}
       {renderTeams()}
     </div>
   );

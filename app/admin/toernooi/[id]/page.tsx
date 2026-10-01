@@ -3,29 +3,38 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
+import { PaymentSelect, paymentBody, paymentValue } from "./payment-select";
 import type {
   ActiveTournament,
   TournamentMatch,
   TournamentPoule,
   TournamentTeam,
 } from "@/lib/tournament-types";
+import { PHASE_LABELS, PHASE_ORDER } from "@/lib/tournament-types";
 import { IconClock, IconEdit, IconPlus, IconSave, IconTrash, IconX,  } from "@/components/ui/icons";
+import { AanmeldingTab } from "./aanmelding-tab";
 
 // ── Default rules text ────────────────────────────────────────────────────────
 
-const DEFAULT_RULES = `De wedstrijd heeft een puur recreatief karakter, dus we rekenen op fairplay van elk team. Bij onenigheid neemt de aangeduide scheidsrechter de definitieve beslissing. Basisregel: De Flosj heeft altijd gelijk!
+const DEFAULT_RULES = `── Fairplay en bandjes ──
+
+De wedstrijd heeft een puur recreatief karakter, dus we rekenen op fairplay van elk team. Bij onenigheid neemt de aangeduide scheidsrechter de definitieve beslissing. Basisregel: De Flosj heeft altijd gelijk!
 
 Elk team ontvangt vier spelersbandjes. Deze moeten tijdens het toernooi gedragen worden en zijn niet uitwisselbaar.
+
+── Ploegen en opstelling ──
 
 Er wordt verplicht gespeeld in ploegen van vier spelers (uitzondering: eerste poulewedstrijd). Indien een team vanaf de tweede wedstrijd met minder dan vier spelers aantreedt, krijgt het andere team automatisch een forfaitoverwinning (5–0).
 
 Per spelronde moet elk team afwisselend twee verschillende spelers opstellen. Met uitzondering van de eerste poulewedstrijd mag een speler nooit twee spelletjes na elkaar spelen. Speler 1 en 2 blijven aan de ene kant, speler 3 en 4 aan de andere kant van het terrein.
 
+── Poulefase ──
+
 Er wordt gespeeld in poules van 4 ploegen. De eerste twee ploegen in de stand gaan automatisch door naar de volgende ronde. Daarnaast stoten ook de acht beste derdes door naar de 1/16 finales.
 
 Elk team (of een afgevaardigde) moet 15 minuten voor de eerste wedstrijd aanwezig zijn. Niet tijdig aanwezig zijn resulteert in een forfait voor de volgende wedstrijd. Na twee forfaitnederlagen eindigt het toernooi voor het betrokken team.
 
-Voor elke wedstrijd bepaalt een toss welke ploeg mag starten.
+── Punten en rangschikking ──
 
 Winst: 2 punten | Gelijkspel: 1 punt | Verlies: 0 punten
 
@@ -38,15 +47,23 @@ Bij gelijke stand na de poulefase gelden de volgende criteria in volgorde:
 6. Onderling resultaat
 7. Indien nog steeds gelijk: één speler van elk team gooit één bal; wie het dichtst bij het cochonnet ligt, gaat door.
 
-Poulewedstrijden duren 15 minuten en stoppen exact na 15 minuten. Er worden geen ballen meer gegooid zodra het eindsignaal klinkt. Wanneer de 20 minuten verstreken zijn, wordt de lopende mène nog uitgespeeld.
+── Spelverloop ──
 
-De ploeg met de meeste punten wint. Er is geen puntenlimiet. Per werpbeurt krijgt elk team zes ballen.
+Voor elke wedstrijd bepaalt een toss welke ploeg mag starten.
 
 Het team dat de toss wint, werpt het cochonnet uit (tussen de 6 m en 9 m om geldig te zijn) en speelt vervolgens de eerste bal. De ploeg met de bal het dichtst bij het cochonnet scoort één punt per beter geplaatste bal dan de beste bal van de tegenstander.
 
+De ploeg met de meeste punten wint. Er is geen puntenlimiet. Per werpbeurt krijgt elk team zes ballen.
+
 Ballen die volledig over het koord gaan, zijn buiten en tellen niet meer mee.
 
+── Timing en forfait ──
+
+Poulewedstrijden duren 15 minuten en stoppen exact na 15 minuten. Er worden geen ballen meer gegooid zodra het eindsignaal klinkt. Wanneer de 20 minuten verstreken zijn, wordt de lopende mène nog uitgespeeld.
+
 Wanneer een team niet komt opdagen of met onvoldoende spelers verschijnt, verliest het met 0–5 (forfait).
+
+── Beeldmateriaal ──
 
 Door deel te nemen aan dit toernooi geef je toestemming aan De Flosj om foto's te maken en deze te publiceren op sociale media.
 
@@ -58,7 +75,7 @@ Ook hier geldt: De Flosj heeft altijd gelijk!`;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Tab = "overzicht" | "teams" | "schema" | "reglement";
+type Tab = "overzicht" | "aanmelding" | "teams" | "schema" | "reglement";
 
 // ── Modal hook ────────────────────────────────────────────────────────────────
 
@@ -105,11 +122,14 @@ const smallInput: React.CSSProperties = {
 interface TeamFormData {
   name: string;
   captainName: string;
+  phone: string;
   speler1: string;
   speler2: string;
   speler3: string;
   speler4: string;
   isPresent: boolean;
+  isPaid: boolean;
+  payment: string;
   pouleId: string;
 }
 
@@ -131,11 +151,16 @@ function TeamDrawer({
   const [form, setForm] = useState<TeamFormData>({
     name:        team?.name        ?? "",
     captainName: team?.captainName ?? "",
+    phone:       team?.phone       ?? "",
     speler1:     team?.speler1     ?? "",
     speler2:     team?.speler2     ?? "",
     speler3:     team?.speler3     ?? "",
     speler4:     team?.speler4     ?? "",
-    isPresent:   team?.isPresent   ?? true,
+    // Nieuw team = aangemeld, nog niet aanwezig. "Aanwezig" is de
+    // check-in op de toernooidag zelf.
+    isPresent:   team?.isPresent   ?? false,
+    isPaid:      team?.isPaid      ?? false,
+    payment:     team ? paymentValue(team) : "",
     pouleId:     team?.pouleId != null ? String(team.pouleId) : "",
   });
   const [saving, setSaving] = useState(false);
@@ -152,11 +177,13 @@ function TeamDrawer({
       const body = {
         name:        form.name.trim(),
         captainName: form.captainName.trim(),
+        phone:       form.phone.trim() || null,
         speler1:     form.speler1.trim(),
         speler2:     form.speler2.trim(),
         speler3:     form.speler3.trim(),
         speler4:     form.speler4.trim(),
         isPresent:   form.isPresent,
+        ...paymentBody(form.payment),
         pouleId:     form.pouleId ? Number.parseInt(form.pouleId, 10) : null,
       };
       const result = team
@@ -192,6 +219,11 @@ function TeamDrawer({
             <input id="t-captain" type="text" disabled={saving}
               value={form.captainName} onChange={(e) => set("captainName", e.target.value)} />
           </div>
+          <div className="form-field" style={{ gridColumn: "1 / -1" }}>
+            <label htmlFor="t-phone">Gsm kapitein</label>
+            <input id="t-phone" type="tel" disabled={saving}
+              value={form.phone} onChange={(e) => set("phone", e.target.value)} />
+          </div>
           <div className="form-field">
             <label htmlFor="t-sp1">Speler 1</label>
             <input id="t-sp1" type="text" disabled={saving}
@@ -217,16 +249,20 @@ function TeamDrawer({
             <select id="t-poule" disabled={saving} style={fieldInput}
               value={form.pouleId} onChange={(e) => set("pouleId", e.target.value)}>
               <option value="">— Nog niet toegewezen —</option>
-              {poules.filter((p) => p.phase === "GROUP").map((p) => (
+              {poules.filter((p) => p.phase === "GROUP_STAGE").map((p) => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
           </div>
-          <div className="form-field" style={{ justifyContent: "flex-end" }}>
+          <div className="form-field" style={{ justifyContent: "flex-end", gap: "0.4rem" }}>
             <label className="form-checkbox">
               <input type="checkbox" checked={form.isPresent} disabled={saving}
                 onChange={(e) => set("isPresent", e.target.checked)} />
-              Aanwezig op toernooi
+              Aanwezig op toernooidag
+            </label>
+            <label className="form-checkbox" style={{ gap: "0.5rem" }}>
+              Inschrijvingsgeld
+              <PaymentSelect value={form.payment} onChange={(v) => set("payment", v)} disabled={saving} />
             </label>
           </div>
         </div>
@@ -244,6 +280,15 @@ function TeamDrawer({
 
 // ── Match row (inline editing) ────────────────────────────────────────────────
 
+/** De backend geeft een ISO-tijdstip terug; aan de wedstrijdtafel wil je
+ *  gewoon "15:00" zien en typen. */
+function toTimeField(iso: string | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "";
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+}
+
 function matchStatusColor(m: TournamentMatch): string {
   if (m.scoreA !== null && m.scoreB !== null) return "#1e7e34";
   if (m.scoreA !== null || m.scoreB !== null) return "#b37400";
@@ -251,17 +296,22 @@ function matchStatusColor(m: TournamentMatch): string {
 }
 
 function MatchRow({
+  tournamentId,
   match,
   teams,
   onSaved,
+  phaseLabel,
 }: Readonly<{
+  tournamentId: number;
   match: TournamentMatch;
   teams: TournamentTeam[];
   onSaved: (m: TournamentMatch) => void;
+  /** Alleen gezet in het knockoutblok, dat een fasekolom extra heeft. */
+  phaseLabel?: string;
 }>) {
   const [scoreA, setScoreA]   = useState(match.scoreA !== null ? String(match.scoreA) : "");
   const [scoreB, setScoreB]   = useState(match.scoreB !== null ? String(match.scoreB) : "");
-  const [time, setTime]       = useState(match.time ?? "");
+  const [time, setTime]       = useState(toTimeField(match.scheduledAt));
   const [track, setTrack]     = useState(match.track !== null ? String(match.track) : "");
   const [teamAId, setTeamAId] = useState(match.teamAId !== null ? String(match.teamAId) : "");
   const [teamBId, setTeamBId] = useState(match.teamBId !== null ? String(match.teamBId) : "");
@@ -272,7 +322,7 @@ function MatchRow({
   const isDirty =
     scoreA !== toStr(match.scoreA) ||
     scoreB !== toStr(match.scoreB) ||
-    time   !== (match.time ?? "") ||
+    time   !== toTimeField(match.scheduledAt) ||
     track  !== toStr(match.track) ||
     teamAId !== toStr(match.teamAId) ||
     teamBId !== toStr(match.teamBId);
@@ -288,9 +338,10 @@ function MatchRow({
       if (scoreB !== "") body.scoreB = Number.parseInt(scoreB, 10);
       if (teamAId) body.teamAId = Number.parseInt(teamAId, 10);
       if (teamBId) body.teamBId = Number.parseInt(teamBId, 10);
-      const updated = await apiFetch<TournamentMatch>(`matches/${match.id}`, {
-        method: "PATCH", body: JSON.stringify(body),
-      });
+      const updated = await apiFetch<TournamentMatch>(
+        `tournaments/${tournamentId}/matches/${match.id}`,
+        { method: "PATCH", body: JSON.stringify(body) }
+      );
       onSaved(updated);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Fout");
@@ -302,6 +353,9 @@ function MatchRow({
   return (
     <tr style={{ background: isComplete ? "color-mix(in srgb, #1e7e34 6%, transparent)" : undefined }}>
       <td style={{ width: 4, padding: 0, background: statusColor }} aria-hidden="true" />
+      {phaseLabel !== undefined && (
+        <td style={{ whiteSpace: "nowrap", fontSize: "0.8rem", color: "var(--ink-2)" }}>{phaseLabel}</td>
+      )}
       <td>
         <select value={teamAId} onChange={(e) => setTeamAId(e.target.value)} style={selectStyle} aria-label="Team A">
           <option value="">—</option>
@@ -439,6 +493,14 @@ function StandingsTable({ teams }: Readonly<{ teams: TournamentTeam[] }>) {
 
 // ── Tab: Overzicht ────────────────────────────────────────────────────────────
 
+/** Vandaag om 13:00 in het formaat dat datetime-local verwacht. */
+function defaultStartTime(): string {
+  const d = new Date();
+  d.setHours(13, 0, 0, 0);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function OverviewTab({
   tournament,
   onUpdate,
@@ -450,8 +512,13 @@ function OverviewTab({
   const [year, setYear]     = useState(String(tournament.year));
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState("");
-  const [generating, setGenerating] = useState(false);
+  const [generating, setGenerating] = useState<"" | "poules" | "ko">("");
   const [genError, setGenError]     = useState("");
+  const [genNote, setGenNote]       = useState("");
+  // Standaard: vandaag om 13u, 20 minuten per ronde, vanaf baan 1.
+  const [startTime, setStartTime]     = useState(defaultStartTime);
+  const [slotMinutes, setSlotMinutes] = useState("20");
+  const [firstTrack, setFirstTrack]   = useState("1");
 
   const teamCount    = tournament.teams.length;
   const presentCount = tournament.teams.filter((t) => t.isPresent).length;
@@ -470,13 +537,28 @@ function OverviewTab({
     finally { setSaving(false); }
   }
 
-  async function generateMatches() {
-    setGenError(""); setGenerating(true);
+  /** De backend wil een starttijd en een rondeduur; zonder die twee kan ze de
+   *  wedstrijden niet inplannen. Na het genereren halen we het toernooi
+   *  opnieuw op, want het antwoord is enkel een teller. */
+  async function generate(kind: "poules" | "ko") {
+    setGenError(""); setGenNote(""); setGenerating(kind);
     try {
-      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}/generate-matches`, { method: "POST" });
-      onUpdate(updated);
+      const path = kind === "poules" ? "generate-matches" : "generate-knockout";
+      const body: Record<string, unknown> = {
+        startTime: new Date(startTime).toISOString(),
+        slotMinutes: Number.parseInt(slotMinutes, 10),
+      };
+      if (kind === "poules") body.firstTrack = Number.parseInt(firstTrack, 10) || 1;
+
+      const result = await apiFetch<{ created: number }>(
+        `tournaments/${tournament.id}/${path}`,
+        { method: "POST", body: JSON.stringify(body) }
+      );
+      const fresh = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`);
+      onUpdate(fresh);
+      setGenNote(`${result.created} wedstrijden aangemaakt.`);
     } catch (err) { setGenError(err instanceof Error ? err.message : "Genereren mislukt."); }
-    finally { setGenerating(false); }
+    finally { setGenerating(""); }
   }
 
   return (
@@ -485,7 +567,7 @@ function OverviewTab({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
         {[
           { label: "Teams",    value: `${presentCount} / ${teamCount} aanwezig` },
-          { label: "Poules",   value: tournament.poules.filter((p) => p.phase === "GROUP").length },
+          { label: "Poules",   value: tournament.poules.filter((p) => p.phase === "GROUP_STAGE").length },
           { label: "Matchen",  value: `${doneCount} / ${matchCount} gespeeld` },
           { label: "Status",   value: tournament.isActive ? "Actief" : "Inactief" },
         ].map((s) => (
@@ -530,17 +612,59 @@ function OverviewTab({
         </div>
         <div style={{ padding: "1.25rem 1.4rem" }}>
           {genError && <div className="form-error" style={{ marginBottom: "1rem" }}>{genError}</div>}
+          {genNote && (
+            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "#1e7e34", fontWeight: 500 }}>
+              ✓ {genNote}
+            </p>
+          )}
           <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.6 }}>
-            Genereert automatisch alle poulematchen op basis van de teamindelingen.
-            Volgorde: poule 1v3, 2v4 → 1v4, 2v3 → 1v2, 3v4.
+            Poulewedstrijden: elke poule speelt een volledige ronde tegen zichzelf, alle poules
+            spelen ronde per ronde tegelijk. Volgorde bij vier ploegen: 1v3, 2v4 → 1v2, 3v4 → 1v4, 2v3.
+            Opnieuw genereren wist de bestaande poulewedstrijden.
           </p>
-          <button type="button" className="btn-sm btn-sm--primary"
-            onClick={generateMatches} disabled={generating || teamCount === 0}>
-            {generating ? "Genereren…" : "Genereer wedstrijden"}
-          </button>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "1rem", marginBottom: "1rem" }}>
+            <div className="form-field">
+              <label htmlFor="gen-start">Eerste wedstrijd</label>
+              <input id="gen-start" type="datetime-local" value={startTime}
+                onChange={(e) => setStartTime(e.target.value)} />
+            </div>
+            <div className="form-field">
+              <label htmlFor="gen-slot">Minuten per ronde</label>
+              <input id="gen-slot" type="number" min="5" max="120" value={slotMinutes}
+                style={{ width: "110px" }}
+                onChange={(e) => setSlotMinutes(e.target.value)} />
+            </div>
+            <div className="form-field">
+              <label htmlFor="gen-track">Eerste baan</label>
+              <input id="gen-track" type="number" min="1" max="40" value={firstTrack}
+                style={{ width: "90px" }}
+                onChange={(e) => setFirstTrack(e.target.value)} />
+            </div>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <button type="button" className="btn-sm btn-sm--primary"
+              onClick={() => generate("poules")}
+              disabled={generating !== "" || teamCount === 0 || !startTime}>
+              {generating === "poules" ? "Genereren…" : "Genereer poulewedstrijden"}
+            </button>
+            <button type="button" className="btn-sm btn-sm--ghost"
+              onClick={() => generate("ko")}
+              disabled={generating !== "" || doneCount === 0 || !startTime}
+              title="Neemt de huidige standen als vertrekpunt">
+              {generating === "ko" ? "Genereren…" : "Genereer knockoutschema"}
+            </button>
+          </div>
+
           {teamCount === 0 && (
             <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "var(--ink-2)" }}>
               Voeg eerst teams toe via het tabblad &quot;Teams&quot;.
+            </p>
+          )}
+          {teamCount > 0 && doneCount === 0 && (
+            <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "var(--ink-2)" }}>
+              Het knockoutschema vertrekt van de poulestanden — speel eerst de poules af.
             </p>
           )}
         </div>
@@ -562,7 +686,7 @@ function TeamsTab({
   const [deleteTeam, setDeleteTeam] = useState<TournamentTeam | null>(null);
   const [deleting, setDeleting]     = useState(false);
 
-  const groupPoules = tournament.poules.filter((p) => p.phase === "GROUP");
+  const groupPoules = tournament.poules.filter((p) => p.phase === "GROUP_STAGE");
   const pouleMap    = new Map(groupPoules.map((p) => [p.id, p.name]));
 
   function handleSaved(saved: TournamentTeam) {
@@ -578,6 +702,16 @@ function TeamsTab({
       const updated = await apiFetch<TournamentTeam>(
         `tournaments/${tournament.id}/teams/${team.id}`,
         { method: "PATCH", body: JSON.stringify({ isPresent: !team.isPresent }) }
+      );
+      onUpdate({ ...tournament, teams: tournament.teams.map((t) => (t.id === updated.id ? updated : t)) });
+    } catch { /* ignore */ }
+  }
+
+  async function setPayment(team: TournamentTeam, value: string) {
+    try {
+      const updated = await apiFetch<TournamentTeam>(
+        `tournaments/${tournament.id}/teams/${team.id}`,
+        { method: "PATCH", body: JSON.stringify(paymentBody(value)) }
       );
       onUpdate({ ...tournament, teams: tournament.teams.map((t) => (t.id === updated.id ? updated : t)) });
     } catch { /* ignore */ }
@@ -611,20 +745,30 @@ function TeamsTab({
           <table className="admin-table">
             <thead>
               <tr>
-                <th>Team</th><th>Kapitein</th><th>Poule</th><th>Aanwezig</th><th>Acties</th>
+                <th>Team</th><th>Kapitein</th><th>Poule</th><th>Betaald</th><th>Aanwezig</th><th>Acties</th>
               </tr>
             </thead>
             <tbody>
               {tournament.teams.map((team) => (
                 <tr key={team.id}>
                   <td><strong>{team.name}</strong></td>
-                  <td>{team.captainName || <span style={{ color: "var(--ink-2)" }}>—</span>}</td>
+                  <td>
+                    {team.captainName || <span style={{ color: "var(--ink-2)" }}>—</span>}
+                    {team.phone && (
+                      <div style={{ fontSize: "0.75rem" }}>
+                        <a href={`tel:${team.phone}`} style={{ color: "var(--ink-2)" }}>{team.phone}</a>
+                      </div>
+                    )}
+                  </td>
                   <td>
                     {team.pouleId ? (
                       <span className="badge badge--blue">{pouleMap.get(team.pouleId) ?? `#${team.pouleId}`}</span>
                     ) : (
                       <span style={{ color: "var(--ink-2)", fontSize: "0.8rem" }}>Niet toegewezen</span>
                     )}
+                  </td>
+                  <td>
+                    <PaymentSelect value={paymentValue(team)} onChange={(v) => setPayment(team, v)} />
                   </td>
                   <td>
                     <button type="button"
@@ -724,7 +868,7 @@ function SchemaTab({
     });
   }
 
-  const groupPoules = tournament.poules.filter((p) => p.phase === "GROUP");
+  const groupPoules = tournament.poules.filter((p) => p.phase === "GROUP_STAGE");
 
   return (
     <div>
@@ -772,6 +916,7 @@ function SchemaTab({
                     {pouleMatches.map((m) => (
                       <MatchRow
                         key={m.id}
+                        tournamentId={tournament.id}
                         match={m}
                         teams={tournament.teams}
                         onSaved={handleMatchSaved}
@@ -784,6 +929,72 @@ function SchemaTab({
           </div>
         );
       })}
+
+      <KnockoutSection
+        tournament={tournament}
+        onMatchSaved={handleMatchSaved}
+      />
+    </div>
+  );
+}
+
+/** De knockoutwedstrijden hangen aan geen enkele poule, dus ze vielen tot nu
+ *  toe buiten dit scherm. Winnaars schuiven serverside door; de selects blijven
+ *  staan om een rechtzetting te doen. */
+function KnockoutSection({
+  tournament,
+  onMatchSaved,
+}: Readonly<{
+  tournament: ActiveTournament;
+  onMatchSaved: (m: TournamentMatch) => void;
+}>) {
+  const koMatches = tournament.matches
+    .filter((m) => m.phase !== "GROUP_STAGE")
+    .sort((a, b) => PHASE_ORDER.indexOf(a.phase) - PHASE_ORDER.indexOf(b.phase) ||
+      (a.bracketPos ?? "").localeCompare(b.bracketPos ?? ""));
+
+  if (koMatches.length === 0) return null;
+
+  return (
+    <div style={{ marginBottom: "2rem" }}>
+      <h3 style={{
+        margin: "0 0 0.75rem",
+        fontSize: "0.875rem",
+        fontWeight: 600,
+        letterSpacing: "0.06em",
+        textTransform: "uppercase",
+        color: "var(--accent)",
+      }}>
+        Knockout
+      </h3>
+      <div className="admin-table-wrapper">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th style={{ width: 4, padding: 0 }} aria-hidden="true" />
+              <th>Fase</th>
+              <th>Team A</th>
+              <th style={{ textAlign: "center" }}>Score</th>
+              <th>Team B</th>
+              <th>Tijd</th>
+              <th>Baan</th>
+              <th>Opslaan</th>
+            </tr>
+          </thead>
+          <tbody>
+            {koMatches.map((m) => (
+              <MatchRow
+                key={m.id}
+                tournamentId={tournament.id}
+                match={m}
+                teams={tournament.teams}
+                onSaved={onMatchSaved}
+                phaseLabel={PHASE_LABELS[m.phase]}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -797,7 +1008,7 @@ function ReglementTab({
   tournament: ActiveTournament;
   onUpdate: (t: ActiveTournament) => void;
 }>) {
-  const [text, setText] = useState(tournament.rules?.description ?? DEFAULT_RULES);
+  const [text, setText] = useState(tournament.rules ?? DEFAULT_RULES);
   const [saving, setSaving] = useState(false);
   const [error, setError]   = useState("");
   const [saved, setSaved]   = useState(false);
@@ -805,10 +1016,11 @@ function ReglementTab({
   async function save() {
     setError(""); setSaving(true);
     try {
-      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
-        method: "PATCH", body: JSON.stringify({ rules: { description: text } }),
-      });
-      onUpdate(updated);
+      const saved = await apiFetch<{ rules: string; rulesUpdatedAt: string }>(
+        `tournaments/${tournament.id}/rules`,
+        { method: "PUT", body: JSON.stringify({ rules: text }) }
+      );
+      onUpdate({ ...tournament, rules: saved.rules, rulesUpdatedAt: saved.rulesUpdatedAt });
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch (err) {
@@ -860,8 +1072,9 @@ function ReglementTab({
 // ── Tab navigation ────────────────────────────────────────────────────────────
 
 const TAB_LABELS: Record<Tab, string> = {
-  overzicht: "Overzicht",
-  teams:     "Teams",
+  overzicht:  "Overzicht",
+  aanmelding: "Aanmelding",
+  teams:      "Teams",
   schema:    "Schema",
   reglement: "Reglement",
 };
@@ -944,6 +1157,7 @@ export default function TournamentDetailPage({
 
       {/* Tab content */}
       {tab === "overzicht"  && <OverviewTab  tournament={tournament} onUpdate={setTournament} />}
+      {tab === "aanmelding" && <AanmeldingTab tournament={tournament} onUpdate={setTournament} />}
       {tab === "teams"      && <TeamsTab     tournament={tournament} onUpdate={setTournament} />}
       {tab === "schema"     && <SchemaTab    tournament={tournament} onUpdate={setTournament} />}
       {tab === "reglement"  && <ReglementTab tournament={tournament} onUpdate={setTournament} />}

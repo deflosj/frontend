@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { IconPlus, IconTrash } from "@/components/ui/icons";
+import { QrModal } from "@/components/ui/qr-modal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -144,6 +145,7 @@ export default function AdminUitnodigingenPage() {
   const [codes, setCodes]       = useState<InviteCode[]>([]);
   const [loading, setLoading]   = useState(true);
   const [fetchError, setFetchError] = useState("");
+  const [qrCode, setQrCode]     = useState<InviteCode | null>(null);
 
   useEffect(() => {
     apiFetch<InviteCode[]>("invite-codes")
@@ -233,7 +235,15 @@ export default function AdminUitnodigingenPage() {
                     </td>
                     <td className="px-4 py-3">
                       {c.isActive ? (
-                        <CopyButton text={`${registerBase}${c.code}`} />
+                        <div className="flex items-center gap-3">
+                          <CopyButton text={`${registerBase}${c.code}`} />
+                          <button
+                            onClick={() => setQrCode(c)}
+                            className="text-xs text-pink hover:underline focus:outline-none"
+                          >
+                            QR-code
+                          </button>
+                        </div>
                       ) : (
                         <span className="text-xs text-ink-2/50">—</span>
                       )}
@@ -254,6 +264,17 @@ export default function AdminUitnodigingenPage() {
           </div>
         )}
       </div>
+
+      {qrCode && (
+        <QrModal
+          title="Scan om je te registreren"
+          subtitle={qrCode.label}
+          code={qrCode.code}
+          url={`${registerBase}${qrCode.code}`}
+          filename={`deflosj-registratie-${qrCode.code}`}
+          onClose={() => setQrCode(null)}
+        />
+      )}
     </>
   );
 }

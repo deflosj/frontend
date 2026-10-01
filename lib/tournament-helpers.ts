@@ -17,7 +17,10 @@ export function sortStandings(teams: TournamentTeam[]): TournamentTeam[] {
   );
 }
 
-export function teamName(teams: TournamentTeam[], id: number | null): string {
+export function teamName(
+  teams: Pick<TournamentTeam, "id" | "name">[],
+  id: number | null
+): string {
   if (!id) return "TBD";
   return teams.find((t) => t.id === id)?.name ?? "TBD";
 }
