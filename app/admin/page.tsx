@@ -102,7 +102,7 @@ export default function AdminDashboardPage() {
 
       {/* Active tournament banner */}
       {!loading && activeTournament && (
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-ink/5 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg bg-ink/5 p-4 mb-2">
           <div>
             <p style={{ margin: 0, fontSize: "0.7rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.1em", color: "var(--accent-strong)", fontFamily: "var(--font-geist-mono), monospace" }}>
               Actief toernooi

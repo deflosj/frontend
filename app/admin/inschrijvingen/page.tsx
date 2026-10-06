@@ -165,6 +165,31 @@ export default function InschrijvingenPage() {
     setRegistrations((prev) => prev.map((r) => (r.id === updated.id ? updated : r)));
   }, []);
 
+  const [toggling, setToggling] = useState(false);
+  const [toggleError, setToggleError] = useState("");
+
+  async function toggleOpen() {
+    const next = !settings.isOpen;
+    const msg = next
+      ? "Inschrijvingen terug openen?"
+      : "Inschrijvingen sluiten? Nieuwe aanmeldingen worden dan geweigerd.";
+    if (!globalThis.confirm(msg)) return;
+    setToggling(true);
+    setToggleError("");
+    try {
+      setSettings(
+        await apiFetch<RegistrationSettings>("registrations/settings", {
+          method: "PATCH",
+          body: JSON.stringify({ isOpen: next }),
+        })
+      );
+    } catch (err) {
+      setToggleError(err instanceof Error ? err.message : "Opslaan mislukt.");
+    } finally {
+      setToggling(false);
+    }
+  }
+
   const handleDeleted = useCallback((id: number) => {
     setRegistrations((prev) => prev.filter((r) => r.id !== id));
   }, []);
@@ -187,6 +212,15 @@ export default function InschrijvingenPage() {
             <h1>Inschrijvingen</h1>
             <p>Beheer inschrijvingen voor de dorpelingenkoers en fun wedstrijd.</p>
           </div>
+          <button
+            type="button"
+            className={`btn-sm ${settings.isOpen ? "btn-sm--ghost" : "btn-sm--primary"}`}
+            onClick={toggleOpen}
+            disabled={loading || toggling}
+          >
+            {toggling && "Opslaan…"}
+            {!toggling && (settings.isOpen ? "Inschrijvingen sluiten" : "Inschrijvingen openen")}
+          </button>
         </div>
 
         {fetchError && (
@@ -202,6 +236,22 @@ export default function InschrijvingenPage() {
             }}
           >
             Kon inschrijvingen niet laden: <strong>{fetchError}</strong>
+          </div>
+        )}
+
+        {toggleError && (
+          <div
+            style={{
+              marginTop: "1rem",
+              padding: "0.65rem 1rem",
+              borderRadius: "10px",
+              background: "#fdecea",
+              color: "#c5221f",
+              fontSize: "0.875rem",
+              fontWeight: 500,
+            }}
+          >
+            Kon status niet wijzigen: <strong>{toggleError}</strong>
           </div>
         )}
 

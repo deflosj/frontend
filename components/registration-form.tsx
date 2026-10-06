@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { RaceCategory } from "@/lib/registration-types";
 import { API_BASE } from "@/lib/api";
@@ -71,6 +71,15 @@ export function RegistrationForm() {
   const [phone, setPhone] = useState("");
   const [wielerclub, setWielerclub] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  // null = still checking; on network error we fall back to showing the form
+  const [isOpen, setIsOpen] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_BASE}registrations/status`)
+      .then((res) => (res.ok ? res.json() : { isOpen: true }))
+      .then((body: { isOpen: boolean }) => setIsOpen(body.isOpen))
+      .catch(() => setIsOpen(true));
+  }, []);
 
   const canSubmit =
     Boolean(firstName && lastName && dateOfBirth && address && nationalRegisterNumber && email && phone) &&
@@ -152,6 +161,37 @@ export function RegistrationForm() {
           >
             Nog iemand inschrijven
           </button>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Closed ──────────────────────────────────────────────────────────────────
+
+  if (isOpen === null) {
+    return <p className="py-16 text-center text-sm text-ink-2">Laden…</p>;
+  }
+
+  if (!isOpen) {
+    return (
+      <div className="py-16 text-center">
+        <h2 className="mb-3 text-2xl font-bold text-ink">Inschrijvingen gesloten</h2>
+        <p className="mx-auto mb-8 max-w-md text-base leading-relaxed text-ink-2">
+          Online inschrijven is momenteel niet mogelijk. Heb je vragen? Neem gerust contact met ons op.
+        </p>
+        <div className="flex flex-wrap justify-center gap-3">
+          <Link
+            href="/dorpelingenkoers"
+            className="rounded-full bg-ink px-6 py-3 text-sm font-semibold text-paper transition-colors hover:bg-ink/80"
+          >
+            ← Terug naar de koerspagina
+          </Link>
+          <Link
+            href="/contact"
+            className="rounded-full border border-rule px-6 py-3 text-sm font-semibold text-ink-2 transition-colors hover:border-ink/20 hover:text-ink"
+          >
+            Contact
+          </Link>
         </div>
       </div>
     );
