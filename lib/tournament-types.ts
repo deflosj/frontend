@@ -99,6 +99,8 @@ export interface ActiveTournament {
   name: string;
   year: number;
   isActive: boolean;
+  /** Gewenst aantal teams per poule, ingesteld bij het aanmaken. */
+  teamsPerPoule?: number | null;
   /** Platte tekst; de backend bewaart dit als één veld op het toernooi. */
   rules: string | null;
   rulesUpdatedAt?: string | null;

@@ -519,11 +519,20 @@ function OverviewTab({
   const [startTime, setStartTime]     = useState(defaultStartTime);
   const [slotMinutes, setSlotMinutes] = useState("20");
   const [firstTrack, setFirstTrack]   = useState("1");
+  const [perPoule, setPerPoule]         = useState(String(tournament.teamsPerPoule ?? 4));
+  const [onlyPresent, setOnlyPresent]   = useState(false);
+  const [drawing, setDrawing]           = useState(false);
+  const [drawError, setDrawError]       = useState("");
+  const [drawNote, setDrawNote]         = useState("");
 
   const teamCount    = tournament.teams.length;
   const presentCount = tournament.teams.filter((t) => t.isPresent).length;
   const matchCount   = tournament.matches.length;
   const doneCount    = tournament.matches.filter((m) => m.scoreA !== null && m.scoreB !== null).length;
+  const groupPouleCount = tournament.poules.filter((p) => p.phase === "GROUP_STAGE").length;
+  const drawTeamCount   = onlyPresent ? presentCount : teamCount;
+  const perPouleNum     = Number.parseInt(perPoule, 10);
+  const drawPouleCount  = perPouleNum >= 2 ? Math.ceil(drawTeamCount / perPouleNum) : 0;
 
   async function saveBasics(e: { preventDefault(): void }) {
     e.preventDefault();
@@ -535,6 +544,25 @@ function OverviewTab({
       onUpdate(updated);
     } catch (err) { setError(err instanceof Error ? err.message : "Fout."); }
     finally { setSaving(false); }
+  }
+
+  /** Verdeelt de teams willekeurig over nieuwe poules. Bestaande poules en
+   *  poulewedstrijden gaan verloren, dus eerst bevestigen als die er zijn. */
+  async function drawPoules() {
+    if ((groupPouleCount > 0 || matchCount > 0) && !globalThis.confirm(
+      "De bestaande poules en poulewedstrijden worden gewist en de teams opnieuw willekeurig verdeeld. Doorgaan?"
+    )) return;
+    setDrawError(""); setDrawNote(""); setDrawing(true);
+    try {
+      const result = await apiFetch<{ poules: number; teams: number }>(
+        `tournaments/${tournament.id}/generate-poules`,
+        { method: "POST", body: JSON.stringify({ teamsPerPoule: perPouleNum, onlyPresent }) }
+      );
+      const fresh = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`);
+      onUpdate(fresh);
+      setDrawNote(`${result.teams} teams verdeeld over ${result.poules} poules.`);
+    } catch (err) { setDrawError(err instanceof Error ? err.message : "Poules genereren mislukt."); }
+    finally { setDrawing(false); }
   }
 
   /** De backend wil een starttijd en een rondeduur; zonder die twee kan ze de
@@ -602,6 +630,52 @@ function OverviewTab({
               <IconSave /> {saving ? "Opslaan…" : "Opslaan"}
             </button>
           </form>
+        </div>
+      </div>
+
+      {/* Generate poules */}
+      <div className="admin-table-wrapper">
+        <div className="admin-table-header">
+          <h2>Poules genereren</h2>
+        </div>
+        <div style={{ padding: "1.25rem 1.4rem" }}>
+          {drawError && <div className="form-error" style={{ marginBottom: "1rem" }}>{drawError}</div>}
+          {drawNote && (
+            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "#1e7e34", fontWeight: 500 }}>
+              ✓ {drawNote}
+            </p>
+          )}
+          <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.6 }}>
+            Verdeelt de teams willekeurig over poules (Poule A, B, C…). De poules verschillen hoogstens
+            één team in grootte. Opnieuw genereren wist de bestaande poules en poulewedstrijden.
+          </p>
+
+          <div style={{ display: "flex", gap: "1.25rem", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "1rem" }}>
+            <div className="form-field">
+              <label htmlFor="draw-size">Teams per poule</label>
+              <input id="draw-size" type="number" min="2" max="16" value={perPoule}
+                style={{ width: "110px" }}
+                onChange={(e) => setPerPoule(e.target.value)} />
+            </div>
+            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", paddingBottom: "0.5rem" }}>
+              <input type="checkbox" checked={onlyPresent}
+                onChange={(e) => setOnlyPresent(e.target.checked)} />
+              Enkel aanwezige teams
+            </label>
+          </div>
+
+          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
+            <button type="button" className="btn-sm btn-sm--primary"
+              onClick={drawPoules}
+              disabled={drawing || drawTeamCount < 2 || perPouleNum < 2 || Number.isNaN(perPouleNum)}>
+              {drawing ? "Genereren…" : "Genereer poules"}
+            </button>
+            {drawPouleCount > 0 && (
+              <span style={{ fontSize: "0.8rem", color: "var(--ink-2)" }}>
+                {drawTeamCount} teams → {drawPouleCount} poules
+              </span>
+            )}
+          </div>
         </div>
       </div>
 
