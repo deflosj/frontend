@@ -16,5 +16,5 @@ export default async function MatchesPage({
   const { matches, teams, poules } = tournament;
   if (!matches.length) return <Empty text="Nog geen wedstrijden ingevoerd." />;
 
-  return <MatchesView matches={matches} teams={teams} poules={poules} />;
+  return <MatchesView matches={matches} teams={teams} poules={poules} isActive={tournament.isActive} />;
 }

@@ -501,6 +501,18 @@ function defaultStartTime(): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
+/** Eind van de poulefase (laatste poulematch + slotduur) als waarde voor een
+ *  datetime-local veld, of null als er nog geen poulewedstrijden zijn. */
+function latestGroupEnd(t: ActiveTournament, slotMinutes: number): string | null {
+  const times = t.matches
+    .filter((m) => m.phase === "GROUP_STAGE" && m.scheduledAt)
+    .map((m) => new Date(m.scheduledAt as string).getTime());
+  if (times.length === 0) return null;
+  const d = new Date(Math.max(...times) + slotMinutes * 60_000);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 function OverviewTab({
   tournament,
   onUpdate,
@@ -515,10 +527,15 @@ function OverviewTab({
   const [generating, setGenerating] = useState<"" | "poules" | "ko">("");
   const [genError, setGenError]     = useState("");
   const [genNote, setGenNote]       = useState("");
-  // Standaard: vandaag om 13u, 20 minuten per ronde, vanaf baan 1.
+  // Poulefase: 20 minuten per wedstrijd op alle banen van het terrein.
   const [startTime, setStartTime]     = useState(defaultStartTime);
   const [slotMinutes, setSlotMinutes] = useState("20");
-  const [firstTrack, setFirstTrack]   = useState("1");
+  const [trackCount, setTrackCount]   = useState(String(tournament.trackCount ?? 6));
+  // Knock-out: eigen starttijd, slotduur en pauze tussen de rondes.
+  const [koStart, setKoStart]         = useState(() => latestGroupEnd(tournament, 20) ?? defaultStartTime());
+  const [koSlot, setKoSlot]           = useState("20");
+  const [koBreak, setKoBreak]         = useState("0");
+  const [koConsolation, setKoConsolation] = useState(true);
   const [perPoule, setPerPoule]         = useState(String(tournament.teamsPerPoule ?? 4));
   const [onlyPresent, setOnlyPresent]   = useState(false);
   const [drawing, setDrawing]           = useState(false);
@@ -568,24 +585,64 @@ function OverviewTab({
   /** De backend wil een starttijd en een rondeduur; zonder die twee kan ze de
    *  wedstrijden niet inplannen. Na het genereren halen we het toernooi
    *  opnieuw op, want het antwoord is enkel een teller. */
-  async function generate(kind: "poules" | "ko") {
+  async function generate(kind: "poules" | "ko", force = false) {
+    const hasExisting = tournament.matches.some((m) =>
+      kind === "poules" ? m.phase === "GROUP_STAGE" : m.phase !== "GROUP_STAGE"
+    );
+    if (!force && hasExisting && !globalThis.confirm(
+      kind === "poules"
+        ? "De bestaande poulewedstrijden (en hun scores) worden gewist. Doorgaan?"
+        : "Het bestaande knockoutschema (en de scores) wordt gewist. Doorgaan?"
+    )) return;
+
     setGenError(""); setGenNote(""); setGenerating(kind);
     try {
-      const path = kind === "poules" ? "generate-matches" : "generate-knockout";
-      const body: Record<string, unknown> = {
-        startTime: new Date(startTime).toISOString(),
-        slotMinutes: Number.parseInt(slotMinutes, 10),
-      };
-      if (kind === "poules") body.firstTrack = Number.parseInt(firstTrack, 10) || 1;
+      const tracks = Number.parseInt(trackCount, 10) || 6;
+      const body: Record<string, unknown> =
+        kind === "poules"
+          ? {
+              startTime: new Date(startTime).toISOString(),
+              slotMinutes: Number.parseInt(slotMinutes, 10),
+              trackCount: tracks,
+            }
+          : {
+              startTime: new Date(koStart).toISOString(),
+              slotMinutes: Number.parseInt(koSlot, 10),
+              breakMinutes: Number.parseInt(koBreak, 10) || 0,
+              trackCount: tracks,
+              withConsolation: koConsolation,
+              force,
+            };
 
-      const result = await apiFetch<{ created: number }>(
+      const path = kind === "poules" ? "generate-matches" : "generate-knockout";
+      const result = await apiFetch<{ created: number; totalAdvancing?: number; lastSlotAt?: string | null }>(
         `tournaments/${tournament.id}/${path}`,
         { method: "POST", body: JSON.stringify(body) }
       );
       const fresh = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`);
       onUpdate(fresh);
-      setGenNote(`${result.created} wedstrijden aangemaakt.`);
-    } catch (err) { setGenError(err instanceof Error ? err.message : "Genereren mislukt."); }
+      if (kind === "poules") {
+        const end = result.lastSlotAt ? new Date(result.lastSlotAt) : null;
+        setGenNote(
+          `${result.created} poulewedstrijden over ${tracks} banen` +
+          (end ? ` · laatste start om ${end.toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}.` : ".")
+        );
+        const next = latestGroupEnd(fresh, Number.parseInt(slotMinutes, 10) || 20);
+        if (next) setKoStart(next);
+      } else {
+        setGenNote(`Knock-out met ${result.totalAdvancing} teams: ${result.created} wedstrijden aangemaakt.`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : "Genereren mislukt.";
+      // De backend weigert zolang er poulewedstrijden zonder score zijn.
+      if (kind === "ko" && !force && msg.startsWith("Nog ") &&
+          globalThis.confirm(`${msg}. Toch een knockoutschema maken op basis van de huidige stand?`)) {
+        setGenerating("");
+        await generate("ko", true);
+        return;
+      }
+      setGenError(msg);
+    }
     finally { setGenerating(""); }
   }
 
@@ -692,8 +749,8 @@ function OverviewTab({
             </p>
           )}
           <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.6 }}>
-            Poulewedstrijden: elke poule speelt een volledige ronde tegen zichzelf, alle poules
-            spelen ronde per ronde tegelijk. Volgorde bij vier ploegen: 1v3, 2v4 → 1v2, 3v4 → 1v4, 2v3.
+            Elke baan krijgt vaste poules; poules die een baan delen spelen om beurten (zoals in 2025:
+            baan 1 = poule A en B). Er spelen nooit meer wedstrijden tegelijk dan er banen zijn.
             Opnieuw genereren wist de bestaande poulewedstrijden.
           </p>
 
@@ -704,28 +761,64 @@ function OverviewTab({
                 onChange={(e) => setStartTime(e.target.value)} />
             </div>
             <div className="form-field">
-              <label htmlFor="gen-slot">Minuten per ronde</label>
+              <label htmlFor="gen-slot">Minuten per match</label>
               <input id="gen-slot" type="number" min="5" max="120" value={slotMinutes}
                 style={{ width: "110px" }}
                 onChange={(e) => setSlotMinutes(e.target.value)} />
             </div>
             <div className="form-field">
-              <label htmlFor="gen-track">Eerste baan</label>
-              <input id="gen-track" type="number" min="1" max="40" value={firstTrack}
+              <label htmlFor="gen-tracks">Banen</label>
+              <input id="gen-tracks" type="number" min="1" max="40" value={trackCount}
                 style={{ width: "90px" }}
-                onChange={(e) => setFirstTrack(e.target.value)} />
+                onChange={(e) => setTrackCount(e.target.value)} />
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
             <button type="button" className="btn-sm btn-sm--primary"
               onClick={() => generate("poules")}
-              disabled={generating !== "" || teamCount === 0 || !startTime}>
+              disabled={generating !== "" || groupPouleCount === 0 || !startTime}>
               {generating === "poules" ? "Genereren…" : "Genereer poulewedstrijden"}
             </button>
-            <button type="button" className="btn-sm btn-sm--ghost"
+          </div>
+
+          <h3 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem" }}>Knock-out</h3>
+          <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.6 }}>
+            Top {tournament.teamsAdvancingPerPoule ?? 2} per poule
+            {(tournament.bestNthsAdvancing ?? 0) > 0 && <> + {tournament.bestNthsAdvancing} beste {(tournament.teamsAdvancingPerPoule ?? 2) + 1}de{tournament.bestNthsAdvancing === 1 ? "" : "s"}</>}
+            , gerangschikt over alle poules heen: 1 tegen laatste, 2 tegen voorlaatste, … en
+            nooit twee teams uit dezelfde poule in de eerste ronde. Latere rondes vullen zich
+            automatisch zodra je scores ingeeft.
+          </p>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "1rem", marginBottom: "0.75rem" }}>
+            <div className="form-field">
+              <label htmlFor="ko-start">Eerste knock-outmatch</label>
+              <input id="ko-start" type="datetime-local" value={koStart}
+                onChange={(e) => setKoStart(e.target.value)} />
+            </div>
+            <div className="form-field">
+              <label htmlFor="ko-slot">Minuten per match</label>
+              <input id="ko-slot" type="number" min="5" max="120" value={koSlot}
+                style={{ width: "110px" }}
+                onChange={(e) => setKoSlot(e.target.value)} />
+            </div>
+            <div className="form-field">
+              <label htmlFor="ko-break">Pauze tussen rondes</label>
+              <input id="ko-break" type="number" min="0" max="120" value={koBreak}
+                style={{ width: "110px" }}
+                onChange={(e) => setKoBreak(e.target.value)} />
+            </div>
+          </div>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", marginBottom: "1rem" }}>
+            <input type="checkbox" checked={koConsolation}
+              onChange={(e) => setKoConsolation(e.target.checked)} />
+            Kleine finale (3de plaats)
+          </label>
+
+          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+            <button type="button" className="btn-sm btn-sm--primary"
               onClick={() => generate("ko")}
-              disabled={generating !== "" || doneCount === 0 || !startTime}
+              disabled={generating !== "" || doneCount === 0 || !koStart}
               title="Neemt de huidige standen als vertrekpunt">
               {generating === "ko" ? "Genereren…" : "Genereer knockoutschema"}
             </button>

@@ -50,7 +50,7 @@ export default async function TournamentDetailLayout({
         isActive={tournament.isActive}
       />
 
-      <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 sm:py-10">{children}</div>
+      <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">{children}</div>
     </div>
   );
 }

@@ -154,6 +154,57 @@
   animation: dropdown-in 0.15s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* ── Toernooi: beweging (filters, lijsten, bracket) ───────── */
+@keyframes t-rise    { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+@keyframes t-pop     { from { opacity: 0; transform: scale(.6); }        to { opacity: 1; transform: none; } }
+@keyframes t-drop    { from { opacity: 0; transform: translateY(-6px) scaleY(.96); } to { opacity: 1; transform: none; } }
+@keyframes t-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes t-fade-out{ from { opacity: 1; } to { opacity: 0; } }
+@keyframes t-sheet-up   { from { transform: translateY(100%); } to { transform: none; } }
+@keyframes t-sheet-down { from { transform: none; } to { transform: translateY(100%); } }
+@keyframes t-panel-in   { from { opacity: 0; transform: translateY(-8px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes t-panel-out  { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(-6px) scale(.98); } }
+@keyframes t-col-in  { from { opacity: 0; transform: translateX(-12px); } to { opacity: 1; transform: none; } }
+@keyframes t-in-r    { from { opacity: 0; transform: translateX(28px); }  to { opacity: 1; transform: none; } }
+@keyframes t-in-l    { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@keyframes t-ping    { 0% { transform: scale(.6); opacity: .9; } 80%, 100% { transform: scale(1.9); opacity: 0; } }
+
+.t-rise   { animation: t-rise .34s cubic-bezier(.2,.8,.2,1) both; }
+.t-pop    { animation: t-pop .3s cubic-bezier(.3,1.6,.5,1) both; }
+.t-drop   { transform-origin: top center; animation: t-drop .18s cubic-bezier(.2,.8,.2,1) both; }
+.t-col-in { animation: t-col-in .4s cubic-bezier(.2,.8,.2,1) both; }
+.t-in-r   { animation: t-in-r .34s cubic-bezier(.2,.8,.2,1) both; }
+.t-in-l   { animation: t-in-l .34s cubic-bezier(.2,.8,.2,1) both; }
+.t-scrim          { animation: t-fade-in .22s ease both; }
+.t-scrim.is-closing { animation: t-fade-out .18s ease-in both; }
+/* Filtervenster: van onderen op gsm, paneel onder de knop vanaf md */
+.t-sheet            { animation: t-sheet-up .34s cubic-bezier(.2,.9,.25,1) both; }
+.t-sheet.is-closing { animation: t-sheet-down .2s cubic-bezier(.4,0,1,1) both; }
+@media (min-width: 768px) {
+  .t-sheet            { transform-origin: top right; animation: t-panel-in .22s cubic-bezier(.2,.8,.2,1) both; }
+  .t-sheet.is-closing { animation: t-panel-out .16s ease-in both; }
+}
+.t-press { transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .12s ease, opacity .22s ease; }
+.t-press:active { transform: scale(.96); }
+/* Live-bolletje met golf */
+.t-live-dot { position: relative; display: inline-block; width: 7px; height: 7px; border-radius: 9999px; background: var(--pink); }
+.t-live-dot::after { content: ""; position: absolute; inset: -4px; border-radius: 9999px; border: 2px solid var(--pink); animation: t-ping 1.6s cubic-bezier(0,0,.2,1) infinite; }
+/* Bracketverbindingen */
+.t-bcell { position: relative; display: flex; align-items: center; }
+.t-bcell.c-out::after { content: ""; position: absolute; left: 100%; width: 16px; border-right: 2px solid var(--rule); transition: border-color .25s ease; }
+.t-bcell.c-out.top::after { top: 50%; height: 50%; border-top: 2px solid var(--rule); border-top-right-radius: 6px; }
+.t-bcell.c-out.bot::after { top: 0; height: 50%; border-bottom: 2px solid var(--rule); border-bottom-right-radius: 6px; }
+.t-bcell.c-in::before { content: ""; position: absolute; right: 100%; width: 16px; top: 50%; border-top: 2px solid var(--rule); transition: border-color .25s ease; }
+.t-bcell.out-hot::after { border-color: var(--pink) !important; z-index: 1; }
+.t-bcell.in-hot::before { border-color: var(--pink); }
+
+@media (prefers-reduced-motion: reduce) {
+  .t-rise, .t-pop, .t-drop, .t-col-in, .t-in-r, .t-in-l, .t-scrim, .t-sheet, .t-live-dot::after {
+    animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important;
+  }
+  .t-press, .t-bcell::before, .t-bcell::after { transition-duration: .01ms !important; }
+}
+
 /* ── Base ───────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; }
 html { scroll-behavior: smooth; }

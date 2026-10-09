@@ -6,7 +6,7 @@ import "./styles/globals.css";
 import { siteConfig } from "@/lib/site-config";
 import { Inter } from "next/font/google";
 import { cn } from "@/lib/utils";
-import { Analytics } from "@vercel/analytics/next";
+// import { Analytics } from "@vercel/analytics/next";
 
 const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
@@ -31,7 +31,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       </head>
       <body className={`${GeistSans.variable} ${GeistMono.variable}`}>
         {children}
-        <Analytics />
+        {/* <Analytics /> */}
       </body>
     </html>
   );

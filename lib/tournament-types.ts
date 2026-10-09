@@ -99,8 +99,15 @@ export interface ActiveTournament {
   name: string;
   year: number;
   isActive: boolean;
+  status?: TournamentStatus;
   /** Gewenst aantal teams per poule, ingesteld bij het aanmaken. */
   teamsPerPoule?: number | null;
+  /** Hoeveel teams per poule rechtstreeks doorgaan (bv. 2). */
+  teamsAdvancingPerPoule?: number | null;
+  /** Hoeveel beste n-des er nog bij komen (bv. 8 beste derdes). */
+  bestNthsAdvancing?: number | null;
+  /** Aantal banen op het terrein; de generators plannen hiermee. */
+  trackCount?: number;
   /** Platte tekst; de backend bewaart dit als één veld op het toernooi. */
   rules: string | null;
   rulesUpdatedAt?: string | null;

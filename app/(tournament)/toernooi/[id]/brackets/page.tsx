@@ -28,5 +28,5 @@ export default async function BracketsPage({
     return <Empty text="De knockoutfase is nog niet begonnen." />;
   }
 
-  return <BracketView matches={matches} teams={teams} year={year} />;
+  return <BracketView matches={matches} teams={teams} year={year} isActive={tournament.isActive} />;
 }

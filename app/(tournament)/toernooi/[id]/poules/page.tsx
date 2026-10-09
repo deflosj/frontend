@@ -20,5 +20,14 @@ export default async function PoulesPage({
     return <Empty text="Nog geen poules of teams ingevoerd." />;
   }
 
-  return <PoulesView poules={poules} teams={teams} matches={matches} />;
+  return (
+    <PoulesView
+      poules={poules}
+      teams={teams}
+      matches={matches}
+      isActive={tournament.isActive}
+      advancingPerPoule={tournament.teamsAdvancingPerPoule ?? 2}
+      bestNths={tournament.bestNthsAdvancing ?? 0}
+    />
+  );
 }

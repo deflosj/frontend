@@ -12,8 +12,19 @@ const TEAM_PRESETS  = [32, 40, 48] as const;
 const POULE_PRESETS = [3, 4, 5]    as const;
 const STEPS = ["Gegevens", "Structuur", "Bevestigen"];
 
-function isValidKnockoutSize(n: number) {
-  return n === 0 || (n & (n - 1)) === 0;
+const MAX_KNOCKOUT = 32;
+const isPowerOfTwo = (n: number) => n > 0 && (n & (n - 1)) === 0;
+
+/** Ruwe duur van de poulefase: poules die een baan delen spelen om beurten,
+ *  één wedstrijd per slot (zoals in 2025). */
+function groupSlots(poules: number, perPoule: number, tracks: number) {
+  if (poules <= 0 || perPoule < 2 || tracks < 1) return 0;
+  const matchesPerPoule = (perPoule * (perPoule - 1)) / 2;
+  if (tracks >= poules) {
+    const parallel = Math.max(1, Math.min(Math.floor(tracks / poules), Math.floor(perPoule / 2)));
+    return Math.ceil(matchesPerPoule / parallel);
+  }
+  return Math.ceil(poules / tracks) * matchesPerPoule;
 }
 
 function presetCls(active: boolean) {
@@ -40,16 +51,21 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
   const [customPoule,     setCustomPoule]     = useState("");
   const [advancePerPoule, setAdvancePerPoule] = useState(2);
   const [bestRunnersUp,   setBestRunnersUp]   = useState(8);
+  const [trackCount,      setTrackCount]      = useState(6);
 
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState("");
 
   const effectiveTeams = customTeams ? Number.parseInt(customTeams, 10) : totalTeams;
   const effectivePoule = customPoule ? Number.parseInt(customPoule, 10) : teamsPerPoule;
-  const poulesCount    = effectivePoule > 0 ? Math.floor(effectiveTeams / effectivePoule) : 0;
+  // Zelfde rekenwijze als de backend: ceil, poules verschillen hoogstens 1 team.
+  const poulesCount    = effectivePoule > 0 ? Math.ceil(effectiveTeams / effectivePoule) : 0;
   const autoAdvance    = poulesCount * advancePerPoule;
   const totalAdvancing = autoAdvance + bestRunnersUp;
-  const knockoutValid  = isValidKnockoutSize(totalAdvancing);
+  const knockoutValid  = totalAdvancing >= 2 && totalAdvancing <= MAX_KNOCKOUT;
+  const byes           = isPowerOfTwo(totalAdvancing) ? 0 : 2 ** Math.ceil(Math.log2(totalAdvancing)) - totalAdvancing;
+  const slots          = groupSlots(poulesCount, effectivePoule, trackCount);
+  const poulesPerTrack = trackCount > 0 ? Math.ceil(poulesCount / trackCount) : 0;
 
   function close() {
     setOpen(false);
@@ -65,10 +81,10 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
         body: JSON.stringify({
           name: name.trim(),
           year: Number.parseInt(year, 10),
-          totalTeams: effectiveTeams,
           teamsPerPoule: effectivePoule,
-          advancePerPoule,
-          bestRunnersUp,
+          teamsAdvancingPerPoule: advancePerPoule,
+          bestNthsAdvancing: bestRunnersUp,
+          trackCount,
         }),
       });
       onSaved(result);
@@ -102,7 +118,7 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
   const footer3 = (
     <>
       <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setStep(2)}>← Terug</button>
-      <button type="button" className="btn-sm btn-sm--primary" onClick={handleCreate} disabled={saving}>
+      <button type="button" className="btn-sm btn-sm--primary" onClick={handleCreate} disabled={saving || !knockoutValid}>
         {saving ? "Aanmaken…" : "Toernooi aanmaken"}
       </button>
     </>
@@ -189,6 +205,12 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
             </div>
           </div>
 
+          <div className="form-field">
+            <label htmlFor="tracks">Aantal banen</label>
+            <input id="tracks" type="number" value={trackCount} min="1" max="40"
+              onChange={(e) => setTrackCount(Math.max(1, Number(e.target.value) || 1))} />
+          </div>
+
           {poulesCount > 0 && (
             <div className="admin-summary">
               <strong className="admin-summary__title">Samenvatting</strong>
@@ -197,8 +219,19 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
               {bestRunnersUp > 0 && (
                 <> + {bestRunnersUp} beste {advancePerPoule + 1}de{bestRunnersUp === 1 ? "" : "s"}</>
               )}<br />
+              {slots > 0 && (
+                <>
+                  {trackCount} banen{poulesPerTrack > 1 ? ` · ${poulesPerTrack} poules per baan` : ""} · {slots} rondes
+                  {" "}(± {Math.round((slots * 20) / 6) / 10} u bij 20 min)<br />
+                </>
+              )}
               <strong data-warn={!knockoutValid}>
-                Knockout: {totalAdvancing} teams {knockoutValid ? "✓" : "⚠ geen macht van 2"}
+                Knockout: {totalAdvancing} teams{" "}
+                {!knockoutValid
+                  ? `⚠ maximaal ${MAX_KNOCKOUT}`
+                  : byes > 0
+                    ? `· ${byes} vrijloting${byes === 1 ? "" : "en"} voor de beste seeds`
+                    : "✓"}
               </strong>
             </div>
           )}
@@ -217,8 +250,10 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
               {bestRunnersUp > 0 && (
                 <li>+ {bestRunnersUp} beste {advancePerPoule + 1}de{bestRunnersUp === 1 ? "" : "s"}</li>
               )}
+              <li>{trackCount} banen</li>
               <li data-warn={!knockoutValid}>
-                Knockout: {totalAdvancing} teams {knockoutValid ? "" : "(geen macht van 2!)"}
+                Knockout: {totalAdvancing} teams
+                {!knockoutValid ? ` (maximaal ${MAX_KNOCKOUT}!)` : byes > 0 ? ` (${byes} vrijlotingen)` : ""}
               </li>
             </ul>
           </div>

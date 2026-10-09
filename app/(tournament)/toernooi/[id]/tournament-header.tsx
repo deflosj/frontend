@@ -76,7 +76,7 @@ export function TournamentHeader({ id, name, year, isActive }: Readonly<Props>) 
 
   return (
     <header className="sticky top-0 z-40 border-b border-rule bg-paper/85 backdrop-blur-[14px] backdrop-saturate-150">
-      <div className="mx-auto flex h-[60px] max-w-5xl items-stretch gap-3 px-5 sm:px-8">
+      <div className="mx-auto flex h-[60px] max-w-6xl items-stretch gap-3 px-5 sm:px-8">
         {/* ── Merk van het toernooi ──────────────────────────── */}
         <Link
           href={hrefFor(id, "")}
