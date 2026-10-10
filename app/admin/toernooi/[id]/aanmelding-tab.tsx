@@ -189,11 +189,12 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
   }
 
   async function removeTeam(team: TournamentTeam) {
+    if (!globalThis.confirm(`Ploeg "${team.name}" verwijderen?`)) return;
     try {
       await apiFetch(`tournaments/${tournament.id}/teams/${team.id}`, { method: "DELETE" });
       onUpdate({ ...tournament, teams: tournament.teams.filter((t) => t.id !== team.id) });
-    } catch {
-      /* stil */
+    } catch (e) {
+      globalThis.alert(`Verwijderen mislukt: ${e instanceof Error ? e.message : "onbekende fout"}`);
     }
   }
 

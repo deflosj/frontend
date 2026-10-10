@@ -229,7 +229,7 @@ export default function AdminEventsPage() {
         <h1>Events</h1>
         <p>Beheer evenementen voor de website</p>
         {fetchError && (
-          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "#fdecea", color: "#c5221f", fontSize: "0.875rem", fontWeight: 500 }}>
+          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "var(--err-bg)", color: "var(--err-fg)", fontSize: "0.875rem", fontWeight: 500 }}>
             Kon events niet laden: <strong>{fetchError}</strong>
           </div>
         )}

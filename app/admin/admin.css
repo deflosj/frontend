@@ -13,6 +13,22 @@
   --shadow:        0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
 }
 
+/* Statuskleuren: licht en donker. Gebruik deze i.p.v. vaste hexwaarden,
+ * anders worden knoppen en meldingen onleesbaar in dark mode. */
+:root {
+  --on-ink:  var(--paper);      /* tekst op een knop met achtergrond var(--text) */
+  --ok-bg:   #e6f4ea;  --ok-fg:   #1e7e34;
+  --warn-bg: #fff3cc;  --warn-fg: #7a4d00;
+  --err-bg:  #fce8e6;  --err-fg:  #c5221f;
+  --info-bg: #e8f0fe;  --info-fg: #1a56db;
+}
+.dark {
+  --ok-bg:   rgba(74, 222, 128, 0.14);  --ok-fg:   #86efac;
+  --warn-bg: rgba(250, 204, 21, 0.14);  --warn-fg: #fcd34d;
+  --err-bg:  rgba(248, 113, 113, 0.16); --err-fg:  #fca5a5;
+  --info-bg: rgba(96, 165, 250, 0.16);  --info-fg: #93c5fd;
+}
+
 .admin-content {
   flex: 1;
   min-width: 0;
@@ -157,12 +173,12 @@ table.admin-table {
   text-transform: uppercase;
 }
 
-.badge--green  { background: #e6f4ea; color: #1e7e34; }
-.badge--yellow { background: #fff3cc; color: #7a4d00; }
-.badge--red    { background: #fce8e6; color: #c5221f; }
+.badge--green  { background: var(--ok-bg); color: var(--ok-fg); }
+.badge--yellow { background: var(--warn-bg); color: var(--warn-fg); }
+.badge--red    { background: var(--err-bg); color: var(--err-fg); }
 .badge--gray   { background: var(--bg-alt); color: var(--color-ink-2); }
 .badge--pink   { background: var(--accent-soft); color: var(--accent-strong); }
-.badge--blue   { background: #e8f0fe; color: #1a56db; }
+.badge--blue   { background: var(--info-bg); color: var(--info-fg); }
 
 /* ── Form ────────────────────────────────────────────────── */
 
@@ -221,8 +237,8 @@ table.admin-table {
 .form-error {
   padding: 0.65rem 1rem;
   border-radius: 10px;
-  background: #fce8e6;
-  color: #c5221f;
+  background: var(--err-bg);
+  color: var(--err-fg);
   font-size: 0.85rem;
 }
 
@@ -387,7 +403,7 @@ table.admin-table {
 
 .btn-sm--primary {
   background: var(--text);
-  color: #faf8f5;
+  color: var(--on-ink);
 }
 
 .btn-sm--ghost {
@@ -397,14 +413,14 @@ table.admin-table {
 }
 
 .btn-sm--danger {
-  background: #fce8e6;
-  color: #c5221f;
+  background: var(--err-bg);
+  color: var(--err-fg);
   border: none;
 }
 
 .btn-sm--success {
-  background: #e6f4ea;
-  color: #1e7e34;
+  background: var(--ok-bg);
+  color: var(--ok-fg);
   border: none;
 }
 
@@ -626,7 +642,7 @@ table.admin-table {
 }
 
 .admin-summary [data-warn="true"] {
-  color: #b37400;
+  color: var(--warn-fg);
 }
 
 /* ── Form helpers ────────────────────────────────────────── */
@@ -821,7 +837,7 @@ dialog::backdrop {
 
 .tb-btn--primary {
   background: var(--text);
-  color: #faf8f5;
+  color: var(--on-ink);
   border: 1px solid transparent;
 }
 
@@ -890,11 +906,11 @@ dialog::backdrop {
 }
 
 .tb-dropdown__item--danger {
-  color: #c5221f;
+  color: var(--err-fg);
 }
 
 .tb-dropdown__item--danger:hover {
-  background: #fce8e6;
+  background: var(--err-bg);
 }
 
 .tb-dropdown__item-icon {

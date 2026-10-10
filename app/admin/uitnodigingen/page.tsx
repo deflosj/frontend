@@ -187,7 +187,7 @@ export default function AdminUitnodigingenPage() {
         <h1>Uitnodigingen</h1>
         <p>Beheer uitnodigingscodes voor nieuwe accounts. Deel de link met de ontvanger.</p>
         {fetchError && (
-          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "#fdecea", color: "#c5221f", fontSize: "0.875rem", fontWeight: 500 }}>
+          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "var(--err-bg)", color: "var(--err-fg)", fontSize: "0.875rem", fontWeight: 500 }}>
             Kon uitnodigingen niet laden: <strong>{fetchError}</strong>
           </div>
         )}

@@ -79,15 +79,30 @@ type Tab = "overzicht" | "aanmelding" | "teams" | "schema" | "reglement";
 
 // ── Modal hook ────────────────────────────────────────────────────────────────
 
+/**
+ * Opent een native <dialog> als modal zolang de component gemount is.
+ * Sluiten via Escape loopt over het `cancel`-event (zie onCancel op de dialog),
+ * niet over `close`: in dev mount React StrictMode effecten twee keer, en de
+ * close() uit de eerste cleanup vuurde dan een `close`-event dat de dialog
+ * meteen weer wegklikte. Daardoor leek "Verwijderen" niets te doen.
+ */
 function useDialogModal() {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    el.showModal();
+    if (!el.open) el.showModal();
     return () => { if (el.open) el.close(); };
   }, []);
   return ref;
+}
+
+/** Escape op een native dialog: zelf afhandelen i.p.v. de browser te laten sluiten. */
+function escapeTo(fn: () => void) {
+  return (e: React.SyntheticEvent<HTMLDialogElement>) => {
+    e.preventDefault();
+    fn();
+  };
 }
 
 // ── Shared input style ────────────────────────────────────────────────────────
@@ -198,7 +213,7 @@ function TeamDrawer({
   const isEdit = team !== null;
 
   return (
-    <dialog ref={dialogRef} onClose={onClose} className="admin-drawer"
+    <dialog ref={dialogRef} onCancel={escapeTo(onClose)} className="admin-drawer"
       style={{ width: "min(520px, 100vw)" }} aria-label={isEdit ? "Team bewerken" : "Team toevoegen"}>
       <div className="admin-drawer__header">
         <h2>{isEdit ? "Team bewerken" : "Team toevoegen"}</h2>
@@ -290,8 +305,8 @@ function toTimeField(iso: string | null): string {
 }
 
 function matchStatusColor(m: TournamentMatch): string {
-  if (m.scoreA !== null && m.scoreB !== null) return "#1e7e34";
-  if (m.scoreA !== null || m.scoreB !== null) return "#b37400";
+  if (m.scoreA !== null && m.scoreB !== null) return "var(--ok-fg)";
+  if (m.scoreA !== null || m.scoreB !== null) return "var(--warn-fg)";
   return "var(--border)";
 }
 
@@ -351,7 +366,7 @@ function MatchRow({
   const selectStyle: React.CSSProperties = { ...smallInput, width: "100%", textAlign: "left" as const };
 
   return (
-    <tr style={{ background: isComplete ? "color-mix(in srgb, #1e7e34 6%, transparent)" : undefined }}>
+    <tr style={{ background: isComplete ? "color-mix(in srgb, var(--ok-fg) 8%, transparent)" : undefined }}>
       <td style={{ width: 4, padding: 0, background: statusColor }} aria-hidden="true" />
       {phaseLabel !== undefined && (
         <td style={{ whiteSpace: "nowrap", fontSize: "0.8rem", color: "var(--ink-2)" }}>{phaseLabel}</td>
@@ -390,7 +405,7 @@ function MatchRow({
           style={{ ...smallInput, width: 52 }} />
       </td>
       <td style={{ width: 80 }}>
-        {error && <span style={{ color: "#c5221f", fontSize: "0.7rem", display: "block" }}>{error}</span>}
+        {error && <span style={{ color: "var(--err-fg)", fontSize: "0.7rem", display: "block" }}>{error}</span>}
         <button type="button" className="btn-sm btn-sm--primary" onClick={save}
           disabled={saving || !isDirty}
           style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
@@ -441,7 +456,7 @@ function DelaySection({ tournamentId }: Readonly<{ tournamentId: number }>) {
         disabled={applying || !minutes}>
         {applying ? "Bezig…" : "Toepassen op komende matchen"}
       </button>
-      {done && <span style={{ fontSize: "0.8rem", color: "#1e7e34", fontWeight: 500 }}>✓ Toegepast</span>}
+      {done && <span style={{ fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>✓ Toegepast</span>}
     </div>
   );
 }
@@ -480,7 +495,7 @@ function StandingsTable({ teams }: Readonly<{ teams: TournamentTeam[] }>) {
             <td className="mono">{t.lost}</td>
             <td className="mono">{t.goalsFor}</td>
             <td className="mono">{t.goalsAgainst}</td>
-            <td className="mono" style={{ color: t.saldo >= 0 ? "#1e7e34" : "#c5221f" }}>
+            <td className="mono" style={{ color: t.saldo >= 0 ? "var(--ok-fg)" : "var(--err-fg)" }}>
               {t.saldo >= 0 ? "+" : ""}{t.saldo}
             </td>
             <td><strong className="mono">{t.points}</strong></td>
@@ -537,6 +552,11 @@ function OverviewTab({
   const [koBreak, setKoBreak]         = useState("0");
   const [koConsolation, setKoConsolation] = useState(true);
   const [perPoule, setPerPoule]         = useState(String(tournament.teamsPerPoule ?? 4));
+  // Wie gaat door naar de knock-out: top N per poule + X beste (N+1)-des.
+  const [advPerPoule, setAdvPerPoule]   = useState(String(tournament.teamsAdvancingPerPoule ?? 2));
+  const [bestNths, setBestNths]         = useState(String(tournament.bestNthsAdvancing ?? 0));
+  const [savingFormat, setSavingFormat] = useState(false);
+  const [formatNote, setFormatNote]     = useState("");
   const [onlyPresent, setOnlyPresent]   = useState(false);
   const [drawing, setDrawing]           = useState(false);
   const [drawError, setDrawError]       = useState("");
@@ -550,6 +570,27 @@ function OverviewTab({
   const drawTeamCount   = onlyPresent ? presentCount : teamCount;
   const perPouleNum     = Number.parseInt(perPoule, 10);
   const drawPouleCount  = perPouleNum >= 2 ? Math.ceil(drawTeamCount / perPouleNum) : 0;
+
+  const advNum      = Math.max(0, Number.parseInt(advPerPoule, 10) || 0);
+  const bestNum     = Math.max(0, Number.parseInt(bestNths, 10) || 0);
+  const nthLabel    = `${advNum + 1}de`;
+  const koTeamCount = groupPouleCount * advNum + Math.min(bestNum, groupPouleCount);
+  const formatDirty =
+    advNum !== (tournament.teamsAdvancingPerPoule ?? 2) || bestNum !== (tournament.bestNthsAdvancing ?? 0);
+
+  async function saveFormat() {
+    setFormatNote(""); setSavingFormat(true);
+    try {
+      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({ teamsAdvancingPerPoule: advNum, bestNthsAdvancing: bestNum }),
+      });
+      onUpdate(updated);
+      setFormatNote("Opgeslagen.");
+    } catch (err) {
+      setFormatNote(err instanceof Error ? err.message : "Opslaan mislukt.");
+    } finally { setSavingFormat(false); }
+  }
 
   async function saveBasics(e: { preventDefault(): void }) {
     e.preventDefault();
@@ -698,7 +739,7 @@ function OverviewTab({
         <div style={{ padding: "1.25rem 1.4rem" }}>
           {drawError && <div className="form-error" style={{ marginBottom: "1rem" }}>{drawError}</div>}
           {drawNote && (
-            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "#1e7e34", fontWeight: 500 }}>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>
               ✓ {drawNote}
             </p>
           )}
@@ -744,7 +785,7 @@ function OverviewTab({
         <div style={{ padding: "1.25rem 1.4rem" }}>
           {genError && <div className="form-error" style={{ marginBottom: "1rem" }}>{genError}</div>}
           {genNote && (
-            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "#1e7e34", fontWeight: 500 }}>
+            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>
               ✓ {genNote}
             </p>
           )}
@@ -783,13 +824,52 @@ function OverviewTab({
           </div>
 
           <h3 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem" }}>Knock-out</h3>
-          <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.6 }}>
-            Top {tournament.teamsAdvancingPerPoule ?? 2} per poule
-            {(tournament.bestNthsAdvancing ?? 0) > 0 && <> + {tournament.bestNthsAdvancing} beste {(tournament.teamsAdvancingPerPoule ?? 2) + 1}de{tournament.bestNthsAdvancing === 1 ? "" : "s"}</>}
-            , gerangschikt over alle poules heen: 1 tegen laatste, 2 tegen voorlaatste, … en
-            nooit twee teams uit dezelfde poule in de eerste ronde. Latere rondes vullen zich
-            automatisch zodra je scores ingeeft.
-          </p>
+<div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "1rem", marginBottom: "0.75rem" }}>
+            <div className="form-field" style={{ margin: 0 }}>
+              <label htmlFor="ko-adv">Door per poule</label>
+              <input id="ko-adv" type="number" min="1" max="8" value={advPerPoule} style={{ width: "6rem" }}
+                onChange={(e) => setAdvPerPoule(e.target.value)} />
+            </div>
+            <div className="form-field" style={{ margin: 0 }}>
+              <label htmlFor="ko-best">+ beste {nthLabel}s</label>
+              <input id="ko-best" type="number" min="0" max={groupPouleCount || 32} value={bestNths} style={{ width: "6rem" }}
+                onChange={(e) => setBestNths(e.target.value)} />
+            </div>
+            <button type="button" className="btn-sm btn-sm--ghost" onClick={saveFormat}
+              disabled={savingFormat || !formatDirty || advNum < 1}>
+              {savingFormat ? "Opslaan…" : "Opslaan"}
+            </button>
+            {formatNote && <span style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{formatNote}</span>}
+          </div>
+          <div style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.6 }}>
+            <p style={{ margin: "0 0 0.4rem" }}>
+              {groupPouleCount > 0 ? (
+                <>
+                  <strong style={{ color: "var(--text)" }}>{koTeamCount} ploegen door</strong>: top {advNum} van
+                  elk van de {groupPouleCount} poules ({groupPouleCount * advNum})
+                  {bestNum > 0 && <> + de {Math.min(bestNum, groupPouleCount)} beste {nthLabel}s</>}.
+                </>
+              ) : (
+                <>Top {advNum} per poule{bestNum > 0 && <> + de {bestNum} beste {nthLabel}s</>}.</>
+              )}
+            </p>
+            <p style={{ margin: "0 0 0.4rem" }}>
+              Rangschikking: eerst alle 1sten (beste eerst), dan alle 2den
+              {bestNum > 0 && <>, dan de beste {nthLabel}s</>}. In ronde 1 speelt seed 1 tegen de laatste seed,
+              2 tegen de voorlaatste, …
+              {bestNum > 0 && <> De beste 1ste speelt dus tegen de slechtste {nthLabel} die doorgaat,
+              de tweede beste 1ste tegen de tweede slechtste {nthLabel}, enzovoort.</>}
+            </p>
+            <p style={{ margin: 0 }}>
+              Nooit twee ploegen uit dezelfde poule in ronde 1. Latere rondes vullen zich automatisch zodra je
+              scores ingeeft.
+            </p>
+            {groupPouleCount > 0 && koTeamCount > 0 && (koTeamCount & (koTeamCount - 1)) !== 0 && (
+              <p style={{ margin: "0.5rem 0 0", color: "var(--warn-fg)" }}>
+                {koTeamCount} is geen macht van 2: de hoogste seeds krijgen een vrijloting in ronde 1.
+              </p>
+            )}
+          </div>
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "1rem", marginBottom: "0.75rem" }}>
             <div className="form-field">
               <label htmlFor="ko-start">Eerste knock-outmatch</label>
@@ -891,7 +971,9 @@ function TeamsTab({
       await apiFetch(`tournaments/${tournament.id}/teams/${deleteTeam.id}`, { method: "DELETE" });
       onUpdate({ ...tournament, teams: tournament.teams.filter((t) => t.id !== deleteTeam.id) });
       setDeleteTeam(null);
-    } catch { /* ignore */ } finally { setDeleting(false); }
+    } catch (e) {
+      globalThis.alert(`Verwijderen mislukt: ${e instanceof Error ? e.message : "onbekende fout"}`);
+    } finally { setDeleting(false); }
   }
 
   return (
@@ -1001,7 +1083,7 @@ function DeleteTeamConfirm({
 }: Readonly<{ team: TournamentTeam; onConfirm: () => void; onCancel: () => void; loading: boolean }>) {
   const dialogRef = useDialogModal();
   return (
-    <dialog ref={dialogRef} onClose={onCancel} className="admin-confirm" aria-label="Team verwijderen">
+    <dialog ref={dialogRef} onCancel={escapeTo(onCancel)} className="admin-confirm" aria-label="Team verwijderen">
       <h2 style={{ margin: "0 0 0.5rem", fontSize: "1.1rem", fontWeight: 500, color: "var(--text)" }}>
         Team verwijderen?
       </h2>
@@ -1201,8 +1283,8 @@ function ReglementTab({
         <div className="admin-table-header">
           <h2>Reglement</h2>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {saved && <span style={{ fontSize: "0.8rem", color: "#1e7e34", fontWeight: 500 }}>✓ Opgeslagen</span>}
-            {error && <span style={{ fontSize: "0.8rem", color: "#c5221f" }}>{error}</span>}
+            {saved && <span style={{ fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>✓ Opgeslagen</span>}
+            {error && <span style={{ fontSize: "0.8rem", color: "var(--err-fg)" }}>{error}</span>}
             <button type="button" className="btn-sm btn-sm--primary"
               onClick={save} disabled={saving}
               style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>

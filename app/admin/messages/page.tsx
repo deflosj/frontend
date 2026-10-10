@@ -192,7 +192,7 @@ export default function AdminMessagesPage() {
           )}
         </p>
         {fetchError && (
-          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "#fdecea", color: "#c5221f", fontSize: "0.875rem", fontWeight: 500 }}>
+          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "var(--err-bg)", color: "var(--err-fg)", fontSize: "0.875rem", fontWeight: 500 }}>
             Kon berichten niet laden: <strong>{fetchError}</strong>
           </div>
         )}

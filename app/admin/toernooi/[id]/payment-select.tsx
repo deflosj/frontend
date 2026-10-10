@@ -21,10 +21,10 @@ export function paymentBody(value: string): { isPaid: boolean; paymentMethod?: P
 }
 
 const COLORS: Record<string, { bg: string; fg: string }> = {
-  "":       { bg: "#f3f4f6", fg: "#6b7280" },
-  CASH:     { bg: "#dcfce7", fg: "#15803d" },
-  PAYCONIQ: { bg: "#fce7f3", fg: "#be185d" },
-  PAID:     { bg: "#dcfce7", fg: "#15803d" },
+  "":       { bg: "var(--surface)", fg: "var(--text-2)" },
+  CASH:     { bg: "var(--ok-bg)", fg: "var(--ok-fg)" },
+  PAYCONIQ: { bg: "var(--pink-soft)", fg: "var(--pink-ink)" },
+  PAID:     { bg: "var(--ok-bg)", fg: "var(--ok-fg)" },
 };
 
 /** Compacte keuze aan de balie: Niet betaald / Cash / Payconiq. */

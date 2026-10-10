@@ -229,8 +229,8 @@ export default function InschrijvingenPage() {
               marginTop: "1rem",
               padding: "0.65rem 1rem",
               borderRadius: "10px",
-              background: "#fdecea",
-              color: "#c5221f",
+              background: "var(--err-bg)",
+              color: "var(--err-fg)",
               fontSize: "0.875rem",
               fontWeight: 500,
             }}
@@ -245,8 +245,8 @@ export default function InschrijvingenPage() {
               marginTop: "1rem",
               padding: "0.65rem 1rem",
               borderRadius: "10px",
-              background: "#fdecea",
-              color: "#c5221f",
+              background: "var(--err-bg)",
+              color: "var(--err-fg)",
               fontSize: "0.875rem",
               fontWeight: 500,
             }}
@@ -261,8 +261,8 @@ export default function InschrijvingenPage() {
               marginTop: "1rem",
               padding: "0.65rem 1rem",
               borderRadius: "10px",
-              background: "#fff3cc",
-              color: "#7a4d00",
+              background: "var(--warn-bg)",
+              color: "var(--warn-fg)",
               fontSize: "0.875rem",
               fontWeight: 500,
             }}

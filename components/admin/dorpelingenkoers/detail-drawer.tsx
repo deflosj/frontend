@@ -66,14 +66,14 @@ export function DetailDrawer({ registration: initialRegistration, onUpdated, onD
   }
 
   const statusColors: Record<string, string> = {
-    PENDING:  "#7a4d00",
-    APPROVED: "#1e7e34",
-    REJECTED: "#c5221f",
+    PENDING:  "var(--warn-fg)",
+    APPROVED: "var(--ok-fg)",
+    REJECTED: "var(--err-fg)",
   };
   const statusBg: Record<string, string> = {
-    PENDING:  "#fff3cc",
-    APPROVED: "#e6f4ea",
-    REJECTED: "#fce8e6",
+    PENDING:  "var(--warn-bg)",
+    APPROVED: "var(--ok-bg)",
+    REJECTED: "var(--err-bg)",
   };
 
   const targetCategory: Registration["raceCategory"] =

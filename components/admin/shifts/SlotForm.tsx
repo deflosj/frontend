@@ -94,7 +94,7 @@ export function SlotForm({ eventId, groupId, baseDate, initial, onSaved, onCance
       gap: "0.5rem",
     }}>
       {error && (
-        <p style={{ margin: 0, padding: "0.4rem 0.6rem", background: "#fce8e6", color: "#c5221f", borderRadius: "7px", fontSize: "0.78rem" }}>
+        <p style={{ margin: 0, padding: "0.4rem 0.6rem", background: "var(--err-bg)", color: "var(--err-fg)", borderRadius: "7px", fontSize: "0.78rem" }}>
           {error}
         </p>
       )}

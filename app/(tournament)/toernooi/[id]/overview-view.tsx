@@ -75,11 +75,11 @@ export function OverviewView({ tournament }: Readonly<{ tournament: ActiveTourna
       first ? `Eerste bal om ${fmtTime(first.scheduledAt)}.` : "Het schema volgt nog.",
       teams.length ? `Al ${teams.length} ploegen zijn ingeschreven.` : "",
     ].join(" ").trim();
-    const regOpen = tournament.isActive && (!tournament.teamEditDeadline || new Date(tournament.teamEditDeadline).getTime() > now);
+    // Inschrijven gebeurt ter plaatse aan de balie, niet via de site.
     doors = [
-      ...(regOpen ? [{ title: "Inschrijven", sub: "Schrijf je ploeg in", href: "/team-aanmelden", hot: true }] : []),
-      { title: "Reglement", sub: "Spelregels en puntentelling", href: `${base}/rules`, hot: !regOpen },
+      { title: "Reglement", sub: "Spelregels en puntentelling", href: `${base}/rules`, hot: true },
       { title: "Teams", sub: teams.length ? `${teams.length} ploegen ingeschreven` : "Nog geen ploegen", href: `${base}/teams` },
+      { title: "Poules", sub: tournament.poules.length ? "Wie speelt tegen wie" : "Indeling volgt nog", href: `${base}/poules` },
       { title: "Wedstrijden", sub: matches.length ? `${matches.length} wedstrijden gepland` : "Schema volgt na de indeling", href: `${base}/matches` },
     ].slice(0, 4);
   } else if (moment === "live") {
