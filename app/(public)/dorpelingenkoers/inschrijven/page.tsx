@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { RegistrationForm } from "@/components/registration-form";
+import { BackLink } from "@/components/ui/back-link";
 
 export const metadata: Metadata = {
   title: "Inschrijven | Dorpelingenkoers",
@@ -13,12 +13,7 @@ export default function InschrijvenPage() {
       {/* ── Header ─────────────────────────────────────────── */}
       <div className="border-b border-rule">
         <div className="mx-auto max-w-2xl px-5 py-12 sm:px-8">
-          <Link
-            href="/dorpelingenkoers"
-            className="mb-4 inline-flex items-center gap-1 text-xs font-semibold text-ink-2 hover:text-ink"
-          >
-            ← Dorpelingenkoers
-          </Link>
+          <BackLink href="/dorpelingenkoers" className="mb-5">Dorpelingenkoers</BackLink>
           <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-widest text-pink">
             Inschrijving
           </p>

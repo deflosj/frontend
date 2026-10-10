@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { API_BASE } from "@/lib/api";
+import { BackLink } from "@/components/ui/back-link";
 
 type NewsPost = {
   id: number;
@@ -31,7 +31,7 @@ export default async function NewsArticlePage(props: any) {
   return (
     <div>
       <section className="mx-auto max-w-5xl px-5 py-14 sm:px-8 sm:py-24">
-        <Link href="/" className="text-sm text-ink-2 hover:underline">← Terug</Link>
+        <BackLink href="/">Terug</BackLink>
 
         <article className="mt-6">
           <h1 className="text-3xl font-bold text-ink">{post.title}</h1>

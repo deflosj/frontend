@@ -38,6 +38,8 @@ export interface TournamentTeam {
   speler2: string;
   speler3: string;
   speler4: string;
+  /** Eén regel van de ploeg zelf, getoond op de teamkaart. */
+  motto?: string | null;
   logoUrl: string | null;
   isPresent: boolean;
   /** Inschrijvingsgeld betaald aan de balie. Optioneel: de backend kent
@@ -108,6 +110,13 @@ export interface ActiveTournament {
   bestNthsAdvancing?: number | null;
   /** Aantal banen op het terrein; de generators plannen hiermee. */
   trackCount?: number;
+  /** Knock-out (automatisch opgemaakt na de laatste poulematch). */
+  knockoutPauseMinutes?: number;
+  /** Matchduur 1/16 en 1/8; null = zoals in de poules. */
+  knockoutSlotMinutes?: number | null;
+  finalsSlotMinutes?: number;
+  roundBreakMinutes?: number;
+  withConsolation?: boolean;
   /** Platte tekst; de backend bewaart dit als één veld op het toernooi. */
   rules: string | null;
   rulesUpdatedAt?: string | null;

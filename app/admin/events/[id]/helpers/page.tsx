@@ -9,6 +9,7 @@ import { ShiftBoard } from "@/components/admin/shifts/ShiftBoard";
 import { TimelineView } from "@/components/admin/shifts/TimeLineView";
 import { AccessPanel } from "@/components/admin/shifts/AccessPanel";
 import { Button } from "@/components/ui/button";
+import { BackLink } from "@/components/ui/back-link";
 
 type TabId = "shifts" | "tijdlijn";
 
@@ -59,9 +60,7 @@ export default function EventHelpersPage({
   return (
     <>
       <div style={{ marginBottom: "1.5rem" }}>
-        <Link href="/admin/events" style={{ fontSize: "0.8rem", color: "var(--ink-2)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.3rem", marginBottom: "0.75rem" }}>
-          ← Alle events
-        </Link>
+        <BackLink href="/admin/events" className="mb-4">Alle events</BackLink>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
             <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 500, letterSpacing: "-0.03em", color: "var(--text)" }}>

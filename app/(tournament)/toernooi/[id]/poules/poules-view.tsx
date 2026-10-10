@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+import { useParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import {
@@ -7,6 +9,11 @@ import {
   pouleLetter,
   pouleTables,
   pouleTracks,
+  projectFirstRound,
+  projectedKnockout,
+  knockoutScheduleFor,
+  isKnockout,
+  qualifyReason,
   rankTeams,
   useAutoRefresh,
   useNow,
@@ -21,12 +28,16 @@ import {
   FilterPanel,
   FilterPills,
   FilterSection,
+  IconInfo,
+  InfoSheet,
   Segmented,
   TeamSearch,
   Toggle,
   useAnimKey,
+  usePersisted,
   type ActiveFilter,
 } from "../_filters";
+import { FollowStar, StarMark, useFollowed } from "../_follow";
 
 interface Props {
   poules: TournamentPoule[];
@@ -35,6 +46,14 @@ interface Props {
   isActive: boolean;
   advancingPerPoule: number;
   bestNths: number;
+  ko?: {
+    trackCount?: number;
+    knockoutPauseMinutes?: number;
+    knockoutSlotMinutes?: number | null;
+    finalsSlotMinutes?: number;
+    roundBreakMinutes?: number;
+    withConsolation?: boolean;
+  };
 }
 
 const salCls = (v: number) => (v > 0 ? "text-green-700 dark:text-green-400" : v < 0 ? "text-red-600 dark:text-red-400" : "");
@@ -46,17 +65,20 @@ const KIND_CLS: Record<RankedTeam["kind"], string> = {
   out: "border border-dashed border-rule text-ink-2",
 };
 
-export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule, bestNths }: Readonly<Props>) {
+export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule, bestNths, ko }: Readonly<Props>) {
   const now = useNow();
   useAutoRefresh(isActive);
 
   const [q, setQ] = useState("");
   const [teamId, setTeamId] = useState<number | null>(null);
-  const [view, setView] = useState<"poules" | "rank">("poules");
-  const [track, setTrack] = useState(0);
-  const [pouleId, setPouleId] = useState(0);
-  const [onlyQual, setOnlyQual] = useState(false);
+  const followed = useFollowed();
+  const [view, setView] = usePersisted<"poules" | "rank">("standen", "view", "poules");
+  const [track, setTrack] = usePersisted("standen", "track", 0);
+  const [pouleId, setPouleId] = usePersisted("standen", "poule", 0);
+  const [onlyQual, setOnlyQual] = usePersisted("standen", "onlyQual", false);
   const [open, setOpen] = useState(false);
+  const [info, setInfo] = useState(false);
+  const params = useParams<{ id?: string }>();
 
   const tables = useMemo(() => pouleTables(poules, teams), [poules, teams]);
   const ranking = useMemo(() => rankTeams(tables, advancingPerPoule, bestNths), [tables, advancingPerPoule, bestNths]);
@@ -64,6 +86,43 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
   const trackOf = useMemo(() => pouleTracks(matches), [matches]);
   const tracks = [...new Set(trackOf.values())].sort((a, b) => a - b);
   const qualifyCount = ranking.filter((r) => r.qualifies).length;
+  // Voorlopige tegenstander in de eerste knock-outronde, "als het nu stopt".
+  // Eerste knock-outmatch per ploeg: de echte als het schema er is, anders
+  // de voorlopige "als het nu stopt", met uur en baan.
+  const opponentOf = useMemo(() => {
+    const map = new Map<number, { opp: string; at: string | null; track: number | null }>();
+    const real = matches.filter((m) => m.bracketPos && isKnockout(m.phase));
+    const firstPhase = real.length ? real.reduce((a, b) => ((a.scheduledAt ?? "") <= (b.scheduledAt ?? "") ? a : b)).phase : null;
+    const r1 = real.length
+      ? real.filter((m) => m.phase === firstPhase)
+      : projectedKnockout(poules, teams, advancingPerPoule, bestNths, ko?.withConsolation ?? true, knockoutScheduleFor({ matches, ...ko }));
+    const nameOf = new Map(teams.map((t) => [t.id, t.name]));
+    for (const m of r1) {
+      if (!m.teamAId || !m.teamBId) continue;
+      map.set(m.teamAId, { opp: nameOf.get(m.teamBId) ?? "?", at: m.scheduledAt, track: m.track });
+      map.set(m.teamBId, { opp: nameOf.get(m.teamAId) ?? "?", at: m.scheduledAt, track: m.track });
+    }
+    // Vrijgeloot: wel door, maar geen match in de eerste ronde.
+    for (const p of projectFirstRound(ranking)) if (p.a && !p.b && !map.has(p.a.team.id)) map.set(p.a.team.id, { opp: "", at: null, track: null });
+    return map;
+  }, [ranking, matches, poules, teams, advancingPerPoule, bestNths, ko]);
+  const firstRoundName = qualifyCount > 16 ? "1/16 finale" : qualifyCount > 8 ? "1/8 finale" : qualifyCount > 4 ? "kwartfinale" : "halve finale";
+  const pouleNameOf = (t: TournamentTeam) => {
+    const p = poules.find((x) => x.id === t.pouleId);
+    return p ? `poule ${pouleLetter(p)}` : "de poule";
+  };
+  const myRows = ranking.filter((r) => followed.has(r.team.id));
+  const statusOf = (r: RankedTeam) => {
+    const reason = qualifyReason(r, ranking, pouleNameOf(r.team), advancingPerPoule, bestNths);
+    const o = opponentOf.get(r.team.id);
+    const when = o?.at ? ` om ${fmtTime(o.at)}${o.track ? ` op baan ${o.track}` : ""}` : "";
+    const koLine = r.qualifies && o
+      ? o.opp === ""
+        ? "Vrijgeloot in de eerste knock-outronde."
+        : `${finished ? "Speelt" : "Zou spelen"} in de ${firstRoundName}${when} tegen ${o.opp}.`
+      : "";
+    return { reason, ko: koLine };
+  };
 
   const groupMatches = matches.filter((m) => m.phase === "GROUP_STAGE");
   const played = groupMatches.filter((m) => m.scoreA !== null && m.scoreB !== null).length;
@@ -86,8 +145,10 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
 
   const shownPoules = tables
     .filter((t) => poulePass(t.poule))
-    .map((t) => ({ ...t, rows: t.rows.filter(rowPass) }))
-    .filter((t) => t.rows.length > 0);
+    .map((t) => ({ ...t, rows: t.rows.filter(rowPass), fav: t.rows.some((r) => followed.has(r.id)) }))
+    .filter((t) => t.rows.length > 0)
+    // Poules met een gevolgde ploeg eerst; verder de gewone volgorde (sort is stabiel).
+    .sort((a, b) => Number(b.fav) - Number(a.fav));
   const shownRanking = ranking.filter((r) => {
     const p = poules.find((x) => x.id === r.team.pouleId);
     return (!p || poulePass(p) || (!!team && !track && !pouleId)) && rowPass(r.team);
@@ -106,7 +167,7 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
     setOnlyQual(false);
   };
 
-  const animKey = useAnimKey([view, track, pouleId, onlyQual, teamId]);
+  const animKey = useAnimKey([view, track, pouleId, onlyQual, teamId, followed.ids.join()]);
   const teamOptions = [...teams]
     .filter((t) => t.pouleId !== null)
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -134,7 +195,7 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
       <section aria-label="Zoeken en filteren" className="sticky top-[60px] z-20 -mx-5 flex flex-col gap-2.5 border-b border-rule bg-paper px-5 py-3 sm:-mx-8 sm:px-8 md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
         <div className="relative flex items-start gap-2.5">
           <div className="min-w-0 flex-1">
-            <TeamSearch options={teamOptions} selected={team ? { id: team.id, name: team.name } : null} onSelect={(id) => (id === null ? setTeamId(null) : pick(id))} query={q} onQuery={setQ} />
+            <TeamSearch options={teamOptions} selected={team ? { id: team.id, name: team.name } : null} selectedAction={team ? <FollowStar teamId={team.id} name={team.name} followed={followed} /> : null} onSelect={(id) => (id === null ? setTeamId(null) : pick(id))} query={q} onQuery={setQ} />
           </div>
           <FilterButton count={active.length} open={open} onClick={() => setOpen((o) => !o)} controls="stand-filters" />
           <div className="hidden md:block">
@@ -187,8 +248,47 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
             {mine.label}
           </span>
           <span className="text-[0.8125rem] text-ink-2">
-            Plaats {mine.seed} van {ranking.length} in de ranking{mine.qualifies ? " · speelt de knock-out" : ""}
+            Plaats {mine.seed} van {ranking.length} in de ranking
           </span>
+          <p className="basis-full text-sm leading-relaxed text-ink-2">
+            {statusOf(mine).reason} {statusOf(mine).ko}
+          </p>
+        </section>
+      )}
+
+      {!team && played > 0 && myRows.length > 0 && (
+        <section aria-labelledby="jouw-ploegen" className="flex flex-col gap-2.5">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h2 id="jouw-ploegen" className="text-[0.95rem] font-bold">Jouw ploegen {finished ? "na de poules" : "als het nu stopt"}</h2>
+            <button type="button" onClick={() => setInfo(true)} className="inline-flex items-center gap-1.5 text-[0.8125rem] font-semibold text-ink-2 hover:text-ink">
+              <IconInfo size={14} /> Hoe werkt de loting?
+            </button>
+          </div>
+          <ul className="grid gap-2 md:grid-cols-2">
+            {myRows.map((r, i) => {
+              const st = statusOf(r);
+              return (
+                <li
+                  key={r.team.id}
+                  className={`t-rise flex flex-col gap-2 rounded-2xl border bg-surface px-4 py-3.5 ${r.qualifies ? "border-pink" : "border-rule"}`}
+                  style={{ animationDelay: `${i * 45}ms` }}
+                >
+                  <div className="flex items-center gap-2">
+                    <button type="button" onClick={() => pick(r.team.id)} className="min-w-0 flex-1 truncate text-left text-base font-bold hover:underline hover:underline-offset-2">
+                      {r.team.name}
+                    </button>
+                    <span className={`inline-flex h-7 shrink-0 items-center rounded-full px-3 text-xs font-bold ${KIND_CLS[r.kind]}`}>
+                      {r.qualifies ? (finished ? "Door" : "Gaat door") : finished ? "Uitgeschakeld" : "Ligt eruit"}
+                    </span>
+                  </div>
+                  <p className="text-sm leading-relaxed text-ink-2">
+                    {st.reason}
+                    {st.ko && <> <span className="font-semibold text-ink">{st.ko}</span></>}
+                  </p>
+                </li>
+              );
+            })}
+          </ul>
         </section>
       )}
 
@@ -207,9 +307,12 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
               <span className="inline-flex items-center gap-1.5"><span className="h-3.5 w-1 rounded-sm bg-ink/30" />{advancingPerPoule + 1}de: kans als een van de {bestNths} beste</span>
             )}
             <span>Winst 2 · gelijk 1 · verlies 0</span>
+            <button type="button" onClick={() => setInfo(true)} className="inline-flex items-center gap-1.5 font-semibold text-ink-2 hover:text-ink">
+              <IconInfo size={14} /> Wie gaat door?
+            </button>
           </div>
           <div key={animKey} className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-            {shownPoules.map(({ poule, rows }, i) => {
+            {shownPoules.map(({ poule, rows, fav }, i) => {
               const pm = groupMatches.filter((m) => m.pouleId === poule.id);
               const done = pm.filter((m) => m.scoreA !== null && m.scoreB !== null).length;
               const live = pm.some((m) => matchStatus(m, now) === "live");
@@ -221,7 +324,7 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
               return (
                 <div
                   key={poule.id}
-                  className={`t-rise flex flex-col overflow-hidden rounded-2xl border bg-surface ${isMine ? "border-pink shadow-[inset_0_0_0_1px_var(--pink)]" : "border-rule"}`}
+                  className={`t-rise flex flex-col overflow-hidden rounded-2xl border bg-surface ${isMine ? "border-pink shadow-[inset_0_0_0_1px_var(--pink)]" : fav ? "border-pink/50" : "border-rule"}`}
                   style={{ animationDelay: `${Math.min(i, 11) * 35}ms` }}
                 >
                   <div className="flex items-center gap-2.5 px-4 pb-1.5 pt-3.5">
@@ -254,7 +357,8 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
                         >
                           <span role="cell" className="pl-4 font-bold">{place}</span>
                           <span role="cell" className="min-w-0">
-                            <button type="button" onClick={() => pick(t.id)} className="block max-w-full truncate text-left font-semibold hover:underline hover:underline-offset-2">
+                            <button type="button" onClick={() => pick(t.id)} className={`block max-w-full truncate text-left hover:underline hover:underline-offset-2 ${followed.has(t.id) ? "font-bold text-pink-ink" : "font-semibold"}`}>
+                              {followed.has(t.id) && <StarMark />}
                               {t.name}
                             </button>
                           </span>
@@ -284,12 +388,9 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
         </>
       ) : (
         <>
-          <p className="max-w-3xl text-sm leading-relaxed text-ink-2">
-            Zo wordt de knock-out geloot: eerst alle poulewinnaars, dan de tweedes
-            {bestNths > 0 ? `, dan de ${bestNths} beste ${advancingPerPoule + 1}des` : ""} — telkens op punten, dan saldo, dan
-            gemaakte punten. Plaats 1 speelt tegen plaats {qualifyCount}, plaats 2 tegen {qualifyCount - 1}, … Nooit twee teams uit
-            dezelfde poule in de eerste ronde.
-          </p>
+          <button type="button" onClick={() => setInfo(true)} className="t-press inline-flex h-10 items-center gap-2 self-start rounded-full border border-rule bg-surface px-4 text-sm font-semibold text-ink-2 hover:border-ink-2 hover:text-ink">
+            <IconInfo /> Hoe wordt de knock-out geloot?
+          </button>
           <div key={animKey} className="t-rise overflow-x-auto rounded-2xl border border-rule bg-surface">
             <div role="table" aria-label="Ranking na de poules" className="min-w-0 md:min-w-[720px]">
               <div role="row" className="hidden min-h-[38px] grid-cols-[64px_minmax(0,1fr)_70px_56px_64px_56px_200px] items-center gap-2 border-b border-rule px-3 text-[0.72rem] font-semibold text-ink-2 md:grid">
@@ -321,7 +422,8 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
                     >
                       <span role="cell" className="w-7 text-[0.95rem] font-extrabold md:w-auto md:text-sm">{r.seed}</span>
                       <span role="cell" className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <button type="button" onClick={() => pick(r.team.id)} className="block max-w-full truncate text-left text-sm font-semibold hover:underline hover:underline-offset-2">
+                        <button type="button" onClick={() => pick(r.team.id)} className={`block max-w-full truncate text-left text-sm hover:underline hover:underline-offset-2 ${followed.has(r.team.id) ? "font-bold text-pink-ink" : "font-semibold"}`}>
+                          {followed.has(r.team.id) && <StarMark />}
                           {r.team.name}
                         </button>
                         <span className="text-xs text-ink-2 md:hidden">
@@ -347,6 +449,30 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
           </div>
         </>
       )}
+
+      <InfoSheet open={info} onClose={() => setInfo(false)} title="Wie gaat door naar de knock-out?">
+        <p>
+          De top {advancingPerPoule} van elke poule gaat rechtstreeks door
+          {bestNths > 0 ? <>, samen met de <strong className="text-ink">{bestNths} beste {advancingPerPoule + 1}des</strong></> : null}.
+          {qualifyCount > 0 && <> Dat zijn {qualifyCount} ploegen.</>}
+        </p>
+        <p>
+          Binnen een poule tellen eerst de punten (winst 2, gelijk 1, verlies 0), dan het saldo, dan de gemaakte punten.
+          Zo worden ook de {advancingPerPoule + 1}des onderling vergeleken.
+        </p>
+        <p>
+          Voor de loting komen eerst alle poulewinnaars (beste eerst), dan alle {advancingPerPoule}des
+          {bestNths > 0 ? <>, dan de beste {advancingPerPoule + 1}des</> : null}. Zo krijgt elke ploeg een plaats van 1 tot {qualifyCount || "N"}.
+        </p>
+        <p>
+          In de eerste ronde speelt plaats 1 tegen de laatste plaats, plaats 2 tegen de voorlaatste, enzovoort.
+          {bestNths > 0 && <> De beste poulewinnaar speelt dus tegen de zwakste {advancingPerPoule + 1}de die doorgaat.</>}{" "}
+          Twee ploegen uit dezelfde poule treffen elkaar nooit in de eerste ronde.
+        </p>
+        <Link href={`/toernooi/${params?.id ?? ""}/rules`} className="self-start font-semibold text-ink underline underline-offset-4">
+          Naar het reglement
+        </Link>
+      </InfoSheet>
     </div>
   );
 }

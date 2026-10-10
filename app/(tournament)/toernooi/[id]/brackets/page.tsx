@@ -22,11 +22,32 @@ export default async function BracketsPage({
   const tournament = await getTournament(id);
   if (!tournament) notFound();
 
-  const { matches, teams, year } = tournament;
+  const { matches, teams, poules, year } = tournament;
+  const hasKnockout = matches.some((m) => KNOCKOUT_SET.has(m.phase));
+  const hasPoules = poules.some((p) => p.phase === "GROUP_STAGE") && teams.some((t) => t.pouleId);
 
-  if (!matches.some((m) => KNOCKOUT_SET.has(m.phase))) {
-    return <Empty text="De knockoutfase is nog niet begonnen." />;
+  // Zonder knock-out tonen we een voorlopige bracket op basis van de huidige standen.
+  if (!hasKnockout && !hasPoules) {
+    return <Empty text="De bracket verschijnt zodra de poules ingedeeld zijn." />;
   }
 
-  return <BracketView matches={matches} teams={teams} year={year} isActive={tournament.isActive} />;
+  return (
+    <BracketView
+      matches={matches}
+      teams={teams}
+      poules={poules}
+      advancingPerPoule={tournament.teamsAdvancingPerPoule ?? 2}
+      bestNths={tournament.bestNthsAdvancing ?? 0}
+      ko={{
+        trackCount: tournament.trackCount,
+        knockoutPauseMinutes: tournament.knockoutPauseMinutes,
+        knockoutSlotMinutes: tournament.knockoutSlotMinutes,
+        finalsSlotMinutes: tournament.finalsSlotMinutes,
+        roundBreakMinutes: tournament.roundBreakMinutes,
+        withConsolation: tournament.withConsolation,
+      }}
+      year={year}
+      isActive={tournament.isActive}
+    />
+  );
 }

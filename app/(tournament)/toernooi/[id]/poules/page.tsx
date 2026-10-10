@@ -28,6 +28,14 @@ export default async function PoulesPage({
       isActive={tournament.isActive}
       advancingPerPoule={tournament.teamsAdvancingPerPoule ?? 2}
       bestNths={tournament.bestNthsAdvancing ?? 0}
+      ko={{
+        trackCount: tournament.trackCount,
+        knockoutPauseMinutes: tournament.knockoutPauseMinutes,
+        knockoutSlotMinutes: tournament.knockoutSlotMinutes,
+        finalsSlotMinutes: tournament.finalsSlotMinutes,
+        roundBreakMinutes: tournament.roundBreakMinutes,
+        withConsolation: tournament.withConsolation,
+      }}
     />
   );
 }

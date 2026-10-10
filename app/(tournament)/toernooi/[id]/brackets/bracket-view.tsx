@@ -2,16 +2,30 @@
 
 import { useMemo, useState } from "react";
 
-import { KO_ROUNDS, bracketSize, feederLabels, posNumber, useAutoRefresh } from "@/lib/tournament-live";
-import type { Phase, TournamentMatch, TournamentTeam } from "@/lib/tournament-types";
+import { KO_ROUNDS, bracketSize, feederLabels, isKnockout, knockoutScheduleFor, posNumber, projectedKnockout, useAutoRefresh } from "@/lib/tournament-live";
+import type { Phase, TournamentMatch, TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
 import { fmtTime } from "@/utils/DateHelpers";
 import { IconTrophy } from "@/components/ui/icons/IconTrophy";
 import { PageHead } from "../_shared";
-import { IconArrow, TeamSearch, useAnimKey } from "../_filters";
+import { IconArrow, Segmented, TeamSearch, useAnimKey, usePersisted } from "../_filters";
+import { FollowStar, StarMark, useFollowed } from "../_follow";
+import { ForwardBracket, MirroredBracket } from "./ko-bracket";
 
 interface Props {
   matches: TournamentMatch[];
   teams: TournamentTeam[];
+  poules: TournamentPoule[];
+  advancingPerPoule: number;
+  bestNths: number;
+  /** Instellingen van het toernooi voor de uren van de voorlopige bracket. */
+  ko?: {
+    trackCount?: number;
+    knockoutPauseMinutes?: number;
+    knockoutSlotMinutes?: number | null;
+    finalsSlotMinutes?: number;
+    roundBreakMinutes?: number;
+    withConsolation?: boolean;
+  };
   year: number;
   isActive: boolean;
 }
@@ -31,10 +45,22 @@ const winnerOf = (m: TournamentMatch | undefined): number | null => {
   return m.scoreA > m.scoreB ? m.teamAId : m.teamBId;
 };
 
-export function BracketView({ matches, teams, year, isActive }: Readonly<Props>) {
+export function BracketView({ matches: allMatches, teams, poules, advancingPerPoule, bestNths, ko, year, isActive }: Readonly<Props>) {
   useAutoRefresh(isActive);
   const [q, setQ] = useState("");
   const [teamId, setTeamId] = useState<number | null>(null);
+  const [mode, setMode] = usePersisted<"bracket" | "list">("finales", "mode", "bracket");
+  const followed = useFollowed();
+
+  // Nog geen knock-out gegenereerd? Dan tonen we de bracket "als de poules nu stoppen".
+  const projected = !allMatches.some((m) => isKnockout(m.phase) && m.phase !== ("TIEBREAK" as Phase));
+  const matches = useMemo(
+    () =>
+      projected
+        ? projectedKnockout(poules, teams, advancingPerPoule, bestNths, ko?.withConsolation ?? true, knockoutScheduleFor({ matches: allMatches, ...ko }))
+        : allMatches,
+    [projected, poules, teams, advancingPerPoule, bestNths, allMatches, ko]
+  );
 
   const size = bracketSize(matches);
   const nameOf = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
@@ -65,17 +91,8 @@ export function BracketView({ matches, teams, year, isActive }: Readonly<Props>)
   const anyTeams = matches.some((m) => m.teamAId || m.teamBId);
   const tiebreaks = matches.filter((m) => m.phase === ("TIEBREAK" as Phase));
 
-  // Desktop: vanaf welke ronde
-  const [fromIdx, setFromIdx] = useState(0);
-  const vis = rounds.slice(Math.min(fromIdx, Math.max(rounds.length - 1, 0)));
-  const N = vis[0]?.n ?? 1;
-  const rowH = N >= 16 ? 78 : N >= 8 ? 120 : N >= 4 ? 170 : 220;
-
-  // Gsm: één ronde tegelijk
-  const [mRound, setMRound] = useState(0);
-  const [dir, setDir] = useState<"r" | "l">("r");
-  const animKey = useAnimKey([fromIdx, teamId]);
-  const mKey = useAnimKey([mRound, teamId]);
+  const animKey = useAnimKey([teamId]);
+  const mKey = useAnimKey([teamId]);
 
   // Parcours van het gevolgde team
   const path = useMemo(() => {
@@ -120,6 +137,7 @@ export function BracketView({ matches, teams, year, isActive }: Readonly<Props>)
   const sideCls = (id: number | null, s: Slot) => {
     if (!id) return "font-medium italic text-ink-2";
     if (id === teamId) return "font-extrabold text-pink-ink";
+    if (followed.has(id)) return s.winner && s.winner !== id ? "font-semibold text-pink-ink/60" : "font-bold text-pink-ink";
     if (s.winner && s.winner !== id) return "font-medium text-ink-2";
     return "font-semibold";
   };
@@ -133,7 +151,7 @@ export function BracketView({ matches, teams, year, isActive }: Readonly<Props>)
         onClick={() => id && pick(id)}
         className="group flex min-h-[30px] w-full items-center gap-2 text-left disabled:cursor-default md:min-h-[22px]"
       >
-        <span className={`min-w-0 flex-1 truncate ${big ? "text-[0.95rem]" : "text-[0.9375rem] md:text-[0.8125rem]"} ${sideCls(id, s)} ${id ? "group-hover:underline group-hover:underline-offset-2" : ""}`}>{name}</span>
+        <span className={`min-w-0 flex-1 truncate ${big ? "text-[0.95rem]" : "text-[0.9375rem] md:text-[0.8125rem]"} ${sideCls(id, s)} ${id ? "group-hover:underline group-hover:underline-offset-2" : ""}`}>{followed.has(id) && <StarMark />}{name}</span>
         <span className={`min-w-5 text-right font-bold tabular-nums ${big ? "text-base" : "text-base md:text-[0.8125rem]"} ${s.winner && s.winner !== id ? "font-medium text-ink-2" : ""}`}>
           {score ?? ""}
         </span>
@@ -159,8 +177,6 @@ export function BracketView({ matches, teams, year, isActive }: Readonly<Props>)
     );
   };
 
-  const mr = rounds[Math.min(mRound, rounds.length - 1)];
-  const nextR = rounds[Math.min(mRound, rounds.length - 1) + 1];
 
   return (
     <div className="flex flex-col gap-6">
@@ -177,16 +193,17 @@ export function BracketView({ matches, teams, year, isActive }: Readonly<Props>)
         ) : null}
       </div>
 
-      {!anyTeams && (
-        <div className="flex items-start gap-3 rounded-2xl border border-rule bg-surface px-4 py-3.5 text-sm leading-relaxed">
+      {projected && (
+        <div className="flex items-start gap-3 rounded-2xl border border-dashed border-pink bg-pink-soft/40 px-4 py-3.5 text-sm leading-relaxed">
+          <span className="mt-1.5 shrink-0"><span className="t-live-dot" /></span>
           <span>
-            <strong>De loting volgt na de laatste poulematch.</strong> Tot dan zie je welke plaats uit de ranking tegen welke speelt:
-            1 tegen {size}, 2 tegen {size - 1}, …
+            <strong>Voorlopige bracket.</strong> Zo ziet de knock-out eruit als de poules nu zouden stoppen.
+            Na elke poulematch kan het nog schuiven. Definitief na de laatste poulematch.
           </span>
         </div>
       )}
 
-      <section aria-label="Volg een team" className="flex flex-col gap-2.5 md:flex-row md:items-start">
+      <section aria-label="Zoek een team" className="flex flex-col gap-2.5 md:flex-row md:items-start">
         <div className="min-w-0 flex-1">
           <TeamSearch
             options={teamOptions}
@@ -194,26 +211,12 @@ export function BracketView({ matches, teams, year, isActive }: Readonly<Props>)
             onSelect={(id) => (id === null ? setTeamId(null) : pick(id))}
             query={q}
             onQuery={setQ}
-            selectedPrefix="Volgt"
+            selectedAction={teamId ? <FollowStar teamId={teamId} name={nameOf.get(teamId) ?? ""} followed={followed} /> : null}
             disabled={!anyTeams}
-            placeholder={anyTeams ? "Volg een team door de bracket…" : "Beschikbaar na de loting"}
+            placeholder={anyTeams ? "Zoek een team in de bracket…" : "Beschikbaar na de loting"}
           />
         </div>
-        {rounds.length > 2 && (
-          <div role="group" aria-label="Vanaf ronde" className="hidden h-11 items-center gap-0.5 rounded-xl bg-ink/5 p-[3px] md:inline-flex">
-            {rounds.slice(0, Math.max(1, rounds.length - 2)).map((r, i) => (
-              <button
-                key={r.phase}
-                type="button"
-                aria-pressed={fromIdx === i}
-                onClick={() => setFromIdx(i)}
-                className={`t-press h-[38px] rounded-[9px] px-4 text-[0.8125rem] font-semibold ${fromIdx === i ? "bg-surface text-ink shadow-sm" : "text-ink-2 hover:text-ink"}`}
-              >
-                Vanaf {r.short}
-              </button>
-            ))}
-          </div>
-        )}
+        <Segmented label="Weergave" value={mode} onChange={setMode} options={[{ key: "bracket", label: "Bracket" }, { key: "list", label: "Lijst" }]} />
       </section>
 
       {teamId && path.length > 0 && (
@@ -228,136 +231,71 @@ export function BracketView({ matches, teams, year, isActive }: Readonly<Props>)
         </div>
       )}
 
-      {/* ── Laptop: volledige boom ─────────────────────────── */}
-      <div className="hidden overflow-x-auto pb-2 md:block">
-        <div
-          key={animKey}
-          className="grid min-w-[980px] gap-x-8"
-          style={{ gridTemplateColumns: `repeat(${vis.length}, minmax(180px, 1fr))`, gridTemplateRows: `auto repeat(${N}, ${rowH}px)` }}
-        >
-          {vis.map((r, ci) => {
+      {/* ── Bracket op laptop: langs twee kanten naar de finale ─ */}
+      {mode === "bracket" && (
+        // Breder dan de gewone inhoud, zodat 32 namen naast elkaar passen.
+        <div className="relative left-1/2 hidden w-[min(calc(100vw-48px),1680px)] -translate-x-1/2 overflow-x-auto pb-2 pt-12 md:block">
+          <div key={animKey} className="min-w-[1180px] text-[clamp(13px,1.05vw,16px)]">
+            <MirroredBracket
+              matches={matches}
+              nameOf={nameOf}
+              year={year}
+              teamId={teamId}
+              isFollowed={followed.has}
+              onPick={pick}
+              projected={projected}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ── Bracket op gsm: één richting, vanaf een gekozen ronde ─ */}
+      {mode === "bracket" && (
+        <div className="md:hidden">
+          <ForwardBracket
+            matches={matches}
+            nameOf={nameOf}
+            year={year}
+            teamId={teamId}
+            isFollowed={followed.has}
+            onPick={pick}
+            projected={projected}
+          />
+        </div>
+      )}
+
+      {/* ── Lijst: alle rondes onder elkaar, zoals bij wedstrijden ─ */}
+      {mode === "list" && (
+        <div className={`flex flex-col gap-7 ${teamId ? "hidden md:flex" : ""}`}>
+          {rounds.map((r, ri) => {
             const own = matches.filter((m) => m.phase === r.phase && m.scheduledAt).map((m) => m.scheduledAt!).sort();
             const t = own.length ? `${fmtTime(own[0])}${own.at(-1) !== own[0] ? `–${fmtTime(own.at(-1)!)}` : ""}` : "";
+            const slots = Array.from({ length: r.n }, (_, k) => slot(posFor(r.prefix, k + 1)));
+            const cf = r.phase === "FINAL" && byPos.get("CF1") ? slot("CF1") : null;
             return (
-              <div key={r.phase} className="t-col-in flex flex-col gap-0.5 pb-3" style={{ gridColumn: ci + 1, gridRow: 1, animationDelay: `${ci * 70}ms` }}>
-                <span className="text-sm font-extrabold">{r.label}</span>
-                <span className="text-xs text-ink-2">{t}</span>
-              </div>
+              <section key={r.phase} className="t-rise flex flex-col gap-2.5" style={{ animationDelay: `${Math.min(ri, 5) * 50}ms` }}>
+                <div className="flex items-baseline gap-2">
+                  <h2 className="text-base font-extrabold">{r.phase === "FINAL" ? "Finale" : r.label}</h2>
+                  {t && <span className="text-[0.8125rem] text-ink-2">{t}</span>}
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {slots.map((sl) => renderCard({ key: sl.pos, s: sl, big: r.phase === "FINAL" }))}
+                </div>
+                {cf && (
+                  <>
+                    <h3 className="pt-2 text-sm font-bold text-ink-2">Kleine finale</h3>
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">{renderCard({ key: "CF1", s: cf, dashed: true })}</div>
+                  </>
+                )}
+              </section>
             );
           })}
-          {vis.flatMap((r, ci) => {
-            const span = N / r.n;
-            const isFinal = r.phase === "FINAL";
-            return Array.from({ length: r.n }, (_, k) => {
-              const i = k + 1;
-              const s = slot(posFor(r.prefix, i));
-              const mine = !!teamId && (s.m?.teamAId === teamId || s.m?.teamBId === teamId);
-              const cls = [
-                "t-bcell t-col-in",
-                ci < vis.length - 1 ? `c-out ${i % 2 === 1 ? "top" : "bot"}` : "",
-                ci > 0 ? "c-in" : "",
-                mine && s.winner === teamId && !isFinal ? "out-hot" : "",
-                mine && ci > 0 ? "in-hot" : "",
-              ].join(" ");
-              const cf = isFinal ? slot("CF1") : null;
-              return (
-                <div key={s.pos} className={cls} style={{ gridColumn: ci + 1, gridRow: `${2 + (i - 1) * span} / span ${span}`, animationDelay: `${ci * 70}ms` }}>
-                  {isFinal && (
-                    <span className="absolute inset-x-0 bottom-[calc(50%+52px)] text-center text-[0.68rem] font-extrabold uppercase tracking-wider text-pink-ink">
-                      Finale{s.m?.scheduledAt ? ` · ${fmtTime(s.m.scheduledAt)}` : ""}
-                    </span>
-                  )}
-                  {renderCard({ s, big: isFinal })}
-                  {cf?.m && (
-                    <div className="absolute inset-x-0 top-[calc(50%+64px)] flex flex-col gap-2">
-                      <span className="text-center text-[0.68rem] font-extrabold uppercase tracking-wider text-ink-2">
-                        Kleine finale{cf.m.scheduledAt ? ` · ${fmtTime(cf.m.scheduledAt)}` : ""}
-                      </span>
-                      {renderCard({ s: cf, dashed: true })}
-                    </div>
-                  )}
-                </div>
-              );
-            });
-          })}
         </div>
-      </div>
+      )}
 
-      {/* ── Gsm: één ronde tegelijk, of het parcours van je team ─ */}
-      <div className="md:hidden">
-        {!teamId ? (
-          <>
-            <div role="group" aria-label="Ronde" className="-mx-5 mb-4 flex gap-1.5 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-8 sm:px-8">
-              {rounds.map((r, i) => (
-                <button
-                  key={r.phase}
-                  type="button"
-                  aria-pressed={mRound === i}
-                  onClick={() => {
-                    setDir(i >= mRound ? "r" : "l");
-                    setMRound(i);
-                  }}
-                  className={`t-press inline-flex h-11 shrink-0 items-center gap-1.5 rounded-full border px-4 text-sm font-semibold ${mRound === i ? "border-ink bg-ink text-paper" : "border-rule bg-surface"}`}
-                >
-                  {r.short}
-                  {r.phase !== "FINAL" && <span className="font-medium opacity-65">{r.n}</span>}
-                </button>
-              ))}
-            </div>
-            {mr && (
-              <div key={mKey} className="flex flex-col gap-3.5">
-                <h2 className="text-[1.05rem] font-extrabold">{mr.phase === "FINAL" ? "Finales" : mr.label}</h2>
-                {mr.phase === "FINAL" ? (
-                  <div className={`${dir === "r" ? "t-in-r" : "t-in-l"} flex flex-col gap-3`}>
-                    {renderCard({ s: slot("F1"), big: true })}
-                    {byPos.get("CF1") && (
-                      <>
-                        <span className="text-xs font-bold uppercase tracking-wider text-ink-2">Kleine finale</span>
-                        {renderCard({ s: slot("CF1"), dashed: true })}
-                      </>
-                    )}
-                  </div>
-                ) : (
-                  Array.from({ length: Math.ceil(mr.n / 2) }, (_, k) => {
-                    const i = k * 2 + 1;
-                    const a = slot(posFor(mr.prefix, i));
-                    const b = i + 1 <= mr.n ? slot(posFor(mr.prefix, i + 1)) : null;
-                    const nextName = nextR ? (nextR.phase === "FINAL" ? "de finale" : `${nextR.label.replace(/s$/, "").toLowerCase()} ${k + 1}`) : "";
-                    return (
-                      <div key={i} className={`${dir === "r" ? "t-in-r" : "t-in-l"} flex flex-col gap-1.5`} style={{ animationDelay: `${Math.min(k, 6) * 45}ms` }}>
-                        <div className="flex items-stretch gap-2.5">
-                          <div className="flex min-w-0 flex-1 flex-col gap-2">
-                            {renderCard({ s: a })}
-                            {b && renderCard({ s: b })}
-                          </div>
-                          {b && <div className="my-[30px] w-3.5 rounded-r-lg border-2 border-l-0 border-rule" />}
-                        </div>
-                        {nextR && (
-                          <span className="flex items-center gap-1.5 pl-0.5 text-xs font-semibold text-ink-2">
-                            <IconArrow />
-                            {mr.phase === "SEMI_FINAL" ? "Winnaars naar de finale, verliezers naar de kleine finale" : `Winnaars spelen de ${nextName}`}
-                          </span>
-                        )}
-                      </div>
-                    );
-                  })
-                )}
-                {nextR && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setDir("r");
-                      setMRound(mRound + 1);
-                    }}
-                    className="t-press mt-1 flex h-[52px] items-center justify-center gap-2 rounded-2xl border border-rule bg-surface text-sm font-semibold"
-                  >
-                    Verder naar {nextR.phase === "FINAL" ? "de finale" : nextR.label.toLowerCase()} <IconArrow />
-                  </button>
-                )}
-              </div>
-            )}
-          </>
-        ) : (
+      {/* ── Gsm, lijst, gekozen team: het parcours ─────────── */}
+      {mode === "list" && teamId && (
+        <div className="md:hidden">
           <div key={mKey} className="flex flex-col">
             <h2 className="mb-2.5 text-[1.05rem] font-extrabold">Parcours</h2>
             {path.length === 0 && (
@@ -392,8 +330,8 @@ export function BracketView({ matches, teams, year, isActive }: Readonly<Props>)
               );
             })}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {tiebreaks.length > 0 && (
         <section className="flex flex-col gap-3">

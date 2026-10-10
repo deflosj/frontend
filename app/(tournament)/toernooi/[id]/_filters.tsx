@@ -5,6 +5,7 @@
  * standen, bracket): teamzoeker, filterknop, filterpaneel (paneel op laptop,
  * venster van onderen op gsm), actieve-filterlabels, chips en segmenten.
  */
+import { useParams } from "next/navigation";
 import { useEffect, useId, useRef, useState } from "react";
 
 // ── Iconen ────────────────────────────────────────────────────────────────────
@@ -70,6 +71,7 @@ export function TeamSearch({
   onQuery,
   placeholder = "Zoek je team…",
   selectedPrefix,
+  selectedAction,
   disabled = false,
 }: Readonly<{
   options: TeamOption[];
@@ -79,6 +81,8 @@ export function TeamSearch({
   onQuery: (q: string) => void;
   placeholder?: string;
   selectedPrefix?: string;
+  /** Extra knop naast de gekozen ploeg, bv. de volg-ster. */
+  selectedAction?: React.ReactNode;
   disabled?: boolean;
 }>) {
   const id = useId();
@@ -91,6 +95,7 @@ export function TeamSearch({
       <div className="flex h-12 items-center gap-2.5 rounded-xl border border-pink bg-pink-soft pl-3.5 pr-1 md:h-11">
         {selectedPrefix && <span className="text-xs font-bold text-pink-ink">{selectedPrefix}</span>}
         <span className="min-w-0 flex-1 truncate text-[0.9375rem] font-bold text-pink-ink md:text-sm">{selected.name}</span>
+        {selectedAction}
         <button
           type="button"
           onClick={() => onSelect(null)}
@@ -381,5 +386,110 @@ export function FilterPills({
         </button>
       )}
     </div>
+  );
+}
+
+// ── Filters onthouden ─────────────────────────────────────────────────────────
+
+/**
+ * useState dat zijn waarde onthoudt in localStorage van dit toestel, per
+ * toernooi en per pagina. Eerst de standaardwaarde (zodat server en client
+ * hetzelfde renderen), meteen na het mounten de bewaarde waarde.
+ */
+export function usePersisted<T>(page: string, name: string, initial: T): [T, (v: T | ((prev: T) => T)) => void] {
+  const params = useParams<{ id?: string }>();
+  const key = `deflosj:filters:${params?.id ?? "x"}:${page}:${name}`;
+  const [value, setValue] = useState<T>(initial);
+  const loaded = useRef(false);
+
+  useEffect(() => {
+    try {
+      const raw = globalThis.localStorage?.getItem(key);
+      if (raw !== null && raw !== undefined) setValue(JSON.parse(raw) as T);
+    } catch {
+      /* niets bewaard of opslag geblokkeerd */
+    }
+    loaded.current = true;
+  }, [key]);
+
+  useEffect(() => {
+    if (!loaded.current) return;
+    try {
+      globalThis.localStorage?.setItem(key, JSON.stringify(value));
+    } catch {
+      /* opslag geblokkeerd: dan onthouden we het gewoon niet */
+    }
+  }, [key, value]);
+
+  return [value, setValue];
+}
+
+// ── Uitleg-popup ──────────────────────────────────────────────────────────────
+
+export function IconInfo({ size = 16 }: Readonly<{ size?: number }>) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 11v6M12 7.5v.01" />
+    </svg>
+  );
+}
+
+/** Onderblad op gsm, gecentreerd venster vanaf md. */
+export function InfoSheet({
+  open,
+  onClose,
+  title,
+  children,
+}: Readonly<{ open: boolean; onClose: () => void; title: string; children: React.ReactNode }>) {
+  const [render, setRender] = useState(open);
+  const [closing, setClosing] = useState(false);
+  const titleId = useId();
+
+  useEffect(() => {
+    if (open) {
+      setRender(true);
+      setClosing(false);
+      return;
+    }
+    if (!render) return;
+    setClosing(true);
+    const t = setTimeout(() => {
+      setRender(false);
+      setClosing(false);
+    }, 200);
+    return () => clearTimeout(t);
+  }, [open, render]);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!render) return null;
+  const cls = closing ? " is-closing" : "";
+  return (
+    <>
+      <button type="button" aria-label="Sluiten" onClick={onClose} className={`t-scrim${cls} fixed inset-0 z-40 cursor-default bg-ink/40`} />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={titleId}
+        className={`t-info${cls} fixed inset-x-0 bottom-0 z-50 flex max-h-[86vh] flex-col rounded-t-3xl bg-surface shadow-2xl md:inset-x-auto md:bottom-auto md:left-1/2 md:top-1/2 md:w-[520px] md:-translate-x-1/2 md:-translate-y-1/2 md:rounded-2xl md:border md:border-rule`}
+      >
+        <div className="flex justify-center pb-0.5 pt-2 md:hidden">
+          <span className="h-1.5 w-10 rounded-full bg-rule" />
+        </div>
+        <div className="flex items-center justify-between py-1 pl-5 pr-2 md:border-b md:border-rule md:py-2.5">
+          <h2 id={titleId} className="text-lg font-bold md:text-base">{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Sluiten" className="t-press flex h-11 w-11 items-center justify-center rounded-xl hover:bg-ink/5 md:h-9 md:w-9">
+            <IconClose size={18} />
+          </button>
+        </div>
+        <div className="flex flex-col gap-3 overflow-y-auto px-5 pb-7 pt-2 text-[0.9375rem] leading-relaxed text-ink-2 md:pt-4">{children}</div>
+      </div>
+    </>
   );
 }

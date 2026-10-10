@@ -1,9 +1,11 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getTournament, saldoClass, sortStandings } from "@/lib/tournament-helpers";
 import { PHASE_LABELS, Phase } from "@/lib/tournament-types";
 import { MatchBlock, SectionHead } from "../../_shared";
+import { FollowButton } from "../../_follow";
+import { rosterOf } from "@/lib/team-roster";
+import { BackLink } from "@/components/ui/back-link";
 
 function Stat({
   value,
@@ -52,22 +54,14 @@ export default async function TeamDetailPage({
     .filter((m) => m.teamAId === team.id || m.teamBId === team.id)
     .sort((a, b) => new Date(a.scheduledAt ?? 0).getTime() - new Date(b.scheduledAt ?? 0).getTime());
 
-  const spelers = [team.speler1, team.speler2, team.speler3, team.speler4].filter(Boolean);
-  const chips = spelers.includes(team.captainName)
-    ? spelers
-    : [team.captainName, ...spelers];
+  const chips = rosterOf(team);
 
   const label = (phase: Phase, mPouleId: number | null) =>
     phase === "GROUP_STAGE" ? poules.find((p) => p.id === mPouleId)?.name : PHASE_LABELS[phase];
 
   return (
     <div className="flex flex-col gap-8">
-      <Link
-        href={`/toernooi/${id}/teams`}
-        className="self-start text-[0.8125rem] font-semibold text-ink-2 transition-colors hover:text-ink"
-      >
-        ← Alle teams
-      </Link>
+      <BackLink href={`/toernooi/${id}/teams`}>Alle teams</BackLink>
 
       {/* Team hero */}
       <div className="rounded-2xl border border-rule bg-surface px-6 py-6">
@@ -81,19 +75,21 @@ export default async function TeamDetailPage({
             )}
             <h2 className="text-2xl font-bold text-ink">{team.name}</h2>
           </div>
-          {team.isPresent && (
-            <span className="shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-              Aanwezig
-            </span>
-          )}
+          <div className="flex items-center gap-2">
+            {team.isPresent && (
+              <span className="shrink-0 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700 dark:bg-green-400/15 dark:text-green-300">
+                Aanwezig
+              </span>
+            )}
+            <FollowButton teamId={team.id} name={team.name} />
+          </div>
         </div>
 
         <p className="mb-2 text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-ink-2">
           Spelers
         </p>
         <div className="flex flex-wrap gap-2">
-          {chips.map((speler, i) => {
-            const isCaptain = speler === team.captainName;
+          {chips.map(({ name: speler, captain: isCaptain }, i) => {
             return (
               <span
                 key={`${speler}-${i}`}

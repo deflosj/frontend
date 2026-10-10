@@ -242,12 +242,12 @@ export function StandingsLegend() {
 
 // ── Team card ─────────────────────────────────────────────────────────────────
 
-function TeamCardInner({ team }: Readonly<{ team: TournamentTeam }>) {
+function TeamCardInner({ team, followed = false, roomRight = false }: Readonly<{ team: TournamentTeam; followed?: boolean; roomRight?: boolean }>) {
   const spelers = [team.speler1, team.speler2, team.speler3, team.speler4].filter(Boolean);
 
   return (
     <>
-      <h4 className="mb-0.5 text-[0.9375rem] font-semibold text-ink">{team.name}</h4>
+      <h4 className={`mb-0.5 text-[0.9375rem] font-semibold ${followed ? "text-pink-ink" : "text-ink"} ${roomRight ? "pr-9" : ""}`}>{team.name}</h4>
       <p className="mb-2.5 text-[0.6875rem] font-semibold text-pink">
         Kapitein · {team.captainName}
       </p>
@@ -275,21 +275,27 @@ function TeamCardInner({ team }: Readonly<{ team: TournamentTeam }>) {
 export function TeamCard({
   team,
   href,
-}: Readonly<{ team: TournamentTeam; href?: string }>) {
-  const base =
-    "flex flex-col rounded-2xl border border-rule bg-surface px-[18px] py-4 transition-colors";
-
-  if (href) {
-    return (
-      <Link href={href} className={`${base} hover:border-pink/25 hover:bg-pink-soft`}>
-        <TeamCardInner team={team} />
-      </Link>
-    );
-  }
-
-  return (
+  star,
+  followed = false,
+}: Readonly<{ team: TournamentTeam; href?: string; star?: React.ReactNode; followed?: boolean }>) {
+  const base = `flex h-full flex-col rounded-2xl border px-[18px] py-4 transition-colors ${
+    followed ? "border-pink/50 bg-pink-soft/40" : "border-rule bg-surface"
+  }`;
+  const card = href ? (
+    <Link href={href} className={`${base} hover:border-pink/25 hover:bg-pink-soft`}>
+      <TeamCardInner team={team} followed={followed} roomRight={!!star} />
+    </Link>
+  ) : (
     <div className={base}>
-      <TeamCardInner team={team} />
+      <TeamCardInner team={team} followed={followed} roomRight={!!star} />
+    </div>
+  );
+  if (!star) return card;
+  // De ster staat naast de link, niet erin: een knop binnen een link is ongeldige HTML.
+  return (
+    <div className="relative">
+      {card}
+      <div className="absolute right-1.5 top-1.5">{star}</div>
     </div>
   );
 }

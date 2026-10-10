@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import {
   KO_SHORT,
@@ -27,8 +27,10 @@ import {
   Segmented,
   TeamSearch,
   useAnimKey,
+  usePersisted,
   type ActiveFilter,
 } from "../_filters";
+import { FollowStar, IconStar, StarMark, useFollowed, type Followed } from "../_follow";
 
 interface Props {
   matches: TournamentMatch[];
@@ -59,12 +61,20 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
 
   const [q, setQ] = useState("");
   const [teamId, setTeamId] = useState<number | null>(null);
-  const [phase, setPhase] = useState<PhaseFilter>("all");
-  const [status, setStatus] = useState<StatusFilter>("all");
-  const [track, setTrack] = useState(0);
-  const [pouleId, setPouleId] = useState(0);
-  const [view, setView] = useState<"grid" | "list">("grid");
+  // Filters blijven bewaard op dit toestel (per toernooi).
+  const [phase, setPhase] = usePersisted<PhaseFilter>("wedstrijden", "phase", "all");
+  const [status, setStatus] = usePersisted<StatusFilter>("wedstrijden", "status", "all");
+  const [track, setTrack] = usePersisted("wedstrijden", "track", 0);
+  const [pouleId, setPouleId] = usePersisted("wedstrijden", "poule", 0);
+  const [view, setView] = usePersisted<"grid" | "list">("wedstrijden", "view", "grid");
   const [open, setOpen] = useState(false);
+  const followed = useFollowed();
+  const [mineOnly, setMineOnly] = usePersisted("wedstrijden", "mine", false);
+  const mineOn = mineOnly && followed.ids.length > 0;
+  // Link "Hun wedstrijden" vanop het overzicht: /matches?mijn=1
+  useEffect(() => {
+    if (new URLSearchParams(globalThis.location?.search ?? "").get("mijn") === "1") setMineOnly(true);
+  }, []);
 
   const teamById = useMemo(() => new Map(teams.map((t) => [t.id, t])), [teams]);
   const pouleById = useMemo(() => new Map(poules.map((p) => [p.id, p])), [poules]);
@@ -110,6 +120,7 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
     if (phase === "KO" && !r.ko) return false;
     if (track && r.m.track !== track) return false;
     if (pouleId && r.m.pouleId !== pouleId) return false;
+    if (mineOn && !followed.has(r.m.teamAId) && !followed.has(r.m.teamBId)) return false;
     if (teamId && r.m.teamAId !== teamId && r.m.teamBId !== teamId) return false;
     if (!teamId && query) {
       const hit = (id: number | null, n: string) => id !== null && n.toLowerCase().includes(query);
@@ -159,6 +170,7 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
 
   // Actieve filters
   const active: ActiveFilter[] = [];
+  if (mineOn) active.push({ label: "Mijn ploegen", onRemove: () => setMineOnly(false) });
   if (phase !== "all") active.push({ label: phase === "G" ? "Poulefase" : "Knock-out", onRemove: () => setPhase("all") });
   if (status !== "all") active.push({ label: STATUS_LABEL[status], onRemove: () => setStatus("all") });
   if (track) active.push({ label: `Baan ${track}`, onRemove: () => setTrack(0) });
@@ -167,13 +179,14 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
     active.push({ label: p ? `Poule ${pouleLetter(p)}` : "Poule", onRemove: () => setPouleId(0) });
   }
   const clearFilters = () => {
+    setMineOnly(false);
     setPhase("all");
     setStatus("all");
     setTrack(0);
     setPouleId(0);
   };
 
-  const animKey = useAnimKey([phase, status, track, pouleId, teamId, view]);
+  const animKey = useAnimKey([phase, status, track, pouleId, teamId, view, mineOn]);
   const teamOptions = useMemo(
     () =>
       [...teams]
@@ -187,6 +200,7 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
   const pick = (id: number | null) => {
     if (id === null) return;
     setTeamId(id);
+    setMineOnly(false);
     setQ("");
   };
 
@@ -204,7 +218,7 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
         <section aria-labelledby="nu-op-de-banen" className="flex flex-col gap-3">
           <div className="flex items-baseline gap-3">
             <h2 id="nu-op-de-banen" className="text-[0.95rem] font-bold">Nu op de banen</h2>
-            <span className="text-xs text-ink-2">tik een team om het te volgen</span>
+            <span className="text-xs text-ink-2">tik een team voor zijn schema</span>
           </div>
           <div className="-mx-5 flex gap-2 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-8 sm:px-8 md:mx-0 md:grid md:grid-cols-[repeat(auto-fill,minmax(170px,1fr))] md:overflow-visible md:px-0">
             {live.map((r, i) => {
@@ -219,8 +233,8 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
                     <span className="font-extrabold text-ink">Baan {r.m.track}</span>·<span>{r.label}</span>
                     <span className="ml-auto inline-flex items-center gap-1.5 font-bold text-pink-ink"><span className="t-live-dot" />bezig</span>
                   </div>
-                  <SideButton name={r.a} id={r.m.teamAId} onPick={pick} />
-                  <SideButton name={r.b} id={r.m.teamBId} onPick={pick} />
+                  <SideButton name={r.a} id={r.m.teamAId} star={followed.has(r.m.teamAId)} onPick={pick} />
+                  <SideButton name={r.b} id={r.m.teamBId} star={followed.has(r.m.teamBId)} onPick={pick} />
                   {nx && (
                     <p className="border-t border-rule pt-1.5 text-[0.6875rem] text-ink-2">
                       Straks {fmtTime(nx.m.scheduledAt)}: {nx.ko ? nx.label : `${nx.a} – ${nx.b}`}
@@ -237,7 +251,14 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
       <section aria-label="Zoeken en filteren" className="sticky top-[60px] z-20 -mx-5 flex flex-col gap-2.5 border-b border-rule bg-paper px-5 py-3 sm:-mx-8 sm:px-8 md:static md:mx-0 md:border-0 md:bg-transparent md:p-0">
         <div className="relative flex items-start gap-2.5">
           <div className="min-w-0 flex-1">
-            <TeamSearch options={teamOptions} selected={team ? { id: team.id, name: team.name } : null} onSelect={(id) => (id === null ? setTeamId(null) : pick(id))} query={q} onQuery={setQ} />
+            <TeamSearch
+              options={teamOptions}
+              selected={team ? { id: team.id, name: team.name } : null}
+              selectedAction={team ? <FollowStar teamId={team.id} name={team.name} followed={followed} /> : null}
+              onSelect={(id) => (id === null ? setTeamId(null) : pick(id))}
+              query={q}
+              onQuery={setQ}
+            />
           </div>
           <FilterButton count={active.length} open={open} onClick={() => setOpen((o) => !o)} controls="wedstrijd-filters" />
           <div className="hidden md:block">
@@ -290,6 +311,21 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
             )}
           </FilterPanel>
         </div>
+        <FollowBar
+          followed={followed}
+          names={teamById}
+          on={mineOn}
+          onToggle={() => {
+            // "Mijn ploegen" toont alle gevolgde ploegen samen: een gekozen ploeg zou dat overschrijven.
+            if (!mineOn) {
+              setTeamId(null);
+              setQ("");
+            }
+            setMineOnly(!mineOn);
+          }}
+          onPick={pick}
+          hint={!!team && !followed.has(team.id)}
+        />
         <FilterPills
           filters={active}
           onClear={clearFilters}
@@ -353,7 +389,7 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
                         {tracks.map((t) => {
                           const r = g.inSlot.find((x) => x.m.track === t);
                           if (!r) return <div key={t} className="rounded-xl border border-dashed border-rule" />;
-                          return <MatchCard key={t} r={r} teamId={teamId} dim={!pass(r)} onPick={pick} />;
+                          return <MatchCard key={t} r={r} teamId={teamId} followed={followed} dim={!pass(r)} onPick={pick} />;
                         })}
                       </div>
                     </div>
@@ -378,7 +414,7 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
                   </div>
                   <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                     {g.vis.map((r) => (
-                      <MatchCard key={r.m.id} r={r} teamId={teamId} showTrack onPick={pick} />
+                      <MatchCard key={r.m.id} r={r} teamId={teamId} followed={followed} showTrack onPick={pick} />
                     ))}
                   </div>
                 </div>
@@ -393,7 +429,7 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
 
 // ── Onderdelen ────────────────────────────────────────────────────────────────
 
-function SideButton({ name, id, onPick }: Readonly<{ name: string; id: number | null; onPick: (id: number) => void }>) {
+function SideButton({ name, id, star = false, onPick }: Readonly<{ name: string; id: number | null; star?: boolean; onPick: (id: number) => void }>) {
   return (
     <button
       type="button"
@@ -401,7 +437,7 @@ function SideButton({ name, id, onPick }: Readonly<{ name: string; id: number | 
       onClick={() => id !== null && onPick(id)}
       className="t-press flex min-h-[26px] w-full items-center text-left disabled:cursor-default"
     >
-      <span className={`min-w-0 flex-1 truncate text-[0.8125rem] font-semibold ${id === null ? "font-medium italic text-ink-2" : "hover:underline hover:underline-offset-2"}`}>{name}</span>
+      <span className={`min-w-0 flex-1 truncate text-[0.8125rem] font-semibold ${id === null ? "font-medium italic text-ink-2" : "hover:underline hover:underline-offset-2"} ${star ? "text-pink-ink" : ""}`}>{star && <StarMark />}{name}</span>
     </button>
   );
 }
@@ -409,10 +445,11 @@ function SideButton({ name, id, onPick }: Readonly<{ name: string; id: number | 
 function MatchCard({
   r,
   teamId,
+  followed,
   dim = false,
   showTrack = false,
   onPick,
-}: Readonly<{ r: Row; teamId: number | null; dim?: boolean; showTrack?: boolean; onPick: (id: number) => void }>) {
+}: Readonly<{ r: Row; teamId: number | null; followed: Followed; dim?: boolean; showTrack?: boolean; onPick: (id: number) => void }>) {
   const { m } = r;
   const played = m.scoreA !== null && m.scoreB !== null;
   const mine = teamId !== null && (m.teamAId === teamId || m.teamBId === teamId);
@@ -429,8 +466,9 @@ function MatchCard({
         <span
           className={`min-w-0 flex-1 truncate text-[0.9375rem] md:text-[0.8125rem] ${
             id === null ? "font-medium italic text-ink-2" : lose ? "font-medium text-ink-2" : "font-semibold"
-          } ${id !== null ? "group-hover:underline group-hover:underline-offset-2" : ""} ${id === teamId ? "font-extrabold text-pink-ink" : ""}`}
+          } ${id !== null ? "group-hover:underline group-hover:underline-offset-2" : ""} ${id === teamId ? "font-extrabold text-pink-ink" : followed.has(id) ? "font-bold text-pink-ink" : ""}`}
         >
+          {followed.has(id) && <StarMark />}
           {name}
         </span>
         <span className={`min-w-5 text-right text-base font-bold tabular-nums md:text-sm ${lose ? "font-medium text-ink-2" : ""}`}>{played ? score : ""}</span>
@@ -466,6 +504,58 @@ function InfoCard({ label, main, sub, hot = false, delay = 0 }: Readonly<{ label
       <span className="text-[0.6875rem] font-semibold text-ink-2">{label}</span>
       <span className="text-[1.05rem] font-extrabold tabular-nums">{main}</span>
       <span className="text-[0.8125rem] text-ink-2">{sub}</span>
+    </div>
+  );
+}
+
+/** Rij onder de zoekbalk: "Mijn ploegen" aan/uit plus de gevolgde ploegen als snelkoppeling. */
+function FollowBar({
+  followed,
+  names,
+  on,
+  onToggle,
+  onPick,
+  hint,
+}: Readonly<{
+  followed: Followed;
+  names: Map<number, TournamentTeam>;
+  on: boolean;
+  onToggle: () => void;
+  onPick: (id: number) => void;
+  hint: boolean;
+}>) {
+  const ids = followed.ids.filter((id) => names.has(id));
+  if (ids.length === 0) {
+    return hint ? (
+      <p className="t-rise flex items-center gap-1.5 text-[0.8125rem] text-ink-2">
+        <IconStar size={14} /> Tik op de ster om deze ploeg te volgen. Zo vind je ze straks met één tik terug.
+      </p>
+    ) : null;
+  }
+  return (
+    <div className="-mx-5 flex items-center gap-1.5 overflow-x-auto px-5 [scrollbar-width:none] sm:-mx-8 sm:px-8 md:mx-0 md:flex-wrap md:overflow-visible md:px-0">
+      <button
+        type="button"
+        aria-pressed={on}
+        onClick={onToggle}
+        className={`t-press inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5 text-[0.8125rem] font-bold transition-colors ${
+          on ? "border-pink bg-pink text-[#16161a]" : "border-pink/40 bg-pink-soft text-pink-ink hover:border-pink"
+        }`}
+      >
+        <IconStar filled size={14} />
+        Mijn ploegen
+        <span className={`tabular-nums ${on ? "" : "text-pink-ink/70"}`}>{ids.length}</span>
+      </button>
+      {ids.map((id) => (
+        <button
+          key={id}
+          type="button"
+          onClick={() => onPick(id)}
+          className="t-press inline-flex h-9 max-w-[180px] shrink-0 items-center rounded-full border border-rule bg-surface px-3 text-[0.8125rem] font-semibold hover:border-ink-2"
+        >
+          <span className="truncate">{names.get(id)?.name}</span>
+        </button>
+      ))}
     </div>
   );
 }

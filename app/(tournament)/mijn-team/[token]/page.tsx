@@ -54,6 +54,7 @@ export default function TeamPortalPage({
 
   const [name, setName] = useState("");
   const [players, setPlayers] = useState(["", "", "", ""]);
+  const [motto, setMotto] = useState("");
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saved, setSaved] = useState(false);
@@ -77,6 +78,7 @@ export default function TeamPortalPage({
         setData(d);
         setName(d.team.name);
         setPlayers([d.team.speler1, d.team.speler2, d.team.speler3, d.team.speler4]);
+        setMotto(d.team.motto ?? "");
       })
       .catch((e) => setLoadError(e instanceof Error ? e.message : "Er ging iets mis."))
       .finally(() => setLoading(false));
@@ -98,6 +100,7 @@ export default function TeamPortalPage({
           speler2: players[1].trim(),
           speler3: players[2].trim(),
           speler4: players[3].trim(),
+          motto: motto.trim(),
         }),
       });
       if (!res.ok) {
@@ -237,6 +240,23 @@ export default function TeamPortalPage({
                 onChange={(e) => { setName(e.target.value); setSaved(false); }}
                 className="h-11 rounded-xl border border-rule bg-paper px-4 text-sm text-ink outline-none focus:ring-2 focus:ring-pink/30 disabled:opacity-60"
               />
+            </label>
+
+            <label className="flex flex-col gap-1.5">
+              <span className="flex items-baseline justify-between text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-ink-2">
+                Motto
+                <span className="font-medium normal-case tracking-normal">{motto.length}/60</span>
+              </span>
+              <input
+                type="text"
+                maxLength={60}
+                disabled={locked || saving}
+                value={motto}
+                placeholder="Eén zin die bij jullie past"
+                onChange={(e) => { setMotto(e.target.value); setSaved(false); }}
+                className="h-11 rounded-xl border border-rule bg-paper px-4 text-sm text-ink outline-none placeholder:text-ink-2/70 focus:ring-2 focus:ring-pink/30 disabled:opacity-60"
+              />
+              <span className="text-xs text-ink-2">Staat op jullie teamkaart op de site.</span>
             </label>
 
             <div className="grid gap-4 sm:grid-cols-2">

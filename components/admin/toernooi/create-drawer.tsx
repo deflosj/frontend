@@ -5,6 +5,7 @@ import { apiFetch } from "@/lib/api";
 import type { TournamentListItem } from "@/lib/tournament-types";
 import { StepDrawer } from "@/components/admin/step-drawer";
 import { useDrawer } from "@/components/admin/drawer-provider";
+import { BackLink } from "@/components/ui/back-link";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -108,7 +109,7 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
 
   const footer2 = (
     <>
-      <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setStep(1)}>← Terug</button>
+      <BackLink onClick={() => setStep(1)}>Terug</BackLink>
       <button type="button" className="btn-sm btn-sm--primary" onClick={() => setStep(3)}>
         Volgende →
       </button>
@@ -117,7 +118,7 @@ export function CreateDrawer({ onSaved }: Readonly<Props>) {
 
   const footer3 = (
     <>
-      <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setStep(2)}>← Terug</button>
+      <BackLink onClick={() => setStep(2)}>Terug</BackLink>
       <button type="button" className="btn-sm btn-sm--primary" onClick={handleCreate} disabled={saving || !knockoutValid}>
         {saving ? "Aanmaken…" : "Toernooi aanmaken"}
       </button>

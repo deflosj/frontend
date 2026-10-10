@@ -184,6 +184,14 @@
   .t-sheet            { transform-origin: top right; animation: t-panel-in .22s cubic-bezier(.2,.8,.2,1) both; }
   .t-sheet.is-closing { animation: t-panel-out .16s ease-in both; }
 }
+/* Uitlegvenster: van onderen op gsm, gecentreerd vanaf md */
+.t-info            { animation: t-sheet-up .34s cubic-bezier(.2,.9,.25,1) both; }
+.t-info.is-closing { animation: t-sheet-down .2s cubic-bezier(.4,0,1,1) both; }
+@media (min-width: 768px) {
+  .t-info            { animation: t-pop-soft .22s cubic-bezier(.2,.8,.2,1) both; }
+  .t-info.is-closing { animation: t-fade-out .16s ease-in both; }
+}
+@keyframes t-pop-soft { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
 .t-press { transition: background-color .16s ease, color .16s ease, border-color .16s ease, box-shadow .16s ease, transform .12s ease, opacity .22s ease; }
 .t-press:active { transform: scale(.96); }
 /* Live-bolletje met golf */
@@ -198,8 +206,27 @@
 .t-bcell.out-hot::after { border-color: var(--pink) !important; z-index: 1; }
 .t-bcell.in-hot::before { border-color: var(--pink); }
 
+/* Knock-outbracket: verbindingen naar rechts (o-r) of links (o-l).
+ * Een lijn is de helft van de kolomtussenruimte (gap-x 1.5em → .75em). */
+.t-mb { position: relative; display: flex; align-items: center; }
+.t-mb::after { content: ""; position: absolute; width: .75em; border: 0 solid var(--rule); transition: border-color .25s ease; }
+.t-mb.o-r::after { left: 100%; border-right-width: 2px; }
+.t-mb.o-l::after { right: 100%; border-left-width: 2px; }
+.t-mb.top::after { top: 50%; height: 50%; border-top-width: 2px; }
+.t-mb.bot::after { top: 0; height: 50%; border-bottom-width: 2px; }
+.t-mb.o-r.top::after { border-top-right-radius: 7px; }
+.t-mb.o-r.bot::after { border-bottom-right-radius: 7px; }
+.t-mb.o-l.top::after { border-top-left-radius: 7px; }
+.t-mb.o-l.bot::after { border-bottom-left-radius: 7px; }
+.t-mb.flat::after { top: 50%; height: 0; border-width: 2px 0 0 0; }
+.t-mb.i-l::before, .t-mb.i-r::before { content: ""; position: absolute; top: 50%; width: .75em; border-top: 2px solid var(--rule); transition: border-color .25s ease; }
+.t-mb.i-l::before { right: 100%; }
+.t-mb.i-r::before { left: 100%; }
+.t-mb.hot-out::after { border-color: var(--pink); z-index: 1; }
+.t-mb.hot-in::before { border-color: var(--pink); }
+
 @media (prefers-reduced-motion: reduce) {
-  .t-rise, .t-pop, .t-drop, .t-col-in, .t-in-r, .t-in-l, .t-scrim, .t-sheet, .t-live-dot::after {
+  .t-rise, .t-pop, .t-drop, .t-col-in, .t-in-r, .t-in-l, .t-scrim, .t-sheet, .t-info, .t-live-dot::after {
     animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important;
   }
   .t-press, .t-bcell::before, .t-bcell::after { transition-duration: .01ms !important; }

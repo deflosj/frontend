@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import { getTournament } from "@/lib/tournament-helpers";
 import { TournamentHeader } from "./tournament-header";
+import { BackLink } from "@/components/ui/back-link";
 
 export async function generateMetadata({
   params,
@@ -33,9 +33,7 @@ export default async function TournamentDetailLayout({
         <div className="text-center">
           <p className="mb-2 text-xs font-semibold uppercase tracking-widest text-ink-2">404</p>
           <h1 className="mb-4 text-2xl font-bold text-ink">Toernooi niet gevonden</h1>
-          <Link href="/toernooi" className="text-sm font-semibold text-pink hover:underline">
-            ← Terug naar overzicht
-          </Link>
+          <BackLink href="/toernooi">Terug naar overzicht</BackLink>
         </div>
       </div>
     );

@@ -1,12 +1,12 @@
 "use client";
 
 import * as Dialog from "@radix-ui/react-dialog";
-import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import type { CalEvent } from "@/components/admin/events/event-drawer";
 import type { Task, TaskAssignee } from "@/types/shifts";
+import { BackLink } from "@/components/ui/back-link";
 
 interface HelperAssignmentRef {
   eventId: number;
@@ -266,12 +266,7 @@ export default function YearlyHelpersPage() {
       )}
 
       <div style={{ marginBottom: "1.5rem" }}>
-        <Link
-          href="/admin"
-          style={{ fontSize: "0.8rem", color: "var(--ink-2)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.3rem", marginBottom: "0.75rem" }}
-        >
-          ← Dashboard
-        </Link>
+        <BackLink href="/admin" className="mb-4">Dashboard</BackLink>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap", justifyContent: "space-between" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
             <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 500, letterSpacing: "-0.03em", color: "var(--text)" }}>

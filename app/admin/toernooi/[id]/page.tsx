@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import { PaymentSelect, paymentBody, paymentValue } from "./payment-select";
 import type {
@@ -12,7 +11,11 @@ import type {
 } from "@/lib/tournament-types";
 import { PHASE_LABELS, PHASE_ORDER } from "@/lib/tournament-types";
 import { IconClock, IconEdit, IconPlus, IconSave, IconTrash, IconX,  } from "@/components/ui/icons";
+import { slotMinutes as slotMinutesOf } from "@/lib/tournament-live";
+import { InfoButton } from "@/components/admin/info-button";
+import { MailTab } from "./mail-tab";
 import { AanmeldingTab } from "./aanmelding-tab";
+import { BackLink } from "@/components/ui/back-link";
 
 // ── Default rules text ────────────────────────────────────────────────────────
 
@@ -75,7 +78,7 @@ Ook hier geldt: De Flosj heeft altijd gelijk!`;
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-type Tab = "overzicht" | "aanmelding" | "teams" | "schema" | "reglement";
+type Tab = "overzicht" | "aanmelding" | "teams" | "schema" | "mail" | "reglement";
 
 // ── Modal hook ────────────────────────────────────────────────────────────────
 
@@ -142,6 +145,7 @@ interface TeamFormData {
   speler2: string;
   speler3: string;
   speler4: string;
+  motto: string;
   isPresent: boolean;
   isPaid: boolean;
   payment: string;
@@ -171,6 +175,7 @@ function TeamDrawer({
     speler2:     team?.speler2     ?? "",
     speler3:     team?.speler3     ?? "",
     speler4:     team?.speler4     ?? "",
+    motto:       team?.motto       ?? "",
     // Nieuw team = aangemeld, nog niet aanwezig. "Aanwezig" is de
     // check-in op de toernooidag zelf.
     isPresent:   team?.isPresent   ?? false,
@@ -197,6 +202,7 @@ function TeamDrawer({
         speler2:     form.speler2.trim(),
         speler3:     form.speler3.trim(),
         speler4:     form.speler4.trim(),
+        motto:       form.motto.trim(),
         isPresent:   form.isPresent,
         ...paymentBody(form.payment),
         pouleId:     form.pouleId ? Number.parseInt(form.pouleId, 10) : null,
@@ -228,6 +234,11 @@ function TeamDrawer({
             <label htmlFor="t-name">Teamnaam</label>
             <input id="t-name" type="text" required disabled={saving}
               value={form.name} onChange={(e) => set("name", e.target.value)} />
+          </div>
+          <div className="form-field" style={{ gridColumn: "1 / -1" }}>
+            <label htmlFor="t-motto">Motto <span style={{ fontWeight: 400, color: "var(--text-2)" }}>(optioneel, max 60 tekens)</span></label>
+            <input id="t-motto" type="text" maxLength={60} disabled={saving}
+              value={form.motto} onChange={(e) => set("motto", e.target.value)} />
           </div>
           <div className="form-field" style={{ gridColumn: "1 / -1" }}>
             <label htmlFor="t-captain">Kapitein</label>
@@ -546,11 +557,14 @@ function OverviewTab({
   const [startTime, setStartTime]     = useState(defaultStartTime);
   const [slotMinutes, setSlotMinutes] = useState("20");
   const [trackCount, setTrackCount]   = useState(String(tournament.trackCount ?? 6));
-  // Knock-out: eigen starttijd, slotduur en pauze tussen de rondes.
-  const [koStart, setKoStart]         = useState(() => latestGroupEnd(tournament, 20) ?? defaultStartTime());
-  const [koSlot, setKoSlot]           = useState("20");
-  const [koBreak, setKoBreak]         = useState("0");
-  const [koConsolation, setKoConsolation] = useState(true);
+  // Knock-out: wordt automatisch opgemaakt na de laatste poulematch,
+  // met deze instellingen (bewaard op het toernooi).
+  const [koPause, setKoPause]           = useState(String(tournament.knockoutPauseMinutes ?? 15));
+  const [koSlot, setKoSlot]             = useState(tournament.knockoutSlotMinutes ? String(tournament.knockoutSlotMinutes) : "");
+  const [koBreak, setKoBreak]           = useState(String(tournament.roundBreakMinutes ?? 0));
+  // Vanaf de kwartfinales duren de matchen langer (2025: 30 i.p.v. 20 min).
+  const [koFinalsSlot, setKoFinalsSlot] = useState(String(tournament.finalsSlotMinutes ?? 30));
+  const [koConsolation, setKoConsolation] = useState(tournament.withConsolation ?? true);
   const [perPoule, setPerPoule]         = useState(String(tournament.teamsPerPoule ?? 4));
   // Wie gaat door naar de knock-out: top N per poule + X beste (N+1)-des.
   const [advPerPoule, setAdvPerPoule]   = useState(String(tournament.teamsAdvancingPerPoule ?? 2));
@@ -575,15 +589,42 @@ function OverviewTab({
   const bestNum     = Math.max(0, Number.parseInt(bestNths, 10) || 0);
   const nthLabel    = `${advNum + 1}de`;
   const koTeamCount = groupPouleCount * advNum + Math.min(bestNum, groupPouleCount);
+  const koSettings = {
+    teamsAdvancingPerPoule: advNum,
+    bestNthsAdvancing: bestNum,
+    knockoutPauseMinutes: Math.max(0, Number.parseInt(koPause, 10) || 0),
+    knockoutSlotMinutes: koSlot.trim() ? Number.parseInt(koSlot, 10) : null,
+    finalsSlotMinutes: Number.parseInt(koFinalsSlot, 10) || 30,
+    roundBreakMinutes: Math.max(0, Number.parseInt(koBreak, 10) || 0),
+    withConsolation: koConsolation,
+  };
   const formatDirty =
-    advNum !== (tournament.teamsAdvancingPerPoule ?? 2) || bestNum !== (tournament.bestNthsAdvancing ?? 0);
+    advNum !== (tournament.teamsAdvancingPerPoule ?? 2) ||
+    bestNum !== (tournament.bestNthsAdvancing ?? 0) ||
+    koSettings.knockoutPauseMinutes !== (tournament.knockoutPauseMinutes ?? 15) ||
+    koSettings.knockoutSlotMinutes !== (tournament.knockoutSlotMinutes ?? null) ||
+    koSettings.finalsSlotMinutes !== (tournament.finalsSlotMinutes ?? 30) ||
+    koSettings.roundBreakMinutes !== (tournament.roundBreakMinutes ?? 0) ||
+    koSettings.withConsolation !== (tournament.withConsolation ?? true);
+
+  // Status van het automatische knock-outschema.
+  const groupMatches = tournament.matches.filter((m) => m.phase === "GROUP_STAGE");
+  const groupOpen    = groupMatches.filter((m) => m.scoreA === null || m.scoreB === null).length;
+  const koMatches    = tournament.matches.filter((m) => m.bracketPos);
+  const koStarted    = koMatches.some((m) => m.scoreA !== null || m.scoreB !== null);
+  const groupSlot    = slotMinutesOf(groupMatches);
+  const lastGroup    = Math.max(0, ...groupMatches.filter((m) => m.scheduledAt).map((m) => new Date(m.scheduledAt!).getTime()));
+  const koStartAt    = koMatches.length
+    ? Math.min(...koMatches.filter((m) => m.scheduledAt).map((m) => new Date(m.scheduledAt!).getTime()))
+    : lastGroup ? lastGroup + (groupSlot + koSettings.knockoutPauseMinutes) * 60_000 : 0;
+  const hhmm = (t: number) => new Date(t).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
 
   async function saveFormat() {
     setFormatNote(""); setSavingFormat(true);
     try {
       const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ teamsAdvancingPerPoule: advNum, bestNthsAdvancing: bestNum }),
+        body: JSON.stringify(koSettings),
       });
       onUpdate(updated);
       setFormatNote("Opgeslagen.");
@@ -647,9 +688,10 @@ function OverviewTab({
               trackCount: tracks,
             }
           : {
-              startTime: new Date(koStart).toISOString(),
-              slotMinutes: Number.parseInt(koSlot, 10),
+              startTime: new Date(koStartAt || Date.now()).toISOString(),
+              slotMinutes: Number.parseInt(koSlot, 10) || groupSlot,
               breakMinutes: Number.parseInt(koBreak, 10) || 0,
+              finalsSlotMinutes: Number.parseInt(koFinalsSlot, 10) || 30,
               trackCount: tracks,
               withConsolation: koConsolation,
               force,
@@ -668,8 +710,6 @@ function OverviewTab({
           `${result.created} poulewedstrijden over ${tracks} banen` +
           (end ? ` · laatste start om ${end.toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}.` : ".")
         );
-        const next = latestGroupEnd(fresh, Number.parseInt(slotMinutes, 10) || 20);
-        if (next) setKoStart(next);
       } else {
         setGenNote(`Knock-out met ${result.totalAdvancing} teams: ${result.created} wedstrijden aangemaakt.`);
       }
@@ -734,7 +774,14 @@ function OverviewTab({
       {/* Generate poules */}
       <div className="admin-table-wrapper">
         <div className="admin-table-header">
-          <h2>Poules genereren</h2>
+          <div className="title-row">
+            <h2>Poules genereren</h2>
+            <InfoButton title="Poules genereren">
+              <p>Verdeelt de teams willekeurig over poules (Poule A, B, C…). De poules verschillen hoogstens één team in grootte.</p>
+              <p>Met <strong>Enkel aanwezige teams</strong> tellen alleen ploegen die ingecheckt zijn.</p>
+              <p><strong>Opnieuw genereren wist de bestaande poules en poulewedstrijden.</strong></p>
+            </InfoButton>
+          </div>
         </div>
         <div style={{ padding: "1.25rem 1.4rem" }}>
           {drawError && <div className="form-error" style={{ marginBottom: "1rem" }}>{drawError}</div>}
@@ -743,10 +790,6 @@ function OverviewTab({
               ✓ {drawNote}
             </p>
           )}
-          <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.6 }}>
-            Verdeelt de teams willekeurig over poules (Poule A, B, C…). De poules verschillen hoogstens
-            één team in grootte. Opnieuw genereren wist de bestaande poules en poulewedstrijden.
-          </p>
 
           <div style={{ display: "flex", gap: "1.25rem", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "1rem" }}>
             <div className="form-field">
@@ -780,7 +823,14 @@ function OverviewTab({
       {/* Generate matches */}
       <div className="admin-table-wrapper">
         <div className="admin-table-header">
-          <h2>Wedstrijden genereren</h2>
+          <div className="title-row">
+            <h2>Wedstrijden genereren</h2>
+            <InfoButton title="Poulewedstrijden">
+              <p>Elke baan krijgt vaste poules. Poules die een baan delen spelen om beurten, zoals in 2025: baan 1 = poule A en B.</p>
+              <p>Er spelen nooit meer wedstrijden tegelijk dan er banen zijn.</p>
+              <p><strong>Opnieuw genereren wist de bestaande poulewedstrijden.</strong></p>
+            </InfoButton>
+          </div>
         </div>
         <div style={{ padding: "1.25rem 1.4rem" }}>
           {genError && <div className="form-error" style={{ marginBottom: "1rem" }}>{genError}</div>}
@@ -789,11 +839,6 @@ function OverviewTab({
               ✓ {genNote}
             </p>
           )}
-          <p style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.6 }}>
-            Elke baan krijgt vaste poules; poules die een baan delen spelen om beurten (zoals in 2025:
-            baan 1 = poule A en B). Er spelen nooit meer wedstrijden tegelijk dan er banen zijn.
-            Opnieuw genereren wist de bestaande poulewedstrijden.
-          </p>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "1rem", marginBottom: "1rem" }}>
             <div className="form-field">
@@ -823,8 +868,37 @@ function OverviewTab({
             </button>
           </div>
 
-          <h3 style={{ margin: "0 0 0.5rem", fontSize: "0.95rem" }}>Knock-out</h3>
-<div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "1rem", marginBottom: "0.75rem" }}>
+          <div className="title-row" style={{ margin: "0 0 0.5rem" }}>
+            <h3 style={{ margin: 0, fontSize: "0.95rem" }}>Knock-out</h3>
+            <InfoButton title="Knock-out">
+              <p>Je hoeft niets te genereren. Zodra de laatste poulematch een score heeft, maakt de site het knock-outschema zelf op met de instellingen hieronder. Tot dan zien de spelers een voorlopige bracket die na elke match verschuift.</p>
+              <p>
+                Rangschikking: eerst alle 1sten (beste eerst), dan alle 2den
+                {bestNum > 0 && <>, dan de beste {nthLabel}s</>}. Binnen elke groep tellen punten, dan saldo, dan gemaakte punten.
+                In ronde 1 speelt seed 1 tegen de laatste seed, 2 tegen de voorlaatste, …
+                {bestNum > 0 && <> De beste 1ste speelt dus tegen de slechtste {nthLabel} die doorgaat.</>}
+              </p>
+              <p>Nooit twee ploegen uit dezelfde poule in ronde 1. Latere rondes vullen zich automatisch zodra je scores ingeeft.</p>
+              <p>Pas je daarna nog een poulescore aan, dan wordt het schema opnieuw geloot, tot de eerste knock-outmatch gespeeld is. Vanaf dan ligt alles vast.</p>
+            </InfoButton>
+          </div>
+
+          <p style={{ margin: "0 0 0.9rem", fontSize: "0.875rem", lineHeight: 1.6 }}>
+            {koStarted ? (
+              <><span className="badge badge--green">Bezig</span>{" "}De knock-out is begonnen; het schema ligt vast.</>
+            ) : koMatches.length ? (
+              <><span className="badge badge--green">Klaar</span>{" "}Schema opgemaakt, eerste knock-outmatch om <strong>{hhmm(koStartAt)}</strong>.</>
+            ) : groupMatches.length ? (
+              <span style={{ color: "var(--text-2)" }}>
+                Wordt automatisch opgemaakt na de laatste poulematch (nog {groupOpen} open).
+                {koStartAt > 0 && <> Verwachte start: <strong style={{ color: "var(--text)" }}>{hhmm(koStartAt)}</strong>.</>}
+              </span>
+            ) : (
+              <span style={{ color: "var(--text-2)" }}>Maak eerst de poulewedstrijden aan.</span>
+            )}
+          </p>
+
+          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "1rem", marginBottom: "0.5rem" }}>
             <div className="form-field" style={{ margin: 0 }}>
               <label htmlFor="ko-adv">Door per poule</label>
               <input id="ko-adv" type="number" min="1" max="8" value={advPerPoule} style={{ width: "6rem" }}
@@ -835,85 +909,60 @@ function OverviewTab({
               <input id="ko-best" type="number" min="0" max={groupPouleCount || 32} value={bestNths} style={{ width: "6rem" }}
                 onChange={(e) => setBestNths(e.target.value)} />
             </div>
-            <button type="button" className="btn-sm btn-sm--ghost" onClick={saveFormat}
-              disabled={savingFormat || !formatDirty || advNum < 1}>
-              {savingFormat ? "Opslaan…" : "Opslaan"}
-            </button>
-            {formatNote && <span style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{formatNote}</span>}
-          </div>
-          <div style={{ margin: "0 0 1rem", fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.6 }}>
-            <p style={{ margin: "0 0 0.4rem" }}>
-              {groupPouleCount > 0 ? (
-                <>
-                  <strong style={{ color: "var(--text)" }}>{koTeamCount} ploegen door</strong>: top {advNum} van
-                  elk van de {groupPouleCount} poules ({groupPouleCount * advNum})
-                  {bestNum > 0 && <> + de {Math.min(bestNum, groupPouleCount)} beste {nthLabel}s</>}.
-                </>
-              ) : (
-                <>Top {advNum} per poule{bestNum > 0 && <> + de {bestNum} beste {nthLabel}s</>}.</>
-              )}
-            </p>
-            <p style={{ margin: "0 0 0.4rem" }}>
-              Rangschikking: eerst alle 1sten (beste eerst), dan alle 2den
-              {bestNum > 0 && <>, dan de beste {nthLabel}s</>}. In ronde 1 speelt seed 1 tegen de laatste seed,
-              2 tegen de voorlaatste, …
-              {bestNum > 0 && <> De beste 1ste speelt dus tegen de slechtste {nthLabel} die doorgaat,
-              de tweede beste 1ste tegen de tweede slechtste {nthLabel}, enzovoort.</>}
-            </p>
-            <p style={{ margin: 0 }}>
-              Nooit twee ploegen uit dezelfde poule in ronde 1. Latere rondes vullen zich automatisch zodra je
-              scores ingeeft.
-            </p>
-            {groupPouleCount > 0 && koTeamCount > 0 && (koTeamCount & (koTeamCount - 1)) !== 0 && (
-              <p style={{ margin: "0.5rem 0 0", color: "var(--warn-fg)" }}>
-                {koTeamCount} is geen macht van 2: de hoogste seeds krijgen een vrijloting in ronde 1.
-              </p>
-            )}
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "1rem", marginBottom: "0.75rem" }}>
-            <div className="form-field">
-              <label htmlFor="ko-start">Eerste knock-outmatch</label>
-              <input id="ko-start" type="datetime-local" value={koStart}
-                onChange={(e) => setKoStart(e.target.value)} />
+            <div className="form-field" style={{ margin: 0 }}>
+              <label htmlFor="ko-pause">Pauze na de poules</label>
+              <input id="ko-pause" type="number" min="0" max="240" value={koPause} style={{ width: "6rem" }}
+                onChange={(e) => setKoPause(e.target.value)} />
             </div>
-            <div className="form-field">
-              <label htmlFor="ko-slot">Minuten per match</label>
-              <input id="ko-slot" type="number" min="5" max="120" value={koSlot}
-                style={{ width: "110px" }}
+            <div className="form-field" style={{ margin: 0 }}>
+              <label htmlFor="ko-slot">Min. per match 1/16, 1/8</label>
+              <input id="ko-slot" type="number" min="5" max="120" value={koSlot} placeholder={String(groupSlot)} style={{ width: "6rem" }}
                 onChange={(e) => setKoSlot(e.target.value)} />
             </div>
-            <div className="form-field">
+            <div className="form-field" style={{ margin: 0 }}>
+              <label htmlFor="ko-finals-slot">Min. vanaf kwartfinale</label>
+              <input id="ko-finals-slot" type="number" min="5" max="120" value={koFinalsSlot} style={{ width: "6rem" }}
+                onChange={(e) => setKoFinalsSlot(e.target.value)} />
+            </div>
+            <div className="form-field" style={{ margin: 0 }}>
               <label htmlFor="ko-break">Pauze tussen rondes</label>
-              <input id="ko-break" type="number" min="0" max="120" value={koBreak}
-                style={{ width: "110px" }}
+              <input id="ko-break" type="number" min="0" max="120" value={koBreak} style={{ width: "6rem" }}
                 onChange={(e) => setKoBreak(e.target.value)} />
             </div>
           </div>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", marginBottom: "1rem" }}>
+          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", margin: "0.5rem 0 0.9rem" }}>
             <input type="checkbox" checked={koConsolation}
               onChange={(e) => setKoConsolation(e.target.checked)} />
             Kleine finale (3de plaats)
           </label>
 
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            <button type="button" className="btn-sm btn-sm--primary"
-              onClick={() => generate("ko")}
-              disabled={generating !== "" || doneCount === 0 || !koStart}
-              title="Neemt de huidige standen als vertrekpunt">
-              {generating === "ko" ? "Genereren…" : "Genereer knockoutschema"}
-            </button>
-          </div>
+          <p style={{ margin: "0 0 0.9rem", fontSize: "0.875rem", color: "var(--text-2)" }}>
+            {groupPouleCount > 0 ? (
+              <>
+                <strong style={{ color: "var(--text)" }}>{koTeamCount} ploegen door</strong>: top {advNum} van
+                elk van de {groupPouleCount} poules ({groupPouleCount * advNum})
+                {bestNum > 0 && <> + de {Math.min(bestNum, groupPouleCount)} beste {nthLabel}s</>}.
+              </>
+            ) : (
+              <>Top {advNum} per poule{bestNum > 0 && <> + de {bestNum} beste {nthLabel}s</>}.</>
+            )}
+            {groupPouleCount > 0 && koTeamCount > 0 && (koTeamCount & (koTeamCount - 1)) !== 0 && (
+              <span style={{ display: "block", marginTop: "0.35rem", color: "var(--warn-fg)" }}>
+                {koTeamCount} is geen macht van 2: de hoogste seeds krijgen een vrijloting in ronde 1.
+              </span>
+            )}
+          </p>
 
-          {teamCount === 0 && (
-            <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "var(--ink-2)" }}>
-              Voeg eerst teams toe via het tabblad &quot;Teams&quot;.
-            </p>
-          )}
-          {teamCount > 0 && doneCount === 0 && (
-            <p style={{ margin: "0.5rem 0 0", fontSize: "0.8rem", color: "var(--ink-2)" }}>
-              Het knockoutschema vertrekt van de poulestanden — speel eerst de poules af.
-            </p>
-          )}
+          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+            <button type="button" className="btn-sm btn-sm--primary" onClick={saveFormat}
+              disabled={savingFormat || !formatDirty || advNum < 1}>
+              {savingFormat ? "Opslaan…" : "Instellingen opslaan"}
+            </button>
+            {formatNote && <span style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{formatNote}</span>}
+            {koStarted && formatDirty && (
+              <span style={{ fontSize: "0.8rem", color: "var(--warn-fg)" }}>De knock-out is al bezig: dit verandert het schema niet meer.</span>
+            )}
+          </div>
         </div>
       </div>
     </div>
@@ -1325,6 +1374,7 @@ const TAB_LABELS: Record<Tab, string> = {
   aanmelding: "Aanmelding",
   teams:      "Teams",
   schema:    "Schema",
+  mail:      "Mail",
   reglement: "Reglement",
 };
 
@@ -1354,16 +1404,24 @@ export default function TournamentDetailPage({
     <>
       {/* Back + Header */}
       <div style={{ marginBottom: "1.5rem" }}>
-        <Link href="/admin/toernooi"
-          style={{ fontSize: "0.8rem", color: "var(--ink-2)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.3rem", marginBottom: "0.75rem" }}>
-          ← Alle toernooien
-        </Link>
+        <BackLink href="/admin/toernooi" className="mb-4">Alle toernooien</BackLink>
         <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
           <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 500, letterSpacing: "-0.03em", color: "var(--text)" }}>
             {tournament.name}
           </h1>
           <span className="mono" style={{ color: "var(--ink-2)", fontSize: "0.9rem" }}>{tournament.year}</span>
           {tournament.isActive && <span className="badge badge--pink">Actief</span>}
+          <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
+            <a href={`/toernooi/${tournament.id}`} target="_blank" rel="noreferrer" className="btn-sm btn-sm--ghost"
+              style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
+              Publieke site
+            </a>
+            <a href={`/tv/${tournament.id}`} target="_blank" rel="noreferrer" className="btn-sm btn-sm--primary"
+              style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
+              title="Open op de laptop aan de tv en druk F voor volledig scherm">
+              TV-scherm openen
+            </a>
+          </div>
         </div>
       </div>
 
@@ -1409,6 +1467,7 @@ export default function TournamentDetailPage({
       {tab === "aanmelding" && <AanmeldingTab tournament={tournament} onUpdate={setTournament} />}
       {tab === "teams"      && <TeamsTab     tournament={tournament} onUpdate={setTournament} />}
       {tab === "schema"     && <SchemaTab    tournament={tournament} onUpdate={setTournament} />}
+      {tab === "mail"       && <MailTab      tournament={tournament} />}
       {tab === "reglement"  && <ReglementTab tournament={tournament} onUpdate={setTournament} />}
     </>
   );

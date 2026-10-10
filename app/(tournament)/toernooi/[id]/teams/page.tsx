@@ -13,8 +13,8 @@ export default async function TeamsPage({
   const tournament = await getTournament(id);
   if (!tournament) notFound();
 
-  const { teams, poules } = tournament;
+  const { teams, poules, matches } = tournament;
   if (!teams.length) return <Empty text="Nog geen teams ingeschreven." />;
 
-  return <TeamsView teams={teams} poules={poules} tournamentId={id} />;
+  return <TeamsView teams={teams} poules={poules} matches={matches} tournamentId={id} />;
 }
