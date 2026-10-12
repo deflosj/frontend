@@ -8,6 +8,8 @@ import type { ActiveTournament, TournamentTeam } from "@/lib/tournament-types";
 import { TeamLinkActions, portalUrl } from "../team-link";
 import { IconPlus } from "@/components/ui/icons";
 import { QrModal } from "@/components/ui/qr-modal";
+import { QrCode } from "lucide-react";
+import { Notice, Panel } from "@/components/admin/ui";
 
 const fieldInput: React.CSSProperties = {
   width: "100%",
@@ -149,17 +151,16 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
   return (
     <>
       {/* ── Aanmeldformulier ────────────────────────────────── */}
-      <div className="admin-table-wrapper" style={{ marginBottom: "1.5rem" }}>
-        <div className="admin-table-header">
-          <h2>Aanmelding</h2>
-          <span style={{ fontSize: "0.8rem", color: "var(--ink-2)" }}>
-            {tournament.teams.length} aangemeld · {paidCount} betaald ({cashCount} cash, {payconiqCount} Payconiq)
-            {" · "}
-            <button type="button" onClick={() => setShowQr(true)} style={{ color: "var(--pink, #e6007e)", fontWeight: 600 }}>
-              QR zelf-inschrijving
-            </button>
-          </span>
-        </div>
+      <Panel
+        id="register"
+        title="Inschrijftafel"
+        description={<>{tournament.teams.length} ingeschreven · {paidCount} betaald ({cashCount} cash, {payconiqCount} Payconiq). Enter schrijft in en zet de cursor terug op de teamnaam.</>}
+        actions={
+          <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setShowQr(true)}>
+            <QrCode size={16} strokeWidth={1.75} /> QR zelf-inschrijving
+          </button>
+        }
+      >
         {showQr && (
           <QrModal
             title="Scan & schrijf je team in"
@@ -170,8 +171,8 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
           />
         )}
 
-        <form onSubmit={handleSubmit} style={{ padding: "1.25rem" }}>
-          {error && <div className="form-error" style={{ marginBottom: "0.75rem" }}>{error}</div>}
+        <form onSubmit={handleSubmit}>
+          {error && <Notice tone="err" className="mb-3">{error}</Notice>}
 
           <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end" }}>
             <div className="form-field" style={{ flex: "2 1 220px", minWidth: 0 }}>
@@ -206,7 +207,7 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
               disabled={saving || !name.trim()}
               style={{ flex: "0 0 auto", padding: "0.6rem 1.1rem" }}
             >
-              {saving ? "Bezig…" : "Aanmelden ⏎"}
+              {saving ? "Bezig…" : "Inschrijven ⏎"}
             </button>
           </div>
 
@@ -243,11 +244,7 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
           )}
 
           {justAdded && !error && (
-            <div style={{
-              marginTop: "0.9rem", padding: "0.75rem 0.9rem", borderRadius: "10px",
-              background: "var(--bg-alt)", border: "1px solid var(--border)",
-              display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap",
-            }}>
+            <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-[var(--ok-bg)] px-3.5 py-3">
               <span style={{ fontSize: "0.8rem", color: "var(--ink-2)" }}>
                 ✓ <strong>{justAdded.name}</strong> aangemeld.
                 {justAdded.token ? " Geef deze link mee:" : " Typ de volgende teamnaam."}
@@ -263,7 +260,7 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
             </div>
           )}
         </form>
-      </div>
+      </Panel>
 
       {/* ── Plaatshouders ───────────────────────────────────── */}
       {SHOW_PLACEHOLDERS && (

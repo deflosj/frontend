@@ -46,12 +46,13 @@ export const fieldInput: React.CSSProperties = {
 };
 
 export const smallInput: React.CSSProperties = {
-  padding: "0.35rem 0.5rem",
+  height: 34,
+  padding: "0 0.5rem",
   border: "1px solid var(--border)",
-  borderRadius: "6px",
-  background: "var(--bg)",
+  borderRadius: 8,
+  background: "var(--surface)",
   color: "var(--text)",
-  fontSize: "0.8rem",
+  fontSize: "0.85rem",
   fontFamily: "inherit",
   outline: "none",
   textAlign: "center" as const,

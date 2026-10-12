@@ -4,6 +4,7 @@ import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament } from "@/lib/tournament-types";
 import { IconSave } from "@/components/ui/icons";
+import { Notice, Panel } from "@/components/admin/ui";
 
 // ── Default rules text ────────────────────────────────────────────────────────
 
@@ -93,43 +94,34 @@ export function ReglementEditor({
     } finally { setSaving(false); }
   }
 
+  const updated = tournament.rulesUpdatedAt
+    ? new Date(tournament.rulesUpdatedAt).toLocaleString("nl-BE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })
+    : null;
+
   return (
-    <div style={{ maxWidth: "720px" }}>
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <h2>Reglement</h2>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {saved && <span style={{ fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>✓ Opgeslagen</span>}
-            {error && <span style={{ fontSize: "0.8rem", color: "var(--err-fg)" }}>{error}</span>}
-            <button type="button" className="btn-sm btn-sm--primary"
-              onClick={save} disabled={saving}
-              style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              <IconSave /> {saving ? "Opslaan…" : "Opslaan"}
-            </button>
-          </div>
-        </div>
-        <div style={{ padding: "1rem 1.4rem" }}>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={28}
-            aria-label="Reglement tekst"
-            style={{
-              width: "100%",
-              resize: "vertical",
-              fontFamily: "var(--font-geist-mono), monospace",
-              fontSize: "0.82rem",
-              lineHeight: 1.7,
-              padding: "0.75rem",
-              border: "1px solid var(--border)",
-              borderRadius: "8px",
-              background: "var(--bg)",
-              color: "var(--text)",
-              outline: "none",
-            }}
-          />
-        </div>
-      </div>
-    </div>
+    <Panel
+      id="rules"
+      title="Reglement"
+      description={updated ? `Laatst opgeslagen op ${updated}. Wordt getoond op de publieke toernooipagina.` : "Wordt getoond op de publieke toernooipagina."}
+      actions={
+        <>
+          {saved && <span className="text-[13px] font-medium text-[var(--ok-fg)]">✓ Opgeslagen</span>}
+          <button type="button" className="btn-sm btn-sm--primary" onClick={save} disabled={saving}>
+            <IconSave /> {saving ? "Opslaan…" : "Opslaan"}
+          </button>
+        </>
+      }
+    >
+      {error && <Notice tone="err" className="mb-3">{error}</Notice>}
+      <p className="mb-2 text-xs text-ink-2">Een regel als <span className="mono">── Titel ──</span> wordt een kop op de site.</p>
+      <textarea
+        value={text}
+        onChange={(e) => { setText(e.target.value); setSaved(false); }}
+        rows={24}
+        aria-label="Reglement tekst"
+        className="w-full rounded-xl border border-rule bg-paper p-3.5 font-mono text-[13px] leading-[1.7] text-ink outline-none focus:border-pink"
+        style={{ resize: "vertical" }}
+      />
+    </Panel>
   );
 }

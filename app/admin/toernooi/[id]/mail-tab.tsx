@@ -1,5 +1,6 @@
 "use client";
 
+import { Notice, Panel } from "@/components/admin/ui";
 import { useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
@@ -54,9 +55,12 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
       const raw = localStorage.getItem(DRAFT_KEY(tournament.id));
       if (raw) {
         const d = JSON.parse(raw) as { subject?: string; body?: string };
-        setSubject(d.subject ?? "");
-        setBody(d.body ?? "");
-        return;
+        // Een leeg concept (bv. door de dubbele mount in dev) telt niet.
+        if (d.subject?.trim() || d.body?.trim()) {
+          setSubject(d.subject ?? "");
+          setBody(d.body ?? "");
+          return;
+        }
       }
     } catch { /* geen concept */ }
     setSubject(`${tournament.name}: praktische info`);
@@ -125,96 +129,92 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
   const n = preview?.recipients.length ?? 0;
 
   return (
-    <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1.1fr) minmax(0, 1fr)", gap: "1.5rem", alignItems: "start" }} className="mail-grid">
-      <style>{`@media (max-width: 900px){.mail-grid{grid-template-columns:minmax(0,1fr)!important}}`}</style>
+    <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
+      <Panel id="compose" title="Mail naar de teams" description="Elke ploeg krijgt een eigen mail, met de velden per ploeg ingevuld.">
+        <div className="flex flex-col gap-4">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="form-field">
+              <label htmlFor="m-aud">Naar</label>
+              <select id="m-aud" value={audience} onChange={(e) => setAudience(e.target.value as Audience)}>
+                {AUDIENCES.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
+              </select>
+            </div>
+            <div className="form-field">
+              <label htmlFor="m-poule">Poule</label>
+              <select id="m-poule" value={pouleId} onChange={(e) => setPouleId(e.target.value)}>
+                <option value="">Alle poules</option>
+                {groupPoules.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+            </div>
+          </div>
 
-      <section style={{ display: "grid", gap: "1rem" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
           <div className="form-field">
-            <label htmlFor="m-aud">Naar</label>
-            <select id="m-aud" value={audience} onChange={(e) => setAudience(e.target.value as Audience)}>
-              {AUDIENCES.map((a) => <option key={a.key} value={a.key}>{a.label}</option>)}
-            </select>
+            <label htmlFor="m-subject">Onderwerp</label>
+            <input id="m-subject" type="text" maxLength={150} value={subject} onChange={(e) => setSubject(e.target.value)} />
           </div>
+
           <div className="form-field">
-            <label htmlFor="m-poule">Poule</label>
-            <select id="m-poule" value={pouleId} onChange={(e) => setPouleId(e.target.value)}>
-              <option value="">Alle poules</option>
-              {groupPoules.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <label htmlFor="m-body">Bericht</label>
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className="text-xs text-ink-2">Invoegen:</span>
+              {FIELDS.map((f) => (
+                <button key={f.key} type="button" className="chip" style={{ height: 28, fontSize: "0.78rem" }}
+                  onClick={() => insertField(f.key)} title={`Voegt {${f.key}} in, per ploeg ingevuld`}>
+                  {f.label}
+                </button>
+              ))}
+            </div>
+            <textarea id="m-body" ref={bodyRef} rows={12} value={body} onChange={(e) => setBody(e.target.value)}
+              style={{ resize: "vertical", lineHeight: 1.6 }} />
           </div>
-        </div>
 
-        <div className="form-field">
-          <label htmlFor="m-subject">Onderwerp</label>
-          <input id="m-subject" type="text" maxLength={150} value={subject} onChange={(e) => setSubject(e.target.value)} />
-        </div>
-
-        <div className="form-field">
-          <label htmlFor="m-body">Bericht</label>
-          <div style={{ display: "flex", flexWrap: "wrap", gap: "0.35rem", alignItems: "center" }}>
-            <span style={{ fontSize: "0.78rem", color: "var(--text-2)" }}>Invoegen:</span>
-            {FIELDS.map((f) => (
-              <button key={f.key} type="button" className="btn-sm btn-sm--ghost" onClick={() => insertField(f.key)}
-                title={`Voegt {${f.key}} in, per ploeg ingevuld`}>
-                {f.label}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className="btn-sm btn-sm--primary" onClick={send}
+              disabled={sending || n === 0 || !subject.trim() || !body.trim()}>
+              {sending ? "Versturen…" : `Verstuur naar ${n} ploeg${n === 1 ? "" : "en"}`}
+            </button>
+            <span className="text-xs text-ink-2">Concept wordt bewaard in deze browser.</span>
           </div>
-          <textarea id="m-body" ref={bodyRef} rows={12} value={body} onChange={(e) => setBody(e.target.value)}
-            style={{ resize: "vertical", lineHeight: 1.55 }} />
-        </div>
+          {sendError && <Notice tone="err">{sendError}</Notice>}
 
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-          <button type="button" className="btn-sm btn-sm--primary" onClick={send}
-            disabled={sending || n === 0 || !subject.trim() || !body.trim()}
-            style={{ padding: "0.55rem 1.1rem" }}>
-            {sending ? "Versturen…" : `Verstuur naar ${n} ploeg${n === 1 ? "" : "en"}`}
-          </button>
-          {sendError && <span style={{ color: "var(--err-fg)", fontSize: "0.85rem" }}>{sendError}</span>}
-        </div>
-
-        {result && (
-          <div style={{ padding: "0.85rem 1rem", borderRadius: 12, background: result.failed.length ? "var(--warn-bg)" : "var(--ok-bg)", color: result.failed.length ? "var(--warn-fg)" : "var(--ok-fg)", fontSize: "0.875rem", lineHeight: 1.5 }}>
-            Verstuurd naar {result.sent} ploeg{result.sent === 1 ? "" : "en"}.
-            {result.failed.length > 0 && (
-              <>
-                {" "}Mislukt voor {result.failed.length}:
-                <ul style={{ margin: "0.35rem 0 0", paddingLeft: "1.1rem" }}>
-                  {result.failed.map((f) => <li key={f.email}>{f.name} ({f.email}): {f.error}</li>)}
-                </ul>
-              </>
-            )}
-          </div>
-        )}
-      </section>
-
-      <aside style={{ display: "grid", gap: "0.75rem" }}>
-        <div style={{ fontSize: "0.875rem", color: "var(--text-2)", lineHeight: 1.5 }}>
-          {previewError ? (
-            <span style={{ color: "var(--err-fg)" }}>{previewError}</span>
-          ) : preview ? (
-            <>
-              Gaat naar <strong style={{ color: "var(--text)" }}>{n} ploeg{n === 1 ? "" : "en"}</strong>
-              {preview.skipped.length > 0 && (
-                <> · {preview.skipped.length} zonder e-mailadres: {preview.skipped.map((s) => s.name).join(", ")}</>
+          {result && (
+            <Notice tone={result.failed.length ? "warn" : "ok"}>
+              Verstuurd naar {result.sent} ploeg{result.sent === 1 ? "" : "en"}.
+              {result.failed.length > 0 && (
+                <>
+                  {" "}Mislukt voor {result.failed.length}:
+                  <ul className="mt-1.5 list-disc pl-4">
+                    {result.failed.map((f) => <li key={f.email}>{f.name} ({f.email}): {f.error}</li>)}
+                  </ul>
+                </>
               )}
+            </Notice>
+          )}
+        </div>
+      </Panel>
+
+      <Panel
+        id="preview"
+        title="Voorbeeld"
+        description={
+          previewError ? <span className="text-[var(--err-fg)]">{previewError}</span>
+          : preview ? (
+            <>
+              Gaat naar <strong className="text-ink">{n} ploeg{n === 1 ? "" : "en"}</strong>
+              {preview.skipped.length > 0 && <> · {preview.skipped.length} zonder e-mailadres: {preview.skipped.map((s) => s.name).join(", ")}</>}
             </>
-          ) : "Ontvangers laden…"}
+          ) : "Ontvangers laden…"
+        }
+        flush
+      >
+        <div className="flex flex-col gap-0.5 bg-paper px-5 py-3 text-[13px] text-ink-2">
+          <span>Aan <strong className="text-ink">{preview?.preview?.name ?? "…"}</strong> {preview?.preview ? `<${preview.preview.to}>` : ""}</span>
+          <span className="text-[15px] font-semibold text-ink">{preview?.preview?.subject || subject || "(geen onderwerp)"}</span>
         </div>
-        <div style={{ border: "1px solid var(--border)", borderRadius: 14, background: "var(--bg-alt)", overflow: "hidden" }}>
-          <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid var(--border)", fontSize: "0.8rem", color: "var(--text-2)", display: "grid", gap: "0.2rem" }}>
-            <span>Voorbeeld voor <strong style={{ color: "var(--text)" }}>{preview?.preview?.name ?? "…"}</strong> {preview?.preview ? `<${preview.preview.to}>` : ""}</span>
-            <span style={{ fontSize: "0.95rem", fontWeight: 600, color: "var(--text)" }}>{preview?.preview?.subject || subject || "(geen onderwerp)"}</span>
-          </div>
-          <pre style={{ margin: 0, padding: "1rem", whiteSpace: "pre-wrap", wordBreak: "break-word", fontFamily: "inherit", fontSize: "0.9rem", lineHeight: 1.6, color: "var(--text)" }}>
-            {preview?.preview?.text ?? body}
-          </pre>
-        </div>
-        <p style={{ margin: 0, fontSize: "0.78rem", color: "var(--text-2)", lineHeight: 1.5 }}>
-          Elke ploeg krijgt een eigen mail; de anderen zien elkaars adres niet. Je concept blijft bewaard in deze browser tot het verstuurd is.
-        </p>
-      </aside>
+        <pre className="m-0 whitespace-pre-wrap break-words border-t border-rule px-5 py-4 font-[inherit] text-sm leading-relaxed text-ink">
+          {preview?.preview?.text ?? body}
+        </pre>
+      </Panel>
     </div>
   );
 }

@@ -6,8 +6,7 @@ import type { ActiveTournament } from "@/lib/tournament-types";
 import { IconSave } from "@/components/ui/icons";
 import { slotMinutes as slotMinutesOf } from "@/lib/tournament-live";
 import { InfoButton } from "@/components/admin/info-button";
-
-// ── Tab: Overzicht ────────────────────────────────────────────────────────────
+import { Notice, Panel, Subhead } from "@/components/admin/ui";
 
 /** Vandaag om 13:00 in het formaat dat datetime-local verwacht. */
 function defaultStartTime(): string {
@@ -200,78 +199,76 @@ export function PlanningPanel({
     finally { setGenerating(""); }
   }
 
-  return (
-    <div style={{ display: "grid", gap: "1.5rem" }}>
-      {/* Generate poules */}
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <div className="title-row">
-            <h2>Poules genereren</h2>
-            <InfoButton title="Poules genereren">
-              <p>Verdeelt de teams willekeurig over poules (Poule A, B, C…). De poules verschillen hoogstens één team in grootte.</p>
-              <p>Met <strong>Enkel aanwezige teams</strong> tellen alleen ploegen die ingecheckt zijn.</p>
-              <p><strong>Opnieuw genereren wist de bestaande poules en poulewedstrijden.</strong></p>
-            </InfoButton>
-          </div>
-        </div>
-        <div style={{ padding: "1.25rem 1.4rem" }}>
-          {drawError && <div className="form-error" style={{ marginBottom: "1rem" }}>{drawError}</div>}
-          {drawNote && (
-            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>
-              ✓ {drawNote}
-            </p>
-          )}
+  const groupMatchCount = groupMatches.length;
+  const isPowerOfTwo = koTeamCount > 0 && (koTeamCount & (koTeamCount - 1)) === 0;
 
-          <div style={{ display: "flex", gap: "1.25rem", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "1rem" }}>
+  return (
+    <div className="flex flex-col gap-5">
+      {/* ── 1. Poules loten ─────────────────────────────── */}
+      <Panel
+        id="draw"
+        step={groupPouleCount > 0 ? "done" : 1}
+        title="Poules loten"
+        description={groupPouleCount > 0
+          ? `${groupPouleCount} poules geloot. Opnieuw loten wist de poules en poulewedstrijden.`
+          : "Verdeelt de teams willekeurig over poules."}
+        info={
+          <InfoButton title="Poules loten">
+            <p>Verdeelt de teams willekeurig over poules (Poule A, B, C…). De poules verschillen hoogstens één team in grootte.</p>
+            <p>Met <strong>Enkel aanwezige teams</strong> tellen alleen ploegen die ingecheckt zijn.</p>
+            <p><strong>Opnieuw genereren wist de bestaande poules en poulewedstrijden.</strong></p>
+          </InfoButton>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          {drawError && <Notice tone="err">{drawError}</Notice>}
+          {drawNote && <Notice tone="ok">✓ {drawNote}</Notice>}
+          <div className="flex flex-wrap items-end gap-4">
             <div className="form-field">
               <label htmlFor="draw-size">Teams per poule</label>
               <input id="draw-size" type="number" min="2" max="16" value={perPoule}
                 style={{ width: "110px" }}
                 onChange={(e) => setPerPoule(e.target.value)} />
             </div>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", paddingBottom: "0.5rem" }}>
+            <label className="form-checkbox" style={{ paddingBottom: "0.7rem" }}>
               <input type="checkbox" checked={onlyPresent}
                 onChange={(e) => setOnlyPresent(e.target.checked)} />
               Enkel aanwezige teams
             </label>
           </div>
-
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-            <button type="button" className="btn-sm btn-sm--primary"
+          <div className="flex flex-wrap items-center gap-3">
+            <button type="button" className={`btn-sm ${groupPouleCount > 0 ? "btn-sm--ghost" : "btn-sm--primary"}`}
               onClick={drawPoules}
               disabled={drawing || drawTeamCount < 2 || perPouleNum < 2 || Number.isNaN(perPouleNum)}>
-              {drawing ? "Genereren…" : "Genereer poules"}
+              {drawing ? "Loten…" : groupPouleCount > 0 ? "Opnieuw loten" : "Poules loten"}
             </button>
             {drawPouleCount > 0 && (
-              <span style={{ fontSize: "0.8rem", color: "var(--ink-2)" }}>
-                {drawTeamCount} teams → {drawPouleCount} poules
-              </span>
+              <span className="text-[13px] text-ink-2">{drawTeamCount} teams → {drawPouleCount} poules</span>
             )}
           </div>
         </div>
-      </div>
+      </Panel>
 
-      {/* Generate matches */}
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <div className="title-row">
-            <h2>Wedstrijden genereren</h2>
-            <InfoButton title="Poulewedstrijden">
-              <p>Elke baan krijgt vaste poules. Poules die een baan delen spelen om beurten, zoals in 2025: baan 1 = poule A en B.</p>
-              <p>Er spelen nooit meer wedstrijden tegelijk dan er banen zijn.</p>
-              <p><strong>Opnieuw genereren wist de bestaande poulewedstrijden.</strong></p>
-            </InfoButton>
-          </div>
-        </div>
-        <div style={{ padding: "1.25rem 1.4rem" }}>
-          {genError && <div className="form-error" style={{ marginBottom: "1rem" }}>{genError}</div>}
-          {genNote && (
-            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>
-              ✓ {genNote}
-            </p>
-          )}
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "1rem", marginBottom: "1rem" }}>
+      {/* ── 2. Poulewedstrijden ─────────────────────────── */}
+      <Panel
+        id="gen"
+        step={groupMatchCount > 0 ? "done" : 2}
+        title="Poulewedstrijden genereren"
+        description={groupMatchCount > 0
+          ? `${groupMatchCount} wedstrijden ingepland. Opnieuw genereren wist ook hun scores.`
+          : groupPouleCount === 0 ? "Loot eerst de poules." : "Plant alle poulewedstrijden over de banen."}
+        info={
+          <InfoButton title="Poulewedstrijden">
+            <p>Elke baan krijgt vaste poules. Poules die een baan delen spelen om beurten, zoals in 2025: baan 1 = poule A en B.</p>
+            <p>Er spelen nooit meer wedstrijden tegelijk dan er banen zijn.</p>
+            <p><strong>Opnieuw genereren wist de bestaande poulewedstrijden.</strong></p>
+          </InfoButton>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          {genError && <Notice tone="err">{genError}</Notice>}
+          {genNote && <Notice tone="ok">✓ {genNote}</Notice>}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
             <div className="form-field">
               <label htmlFor="gen-start">Eerste wedstrijd</label>
               <input id="gen-start" type="datetime-local" value={startTime}
@@ -280,122 +277,138 @@ export function PlanningPanel({
             <div className="form-field">
               <label htmlFor="gen-slot">Minuten per match</label>
               <input id="gen-slot" type="number" min="5" max="120" value={slotMinutes}
-                style={{ width: "110px" }}
+                style={{ width: "120px" }}
                 onChange={(e) => setSlotMinutes(e.target.value)} />
             </div>
             <div className="form-field">
               <label htmlFor="gen-tracks">Banen</label>
               <input id="gen-tracks" type="number" min="1" max="40" value={trackCount}
-                style={{ width: "90px" }}
+                style={{ width: "96px" }}
                 onChange={(e) => setTrackCount(e.target.value)} />
             </div>
           </div>
-
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
-            <button type="button" className="btn-sm btn-sm--primary"
+          <div>
+            <button type="button" className={`btn-sm ${groupMatchCount > 0 ? "btn-sm--ghost" : "btn-sm--primary"}`}
               onClick={() => generate("poules")}
               disabled={generating !== "" || groupPouleCount === 0 || !startTime}>
-              {generating === "poules" ? "Genereren…" : "Genereer poulewedstrijden"}
+              {generating === "poules" ? "Genereren…" : groupMatchCount > 0 ? "Opnieuw genereren" : "Wedstrijden genereren"}
             </button>
           </div>
+        </div>
+      </Panel>
 
-          <div className="title-row" style={{ margin: "0 0 0.5rem" }}>
-            <h3 style={{ margin: 0, fontSize: "0.95rem" }}>Knock-out</h3>
-            <InfoButton title="Knock-out">
-              <p>Je hoeft niets te genereren. Zodra de laatste poulematch een score heeft, maakt de site het knock-outschema zelf op met de instellingen hieronder. Tot dan zien de spelers een voorlopige bracket die na elke match verschuift.</p>
-              <p>
-                Rangschikking: eerst alle 1sten (beste eerst), dan alle 2den
-                {bestNum > 0 && <>, dan de beste {nthLabel}s</>}. Binnen elke groep tellen punten, dan saldo, dan gemaakte punten.
-                In ronde 1 speelt seed 1 tegen de laatste seed, 2 tegen de voorlaatste, …
-                {bestNum > 0 && <> De beste 1ste speelt dus tegen de slechtste {nthLabel} die doorgaat.</>}
-              </p>
-              <p>Nooit twee ploegen uit dezelfde poule in ronde 1. Latere rondes vullen zich automatisch zodra je scores ingeeft.</p>
-              <p>Pas je daarna nog een poulescore aan, dan wordt het schema opnieuw geloot, tot de eerste knock-outmatch gespeeld is. Vanaf dan ligt alles vast.</p>
-            </InfoButton>
-          </div>
-
-          <p style={{ margin: "0 0 0.9rem", fontSize: "0.875rem", lineHeight: 1.6 }}>
+      {/* ── 3. Knock-out ────────────────────────────────── */}
+      <Panel
+        id="ko"
+        step={koMatches.length > 0 ? "done" : 3}
+        title="Knock-out"
+        description="Wordt automatisch opgemaakt na de laatste poulematch, met deze instellingen."
+        info={
+          <InfoButton title="Knock-out">
+            <p>Je hoeft niets te genereren. Zodra de laatste poulematch een score heeft, maakt de site het knock-outschema zelf op met de instellingen hieronder. Tot dan zien de spelers een voorlopige bracket die na elke match verschuift.</p>
+            <p>
+              Rangschikking: eerst alle 1sten (beste eerst), dan alle 2den
+              {bestNum > 0 && <>, dan de beste {nthLabel}s</>}. Binnen elke groep tellen punten, dan saldo, dan gemaakte punten.
+              In ronde 1 speelt seed 1 tegen de laatste seed, 2 tegen de voorlaatste, …
+              {bestNum > 0 && <> De beste 1ste speelt dus tegen de slechtste {nthLabel} die doorgaat.</>}
+            </p>
+            <p>Nooit twee ploegen uit dezelfde poule in ronde 1. Latere rondes vullen zich automatisch zodra je scores ingeeft.</p>
+            <p>Pas je daarna nog een poulescore aan, dan wordt het schema opnieuw geloot, tot de eerste knock-outmatch gespeeld is. Vanaf dan ligt alles vast.</p>
+          </InfoButton>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <Notice tone={koStarted || koMatches.length ? "ok" : "info"}>
             {koStarted ? (
-              <><span className="badge badge--green">Bezig</span>{" "}De knock-out is begonnen; het schema ligt vast.</>
+              <>De knock-out is begonnen; het schema ligt vast.</>
             ) : koMatches.length ? (
-              <><span className="badge badge--green">Klaar</span>{" "}Schema opgemaakt, eerste knock-outmatch om <strong>{hhmm(koStartAt)}</strong>.</>
+              <>Schema opgemaakt, eerste knock-outmatch om <strong>{hhmm(koStartAt)}</strong>.</>
             ) : groupMatches.length ? (
-              <span style={{ color: "var(--text-2)" }}>
-                Wordt automatisch opgemaakt na de laatste poulematch (nog {groupOpen} open).
-                {koStartAt > 0 && <> Verwachte start: <strong style={{ color: "var(--text)" }}>{hhmm(koStartAt)}</strong>.</>}
-              </span>
-            ) : (
-              <span style={{ color: "var(--text-2)" }}>Maak eerst de poulewedstrijden aan.</span>
-            )}
-          </p>
-
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "1rem", marginBottom: "0.5rem" }}>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-adv">Door per poule</label>
-              <input id="ko-adv" type="number" min="1" max="8" value={advPerPoule} style={{ width: "6rem" }}
-                onChange={(e) => setAdvPerPoule(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-best">+ beste {nthLabel}s</label>
-              <input id="ko-best" type="number" min="0" max={groupPouleCount || 32} value={bestNths} style={{ width: "6rem" }}
-                onChange={(e) => setBestNths(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-pause">Pauze na de poules</label>
-              <input id="ko-pause" type="number" min="0" max="240" value={koPause} style={{ width: "6rem" }}
-                onChange={(e) => setKoPause(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-slot">Min. per match 1/16, 1/8</label>
-              <input id="ko-slot" type="number" min="5" max="120" value={koSlot} placeholder={String(groupSlot)} style={{ width: "6rem" }}
-                onChange={(e) => setKoSlot(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-finals-slot">Min. vanaf kwartfinale</label>
-              <input id="ko-finals-slot" type="number" min="5" max="120" value={koFinalsSlot} style={{ width: "6rem" }}
-                onChange={(e) => setKoFinalsSlot(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-break">Pauze tussen rondes</label>
-              <input id="ko-break" type="number" min="0" max="120" value={koBreak} style={{ width: "6rem" }}
-                onChange={(e) => setKoBreak(e.target.value)} />
-            </div>
-          </div>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", margin: "0.5rem 0 0.9rem" }}>
-            <input type="checkbox" checked={koConsolation}
-              onChange={(e) => setKoConsolation(e.target.checked)} />
-            Kleine finale (3de plaats)
-          </label>
-
-          <p style={{ margin: "0 0 0.9rem", fontSize: "0.875rem", color: "var(--text-2)" }}>
-            {groupPouleCount > 0 ? (
               <>
-                <strong style={{ color: "var(--text)" }}>{koTeamCount} ploegen door</strong>: top {advNum} van
-                elk van de {groupPouleCount} poules ({groupPouleCount * advNum})
-                {bestNum > 0 && <> + de {Math.min(bestNum, groupPouleCount)} beste {nthLabel}s</>}.
+                Nog {groupOpen} poulewedstrijd{groupOpen === 1 ? "" : "en"} open.
+                {koStartAt > 0 && <> Verwachte start: <strong className="text-ink">{hhmm(koStartAt)}</strong>.</>}
               </>
             ) : (
-              <>Top {advNum} per poule{bestNum > 0 && <> + de {bestNum} beste {nthLabel}s</>}.</>
+              <>Maak eerst de poulewedstrijden aan.</>
             )}
-            {groupPouleCount > 0 && koTeamCount > 0 && (koTeamCount & (koTeamCount - 1)) !== 0 && (
-              <span style={{ display: "block", marginTop: "0.35rem", color: "var(--warn-fg)" }}>
-                {koTeamCount} is geen macht van 2: de hoogste seeds krijgen een vrijloting in ronde 1.
-              </span>
-            )}
-          </p>
+          </Notice>
 
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+          <div>
+            <Subhead>Wie gaat door</Subhead>
+            <div className="flex flex-wrap items-end gap-4">
+              <div className="form-field">
+                <label htmlFor="ko-adv">Door per poule</label>
+                <input id="ko-adv" type="number" min="1" max="8" value={advPerPoule} style={{ width: "6.5rem" }}
+                  onChange={(e) => setAdvPerPoule(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="ko-best">+ beste {nthLabel}s</label>
+                <input id="ko-best" type="number" min="0" max={groupPouleCount || 32} value={bestNths} style={{ width: "6.5rem" }}
+                  onChange={(e) => setBestNths(e.target.value)} />
+              </div>
+              <label className="form-checkbox" style={{ paddingBottom: "0.7rem" }}>
+                <input type="checkbox" checked={koConsolation}
+                  onChange={(e) => setKoConsolation(e.target.checked)} />
+                Kleine finale (3de plaats)
+              </label>
+            </div>
+            <p className="mt-3 text-[13px] text-ink-2">
+              {groupPouleCount > 0 ? (
+                <>
+                  <strong className="text-ink">{koTeamCount} ploegen door</strong>: top {advNum} van
+                  elk van de {groupPouleCount} poules ({groupPouleCount * advNum})
+                  {bestNum > 0 && <> + de {Math.min(bestNum, groupPouleCount)} beste {nthLabel}s</>}.
+                </>
+              ) : (
+                <>Top {advNum} per poule{bestNum > 0 && <> + de {bestNum} beste {nthLabel}s</>}.</>
+              )}
+            </p>
+            {groupPouleCount > 0 && koTeamCount > 0 && !isPowerOfTwo && (
+              <Notice tone="warn" className="mt-2">
+                {koTeamCount} is geen macht van 2: de hoogste seeds krijgen een vrijloting in ronde 1.
+              </Notice>
+            )}
+          </div>
+
+          <div>
+            <Subhead>Timing</Subhead>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="form-field">
+                <label htmlFor="ko-pause">Pauze na poules</label>
+                <input id="ko-pause" type="number" min="0" max="240" value={koPause}
+                  onChange={(e) => setKoPause(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="ko-slot">Min. 1/16 en 1/8</label>
+                <input id="ko-slot" type="number" min="5" max="120" value={koSlot} placeholder={String(groupSlot)}
+                  onChange={(e) => setKoSlot(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="ko-finals-slot">Min. vanaf kwartfinale</label>
+                <input id="ko-finals-slot" type="number" min="5" max="120" value={koFinalsSlot}
+                  onChange={(e) => setKoFinalsSlot(e.target.value)} />
+              </div>
+              <div className="form-field">
+                <label htmlFor="ko-break">Pauze tussen rondes</label>
+                <input id="ko-break" type="number" min="0" max="120" value={koBreak}
+                  onChange={(e) => setKoBreak(e.target.value)} />
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap items-center gap-3 border-t border-rule pt-4">
             <button type="button" className="btn-sm btn-sm--primary" onClick={saveFormat}
               disabled={savingFormat || !formatDirty || advNum < 1}>
-              {savingFormat ? "Opslaan…" : "Instellingen opslaan"}
+              <IconSave /> {savingFormat ? "Opslaan…" : "Instellingen opslaan"}
             </button>
-            {formatNote && <span style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{formatNote}</span>}
+            {formatNote && <span className="text-[13px] text-ink-2">{formatNote}</span>}
+            {!formatDirty && !formatNote && <span className="text-[13px] text-ink-2">Geen wijzigingen.</span>}
             {koStarted && formatDirty && (
-              <span style={{ fontSize: "0.8rem", color: "var(--warn-fg)" }}>De knock-out is al bezig: dit verandert het schema niet meer.</span>
+              <span className="text-[13px]" style={{ color: "var(--warn-fg)" }}>De knock-out is al bezig: dit verandert het schema niet meer.</span>
             )}
           </div>
         </div>
-      </div>
+      </Panel>
     </div>
   );
 }

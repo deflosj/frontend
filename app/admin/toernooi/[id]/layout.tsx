@@ -51,7 +51,7 @@ export default function TournamentLayout({
 
   return (
     <TournamentProvider value={{ tournament, setTournament, reload }}>
-      <div className="mx-auto flex max-w-[1120px] flex-col gap-6">
+      <div className="mx-auto flex min-w-0 max-w-[1120px] flex-col gap-6">
         <header className="flex flex-col gap-3.5">
           <nav aria-label="Kruimelpad" className="text-[13px] text-ink-2">
             <Link href="/admin/toernooi" className="hover:text-ink">Toernooien</Link>
@@ -107,7 +107,8 @@ export default function TournamentLayout({
           </nav>
         </header>
 
-        {children}
+        {/* min-w-0: brede tabellen scrollen binnen hun kaart i.p.v. de pagina op te rekken */}
+        <div className="min-w-0">{children}</div>
       </div>
     </TournamentProvider>
   );

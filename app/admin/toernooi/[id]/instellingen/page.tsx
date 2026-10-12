@@ -1,21 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament } from "@/lib/tournament-types";
 import { IconSave } from "@/components/ui/icons";
 import { useTournament } from "../tournament-context";
 import { ReglementEditor } from "./reglement-editor";
+import { Notice, Panel } from "@/components/admin/ui";
 
 function Card({ title, children, note }: Readonly<{ title: string; children: React.ReactNode; note?: string }>) {
   return (
-    <section className="admin-table-wrapper">
-      <div className="admin-table-header"><h2>{title}</h2></div>
-      <div style={{ padding: "1.25rem 1.4rem" }}>
-        {children}
-        {note && <p className="mt-3 text-[13px] text-ink-2">{note}</p>}
-      </div>
-    </section>
+    <Panel title={title} description={note}>
+      {children}
+    </Panel>
   );
 }
 
@@ -45,7 +43,7 @@ function BasicsForm() {
   return (
     <Card title="Basisgegevens">
       <form className="admin-form" onSubmit={save}>
-        {error && <div className="form-error">{error}</div>}
+        {error && <Notice tone="err">{error}</Notice>}
         <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "1rem" }}>
           <div className="form-field">
             <label htmlFor="st-name">Naam</label>
@@ -95,7 +93,7 @@ function DeadlineForm() {
       title="Teams mogen zichzelf aanpassen tot"
       note="Na dit moment kunnen teams hun naam, spelers en logo niet meer wijzigen via hun eigen link. Leeg laten = geen deadline."
     >
-      {error && <div className="form-error" style={{ marginBottom: "0.75rem" }}>{error}</div>}
+      {error && <Notice tone="err" className="mb-3">{error}</Notice>}
       <div className="flex flex-wrap items-end gap-3">
         <div className="form-field" style={{ flex: "0 0 240px" }}>
           <label htmlFor="st-deadline">Deadline</label>
@@ -118,10 +116,11 @@ export default function TournamentSettingsPage() {
       <BasicsForm />
       <DeadlineForm />
       <ReglementEditor tournament={tournament} onUpdate={setTournament} />
-      <p className="text-[13px] text-ink-2">
-        Poulegrootte, doorstroming naar de knock-out en matchduren stel je in bij <strong>Poules &amp; schema</strong>,
+      <Notice tone="info">
+        Poulegrootte, doorstroming naar de knock-out en matchduren stel je in bij{" "}
+        <Link href={`/admin/toernooi/${tournament.id}/schema`} className="font-semibold text-ink underline">Poules &amp; schema</Link>,
         omdat ze samen met het loten en genereren horen.
-      </p>
+      </Notice>
     </div>
   );
 }
