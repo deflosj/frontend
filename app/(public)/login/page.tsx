@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import AuthService from "@/services/AuthService";
+import { ADMIN_ROLES, homeForRole } from "@/lib/routePermissions";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -21,12 +22,12 @@ export default function AdminLoginPage() {
     setLoading(true);
     try {
       const user = await AuthService.login(identifier, password);
-      if (user.role !== "ADMIN" && user.role !== "SUPERADMIN") {
+      if (!(ADMIN_ROLES as string[]).includes(user.role)) {
         AuthService.logout();
         setError("Uw account heeft geen beheerderstoegang.");
         return;
       }
-      globalThis.location.replace("/admin");
+      globalThis.location.replace(homeForRole(user.role));
     } catch (err) {
       setError(err instanceof Error ? err.message : "Aanmelden mislukt.");
     } finally {

@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { Check, House, LogOut, Mail, Menu, Monitor, Moon, Sun, Trophy, X } from "lucide-react";
+import { Check, House, LogOut, Mail, Menu, Monitor, Moon, Sun, Trophy, X, Zap } from "lucide-react";
 import AuthService from "@/services/AuthService";
 import { DrawerProvider } from "@/components/admin/drawer-provider";
 import { getTokenPayload } from "@/lib/api";
@@ -17,6 +17,7 @@ import "./admin.css";
 const ROLE_LABELS: Record<string, string> = {
   SUPERADMIN: "Superadmin",
   ADMIN: "Admin",
+  REFEREE: "Scheidsrechter",
 };
 
 // ── Thema ─────────────────────────────────────────────────────────────────────
@@ -202,6 +203,11 @@ const TABS = [
   { href: "/admin/messages", label: "Inbox", Icon: Mail, count: "unreadMessages" as const },
 ];
 
+/** Scheidsrechters hebben maar één plek in de admin. */
+const REFEREE_TABS = [
+  { href: "/admin/eventdag", label: "Eventdag", Icon: Zap, exact: false, count: undefined },
+];
+
 // ── Layout ────────────────────────────────────────────────────────────────────
 
 export default function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -219,15 +225,19 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
 
   useEffect(() => setMoreOpen(false), [pathname]);
 
-  const counts = useAdminCounts(role !== "");
+  const isReferee = role === "REFEREE";
+  const counts = useAdminCounts(role === "ADMIN" || role === "SUPERADMIN");
 
   const sections = NAV_SECTIONS.map((s) => ({
     ...s,
     items: role ? s.items.filter((i) => isPageAllowed(role, i.href)) : s.items,
   })).filter((s) => s.items.length > 0);
 
-  const tabs = TABS.filter((t) => !role || isPageAllowed(role, t.href));
-  const tabActive = tabs.some((t) => (t.exact ? pathname === t.href : pathname.startsWith(t.href)));
+  const tabs = isReferee ? REFEREE_TABS : TABS.filter((t) => !role || isPageAllowed(role, t.href));
+  const tabIsActive = (t: { href: string; exact?: boolean }) =>
+    t.href === "/admin/eventdag" ? pathname.includes("/eventdag")
+    : t.exact ? pathname === t.href : pathname.startsWith(t.href);
+  const tabActive = tabs.some(tabIsActive);
 
   function handleLogout() {
     AuthService.logout();
@@ -265,7 +275,7 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
         aria-label="Hoofdmenu"
       >
         {tabs.map((t) => {
-          const active = t.exact ? pathname === t.href : pathname.startsWith(t.href);
+          const active = tabIsActive(t);
           const n = t.count ? counts[t.count] : 0;
           return (
             <Link

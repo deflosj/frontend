@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
+import { getTokenPayload } from "@/lib/api";
 import { useTournament } from "../tournament-context";
 import { CheckInView } from "./checkin-view";
 import { ScoreboardView } from "./scoreboard-view";
@@ -24,6 +25,12 @@ export default function EventdayPage() {
   const { tournament } = useTournament();
   const [view, setView] = useState<View>("aanmelden");
   const [track, setTrack] = useState<number | null>(null);
+  // Scheidsrechters kunnen niet naar het toernooibeheer: geen terugknop.
+  const [canManage, setCanManage] = useState(false);
+  useEffect(() => {
+    const role = getTokenPayload()?.role;
+    setCanManage(role === "ADMIN" || role === "SUPERADMIN");
+  }, []);
 
   function openTrack(t: number) {
     setTrack(t);
@@ -34,13 +41,13 @@ export default function EventdayPage() {
     <div className="flex flex-col gap-4">
       <header className="flex flex-col gap-3.5">
         <div className="flex items-center gap-1">
-          <Link
+          {canManage && <Link
             href={`/admin/toernooi/${tournament.id}`}
             aria-label="Terug naar toernooibeheer"
             className="-ml-2.5 flex h-11 w-11 items-center justify-center rounded-xl text-ink hover:bg-ink/5"
           >
             <ChevronLeft size={22} />
-          </Link>
+          </Link>}
           <div className="min-w-0">
             <p className="flex items-center gap-1.5 text-xs text-ink-2">
               <span className="t-live-dot" /> Eventdag

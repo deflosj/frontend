@@ -11,6 +11,7 @@ import {
   Star,
   Trophy,
   Users,
+  Zap,
 } from "lucide-react";
 
 /** Sleutel van een teller die de layout ophaalt (zie useAdminCounts). */
@@ -36,7 +37,10 @@ export type NavSection = { title: string | null; items: NavItem[] };
 export const NAV_SECTIONS: NavSection[] = [
   {
     title: null,
-    items: [{ href: "/admin", label: "Vandaag", Icon: House, exact: true }],
+    items: [
+      { href: "/admin", label: "Vandaag", Icon: House, exact: true },
+      { href: "/admin/eventdag", label: "Eventdag", Icon: Zap, alsoActiveOn: [] },
+    ],
   },
   {
     title: "Evenementen",
@@ -67,6 +71,9 @@ export const NAV_SECTIONS: NavSection[] = [
 
 export function isNavItemActive(item: NavItem, pathname: string): boolean {
   if (item.exact) return pathname === item.href;
+  // De eventdag-modus leeft onder /admin/toernooi/[id]/eventdag.
+  if (item.href === "/admin/eventdag") return /^\/admin(\/toernooi\/\d+)?\/eventdag/.test(pathname);
+  if (item.href === "/admin/toernooi" && /\/eventdag/.test(pathname)) return false;
   const paths = [item.href, ...(item.alsoActiveOn ?? [])];
   return paths.some((p) => pathname === p || pathname.startsWith(p + "/"));
 }
