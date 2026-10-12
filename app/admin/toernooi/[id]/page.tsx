@@ -1,1474 +1,234 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
-import { apiFetch } from "@/lib/api";
-import { PaymentSelect, paymentBody, paymentValue } from "./payment-select";
-import type {
-  ActiveTournament,
-  TournamentMatch,
-  TournamentPoule,
-  TournamentTeam,
-} from "@/lib/tournament-types";
-import { PHASE_LABELS, PHASE_ORDER } from "@/lib/tournament-types";
-import { IconClock, IconEdit, IconPlus, IconSave, IconTrash, IconX,  } from "@/components/ui/icons";
-import { slotMinutes as slotMinutesOf } from "@/lib/tournament-live";
-import { InfoButton } from "@/components/admin/info-button";
-import { MailTab } from "./mail-tab";
-import { AanmeldingTab } from "./aanmelding-tab";
-import { BackLink } from "@/components/ui/back-link";
+import { useEffect, useState } from "react";
+import Link from "next/link";
+import { Check, Copy } from "lucide-react";
+import { isTeamComplete } from "@/lib/tournament-phase";
+import { useTournament } from "./tournament-context";
 
-// ── Default rules text ────────────────────────────────────────────────────────
-
-const DEFAULT_RULES = `── Fairplay en bandjes ──
-
-De wedstrijd heeft een puur recreatief karakter, dus we rekenen op fairplay van elk team. Bij onenigheid neemt de aangeduide scheidsrechter de definitieve beslissing. Basisregel: De Flosj heeft altijd gelijk!
-
-Elk team ontvangt vier spelersbandjes. Deze moeten tijdens het toernooi gedragen worden en zijn niet uitwisselbaar.
-
-── Ploegen en opstelling ──
-
-Er wordt verplicht gespeeld in ploegen van vier spelers (uitzondering: eerste poulewedstrijd). Indien een team vanaf de tweede wedstrijd met minder dan vier spelers aantreedt, krijgt het andere team automatisch een forfaitoverwinning (5–0).
-
-Per spelronde moet elk team afwisselend twee verschillende spelers opstellen. Met uitzondering van de eerste poulewedstrijd mag een speler nooit twee spelletjes na elkaar spelen. Speler 1 en 2 blijven aan de ene kant, speler 3 en 4 aan de andere kant van het terrein.
-
-── Poulefase ──
-
-Er wordt gespeeld in poules van 4 ploegen. De eerste twee ploegen in de stand gaan automatisch door naar de volgende ronde. Daarnaast stoten ook de acht beste derdes door naar de 1/16 finales.
-
-Elk team (of een afgevaardigde) moet 15 minuten voor de eerste wedstrijd aanwezig zijn. Niet tijdig aanwezig zijn resulteert in een forfait voor de volgende wedstrijd. Na twee forfaitnederlagen eindigt het toernooi voor het betrokken team.
-
-── Punten en rangschikking ──
-
-Winst: 2 punten | Gelijkspel: 1 punt | Verlies: 0 punten
-
-Bij gelijke stand na de poulefase gelden de volgende criteria in volgorde:
-1. Aantal gemaakte ballen
-2. Aantal ballen tegen
-3. Verschil: gemaakte ballen – ballen tegen
-4. Aantal gewonnen wedstrijden
-5. Aantal verloren wedstrijden
-6. Onderling resultaat
-7. Indien nog steeds gelijk: één speler van elk team gooit één bal; wie het dichtst bij het cochonnet ligt, gaat door.
-
-── Spelverloop ──
-
-Voor elke wedstrijd bepaalt een toss welke ploeg mag starten.
-
-Het team dat de toss wint, werpt het cochonnet uit (tussen de 6 m en 9 m om geldig te zijn) en speelt vervolgens de eerste bal. De ploeg met de bal het dichtst bij het cochonnet scoort één punt per beter geplaatste bal dan de beste bal van de tegenstander.
-
-De ploeg met de meeste punten wint. Er is geen puntenlimiet. Per werpbeurt krijgt elk team zes ballen.
-
-Ballen die volledig over het koord gaan, zijn buiten en tellen niet meer mee.
-
-── Timing en forfait ──
-
-Poulewedstrijden duren 15 minuten en stoppen exact na 15 minuten. Er worden geen ballen meer gegooid zodra het eindsignaal klinkt. Wanneer de 20 minuten verstreken zijn, wordt de lopende mène nog uitgespeeld.
-
-Wanneer een team niet komt opdagen of met onvoldoende spelers verschijnt, verliest het met 0–5 (forfait).
-
-── Beeldmateriaal ──
-
-Door deel te nemen aan dit toernooi geef je toestemming aan De Flosj om foto's te maken en deze te publiceren op sociale media.
-
-── Zuipbeker ──
-
-Bij aanvang van het toernooi wordt elk team gevraagd of het wil deelnemen aan de Zuipbeker. Voor elk deelnemend team wordt het aantal geconsumeerde alcoholische dranken bijgehouden aan de togen van De Flosj met streepjes op een lijst. Per bestelling kunnen maximaal vier streepjes worden genoteerd. Streepjes worden enkel gezet op vertoon van het spelersbandje. Een team kan enkel streepjes laten bijzetten voor het eigen team.
-
-Ook hier geldt: De Flosj heeft altijd gelijk!`;
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-type Tab = "overzicht" | "aanmelding" | "teams" | "schema" | "mail" | "reglement";
-
-// ── Modal hook ────────────────────────────────────────────────────────────────
-
-/**
- * Opent een native <dialog> als modal zolang de component gemount is.
- * Sluiten via Escape loopt over het `cancel`-event (zie onCancel op de dialog),
- * niet over `close`: in dev mount React StrictMode effecten twee keer, en de
- * close() uit de eerste cleanup vuurde dan een `close`-event dat de dialog
- * meteen weer wegklikte. Daardoor leek "Verwijderen" niets te doen.
- */
-function useDialogModal() {
-  const ref = useRef<HTMLDialogElement>(null);
-  useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    if (!el.open) el.showModal();
-    return () => { if (el.open) el.close(); };
-  }, []);
-  return ref;
+interface Step {
+  title: string;
+  sub: string;
+  done: boolean;
+  href?: string;
+  action?: string;
+  body?: React.ReactNode;
 }
 
-/** Escape op een native dialog: zelf afhandelen i.p.v. de browser te laten sluiten. */
-function escapeTo(fn: () => void) {
-  return (e: React.SyntheticEvent<HTMLDialogElement>) => {
-    e.preventDefault();
-    fn();
-  };
-}
-
-// ── Shared input style ────────────────────────────────────────────────────────
-
-const fieldInput: React.CSSProperties = {
-  width: "100%",
-  padding: "0.6rem 0.875rem",
-  border: "1px solid var(--border)",
-  borderRadius: "10px",
-  background: "var(--bg)",
-  color: "var(--text)",
-  fontSize: "0.9rem",
-  fontFamily: "inherit",
-  outline: "none",
-  transition: "border-color 120ms ease",
-};
-
-const smallInput: React.CSSProperties = {
-  padding: "0.35rem 0.5rem",
-  border: "1px solid var(--border)",
-  borderRadius: "6px",
-  background: "var(--bg)",
-  color: "var(--text)",
-  fontSize: "0.8rem",
-  fontFamily: "inherit",
-  outline: "none",
-  textAlign: "center" as const,
-};
-
-// ── Team drawer (add / edit) ──────────────────────────────────────────────────
-
-interface TeamFormData {
-  name: string;
-  captainName: string;
-  phone: string;
-  speler1: string;
-  speler2: string;
-  speler3: string;
-  speler4: string;
-  motto: string;
-  isPresent: boolean;
-  isPaid: boolean;
-  payment: string;
-  pouleId: string;
-}
-
-function TeamDrawer({
-  tournamentId,
-  poules,
-  team,
-  onClose,
-  onSaved,
-}: Readonly<{
-  tournamentId: number;
-  poules: TournamentPoule[];
-  team: TournamentTeam | null;
-  onClose: () => void;
-  onSaved: (t: TournamentTeam) => void;
-}>) {
-  const dialogRef = useDialogModal();
-
-  const [form, setForm] = useState<TeamFormData>({
-    name:        team?.name        ?? "",
-    captainName: team?.captainName ?? "",
-    phone:       team?.phone       ?? "",
-    speler1:     team?.speler1     ?? "",
-    speler2:     team?.speler2     ?? "",
-    speler3:     team?.speler3     ?? "",
-    speler4:     team?.speler4     ?? "",
-    motto:       team?.motto       ?? "",
-    // Nieuw team = aangemeld, nog niet aanwezig. "Aanwezig" is de
-    // check-in op de toernooidag zelf.
-    isPresent:   team?.isPresent   ?? false,
-    isPaid:      team?.isPaid      ?? false,
-    payment:     team ? paymentValue(team) : "",
-    pouleId:     team?.pouleId != null ? String(team.pouleId) : "",
-  });
-  const [saving, setSaving] = useState(false);
-  const [error,  setError]  = useState("");
-
-  function set(field: keyof TeamFormData, value: string | boolean) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
-
-  async function handleSubmit(e: { preventDefault(): void }) {
-    e.preventDefault();
-    setError(""); setSaving(true);
-    try {
-      const body = {
-        name:        form.name.trim(),
-        captainName: form.captainName.trim(),
-        phone:       form.phone.trim() || null,
-        speler1:     form.speler1.trim(),
-        speler2:     form.speler2.trim(),
-        speler3:     form.speler3.trim(),
-        speler4:     form.speler4.trim(),
-        motto:       form.motto.trim(),
-        isPresent:   form.isPresent,
-        ...paymentBody(form.payment),
-        pouleId:     form.pouleId ? Number.parseInt(form.pouleId, 10) : null,
-      };
-      const result = team
-        ? await apiFetch<TournamentTeam>(`tournaments/${tournamentId}/teams/${team.id}`, { method: "PATCH", body: JSON.stringify(body) })
-        : await apiFetch<TournamentTeam>(`tournaments/${tournamentId}/teams`, { method: "POST",  body: JSON.stringify(body) });
-      onSaved(result);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Opslaan mislukt.");
-    } finally { setSaving(false); }
-  }
-
-  const isEdit = team !== null;
-
+function Progress({ label, value, of, tone }: Readonly<{ label: string; value: number; of: number; tone: "pink" | "ink" }>) {
+  const pct = of > 0 ? Math.round((value / of) * 100) : 0;
   return (
-    <dialog ref={dialogRef} onCancel={escapeTo(onClose)} className="admin-drawer"
-      style={{ width: "min(520px, 100vw)" }} aria-label={isEdit ? "Team bewerken" : "Team toevoegen"}>
-      <div className="admin-drawer__header">
-        <h2>{isEdit ? "Team bewerken" : "Team toevoegen"}</h2>
-        <button type="button" className="admin-drawer__close" onClick={onClose} aria-label="Sluiten"><IconX /></button>
+    <div className="rounded-xl border border-rule bg-surface px-3.5 py-3">
+      <div className="flex justify-between text-[13px]">
+        <span className="text-ink-2">{label}</span>
+        <span className="font-mono font-semibold tabular-nums">{value} / {of}</span>
       </div>
-
-      <form className="admin-form" onSubmit={handleSubmit}>
-        {error && <div className="form-error">{error}</div>}
-
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
-          <div className="form-field" style={{ gridColumn: "1 / -1" }}>
-            <label htmlFor="t-name">Teamnaam</label>
-            <input id="t-name" type="text" required disabled={saving}
-              value={form.name} onChange={(e) => set("name", e.target.value)} />
-          </div>
-          <div className="form-field" style={{ gridColumn: "1 / -1" }}>
-            <label htmlFor="t-motto">Motto <span style={{ fontWeight: 400, color: "var(--text-2)" }}>(optioneel, max 60 tekens)</span></label>
-            <input id="t-motto" type="text" maxLength={60} disabled={saving}
-              value={form.motto} onChange={(e) => set("motto", e.target.value)} />
-          </div>
-          <div className="form-field" style={{ gridColumn: "1 / -1" }}>
-            <label htmlFor="t-captain">Kapitein</label>
-            <input id="t-captain" type="text" disabled={saving}
-              value={form.captainName} onChange={(e) => set("captainName", e.target.value)} />
-          </div>
-          <div className="form-field" style={{ gridColumn: "1 / -1" }}>
-            <label htmlFor="t-phone">Gsm kapitein</label>
-            <input id="t-phone" type="tel" disabled={saving}
-              value={form.phone} onChange={(e) => set("phone", e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label htmlFor="t-sp1">Speler 1</label>
-            <input id="t-sp1" type="text" disabled={saving}
-              value={form.speler1} onChange={(e) => set("speler1", e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label htmlFor="t-sp2">Speler 2</label>
-            <input id="t-sp2" type="text" disabled={saving}
-              value={form.speler2} onChange={(e) => set("speler2", e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label htmlFor="t-sp3">Speler 3</label>
-            <input id="t-sp3" type="text" disabled={saving}
-              value={form.speler3} onChange={(e) => set("speler3", e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label htmlFor="t-sp4">Speler 4</label>
-            <input id="t-sp4" type="text" disabled={saving}
-              value={form.speler4} onChange={(e) => set("speler4", e.target.value)} />
-          </div>
-          <div className="form-field">
-            <label htmlFor="t-poule">Poule</label>
-            <select id="t-poule" disabled={saving} style={fieldInput}
-              value={form.pouleId} onChange={(e) => set("pouleId", e.target.value)}>
-              <option value="">— Nog niet toegewezen —</option>
-              {poules.filter((p) => p.phase === "GROUP_STAGE").map((p) => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="form-field" style={{ justifyContent: "flex-end", gap: "0.4rem" }}>
-            <label className="form-checkbox">
-              <input type="checkbox" checked={form.isPresent} disabled={saving}
-                onChange={(e) => set("isPresent", e.target.checked)} />
-              Aanwezig op toernooidag
-            </label>
-            <label className="form-checkbox" style={{ gap: "0.5rem" }}>
-              Inschrijvingsgeld
-              <PaymentSelect value={form.payment} onChange={(v) => set("payment", v)} disabled={saving} />
-            </label>
-          </div>
-        </div>
-
-        <div className="admin-drawer__actions">
-          <button type="submit" className="btn-sm btn-sm--primary" disabled={saving || !form.name.trim()}>
-            {saving ? "Opslaan…" : "Opslaan"}
-          </button>
-          <button type="button" className="btn-sm btn-sm--ghost" onClick={onClose}>Annuleren</button>
-        </div>
-      </form>
-    </dialog>
+      <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-rule">
+        <div className={`h-full ${tone === "pink" ? "bg-pink" : "bg-ink"}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
   );
 }
 
-// ── Match row (inline editing) ────────────────────────────────────────────────
-
-/** De backend geeft een ISO-tijdstip terug; aan de wedstrijdtafel wil je
- *  gewoon "15:00" zien en typen. */
-function toTimeField(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
-}
-
-function matchStatusColor(m: TournamentMatch): string {
-  if (m.scoreA !== null && m.scoreB !== null) return "var(--ok-fg)";
-  if (m.scoreA !== null || m.scoreB !== null) return "var(--warn-fg)";
-  return "var(--border)";
-}
-
-function MatchRow({
-  tournamentId,
-  match,
-  teams,
-  onSaved,
-  phaseLabel,
-}: Readonly<{
-  tournamentId: number;
-  match: TournamentMatch;
-  teams: TournamentTeam[];
-  onSaved: (m: TournamentMatch) => void;
-  /** Alleen gezet in het knockoutblok, dat een fasekolom extra heeft. */
-  phaseLabel?: string;
-}>) {
-  const [scoreA, setScoreA]   = useState(match.scoreA !== null ? String(match.scoreA) : "");
-  const [scoreB, setScoreB]   = useState(match.scoreB !== null ? String(match.scoreB) : "");
-  const [time, setTime]       = useState(toTimeField(match.scheduledAt));
-  const [track, setTrack]     = useState(match.track !== null ? String(match.track) : "");
-  const [teamAId, setTeamAId] = useState(match.teamAId !== null ? String(match.teamAId) : "");
-  const [teamBId, setTeamBId] = useState(match.teamBId !== null ? String(match.teamBId) : "");
-  const [saving, setSaving]   = useState(false);
-  const [error, setError]     = useState("");
-
-  const toStr = (v: number | null) => (v !== null ? String(v) : "");
-  const isDirty =
-    scoreA !== toStr(match.scoreA) ||
-    scoreB !== toStr(match.scoreB) ||
-    time   !== toTimeField(match.scheduledAt) ||
-    track  !== toStr(match.track) ||
-    teamAId !== toStr(match.teamAId) ||
-    teamBId !== toStr(match.teamBId);
-
-  const isComplete = match.scoreA !== null && match.scoreB !== null;
-  const statusColor = matchStatusColor(match);
-
-  async function save() {
-    setSaving(true); setError("");
+function CopyLink({ url }: Readonly<{ url: string }>) {
+  const [copied, setCopied] = useState(false);
+  async function copy() {
     try {
-      const body: Record<string, unknown> = { time: time || null, track: track ? Number.parseInt(track, 10) : null };
-      if (scoreA !== "") body.scoreA = Number.parseInt(scoreA, 10);
-      if (scoreB !== "") body.scoreB = Number.parseInt(scoreB, 10);
-      if (teamAId) body.teamAId = Number.parseInt(teamAId, 10);
-      if (teamBId) body.teamBId = Number.parseInt(teamBId, 10);
-      const updated = await apiFetch<TournamentMatch>(
-        `tournaments/${tournamentId}/matches/${match.id}`,
-        { method: "PATCH", body: JSON.stringify(body) }
-      );
-      onSaved(updated);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Fout");
-    } finally { setSaving(false); }
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1800);
+    } catch { /* klembord niet beschikbaar */ }
   }
-
-  const selectStyle: React.CSSProperties = { ...smallInput, width: "100%", textAlign: "left" as const };
-
   return (
-    <tr style={{ background: isComplete ? "color-mix(in srgb, var(--ok-fg) 8%, transparent)" : undefined }}>
-      <td style={{ width: 4, padding: 0, background: statusColor }} aria-hidden="true" />
-      {phaseLabel !== undefined && (
-        <td style={{ whiteSpace: "nowrap", fontSize: "0.8rem", color: "var(--ink-2)" }}>{phaseLabel}</td>
-      )}
-      <td>
-        <select value={teamAId} onChange={(e) => setTeamAId(e.target.value)} style={selectStyle} aria-label="Team A">
-          <option value="">—</option>
-          {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-      </td>
-      <td style={{ textAlign: "center", width: 60 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "4px", justifyContent: "center" }}>
-          <input type="number" value={scoreA} min="0" max="99" aria-label="Score A"
-            onChange={(e) => setScoreA(e.target.value)}
-            style={{ ...smallInput, width: 38 }} />
-          <span style={{ color: "var(--ink-2)", fontWeight: 600 }}>–</span>
-          <input type="number" value={scoreB} min="0" max="99" aria-label="Score B"
-            onChange={(e) => setScoreB(e.target.value)}
-            style={{ ...smallInput, width: 38 }} />
-        </div>
-      </td>
-      <td>
-        <select value={teamBId} onChange={(e) => setTeamBId(e.target.value)} style={selectStyle} aria-label="Team B">
-          <option value="">—</option>
-          {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-      </td>
-      <td style={{ width: 70 }}>
-        <input type="text" value={time} placeholder="15:00" aria-label="Tijd"
-          onChange={(e) => setTime(e.target.value)}
-          style={{ ...smallInput, width: 64 }} />
-      </td>
-      <td style={{ width: 60 }}>
-        <input type="number" value={track} placeholder="1" min="1" aria-label="Baan"
-          onChange={(e) => setTrack(e.target.value)}
-          style={{ ...smallInput, width: 52 }} />
-      </td>
-      <td style={{ width: 80 }}>
-        {error && <span style={{ color: "var(--err-fg)", fontSize: "0.7rem", display: "block" }}>{error}</span>}
-        <button type="button" className="btn-sm btn-sm--primary" onClick={save}
-          disabled={saving || !isDirty}
-          style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-          <IconSave />
-          {saving ? "…" : "Opslaan"}
-        </button>
-      </td>
-    </tr>
-  );
-}
-
-// ── Delay section ─────────────────────────────────────────────────────────────
-
-function DelaySection({ tournamentId }: Readonly<{ tournamentId: number }>) {
-  const [minutes, setMinutes] = useState("");
-  const [applying, setApplying] = useState(false);
-  const [done, setDone] = useState(false);
-
-  async function apply() {
-    const min = Number.parseInt(minutes, 10);
-    if (Number.isNaN(min) || min === 0) return;
-    setApplying(true);
-    try {
-      await apiFetch(`tournaments/${tournamentId}/delay`, {
-        method: "POST", body: JSON.stringify({ minutes: min }),
-      });
-      setDone(true);
-      setMinutes("");
-      setTimeout(() => setDone(false), 3000);
-    } catch { /* ignore */ } finally { setApplying(false); }
-  }
-
-  return (
-    <div style={{
-      display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap",
-      padding: "0.8rem 1rem", borderRadius: "var(--radius-lg)",
-      background: "var(--bg-alt)", border: "1px solid var(--border)", marginBottom: "1.5rem",
-    }}>
-      <IconClock />
-      <span style={{ fontSize: "0.875rem", color: "var(--text-2)", fontWeight: 500 }}>Vertraging:</span>
-      <input
-        type="number" value={minutes} min="-120" max="120" placeholder="min"
-        aria-label="Vertraging in minuten"
-        onChange={(e) => setMinutes(e.target.value)}
-        style={{ ...smallInput, width: "64px" }}
-      />
-      <button type="button" className="btn-sm btn-sm--primary" onClick={apply}
-        disabled={applying || !minutes}>
-        {applying ? "Bezig…" : "Toepassen op komende matchen"}
+    <div className="flex items-center gap-2.5 rounded-xl bg-paper px-3 py-2.5">
+      <span className="min-w-0 flex-1 truncate font-mono text-xs text-ink-2">{url.replace(/^https?:\/\//, "")}</span>
+      <button
+        type="button"
+        onClick={copy}
+        aria-label={copied ? "Gekopieerd" : "Link kopiëren"}
+        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-rule bg-surface text-ink-2 hover:text-ink"
+      >
+        {copied ? <Check size={14} /> : <Copy size={14} />}
       </button>
-      {done && <span style={{ fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>✓ Toegepast</span>}
     </div>
   );
 }
 
-// ── Standings table ───────────────────────────────────────────────────────────
+export default function TournamentOverviewPage() {
+  const { tournament: t } = useTournament();
+  const [origin, setOrigin] = useState("");
+  useEffect(() => setOrigin(globalThis.location.origin), []);
 
-function StandingsTable({ teams }: Readonly<{ teams: TournamentTeam[] }>) {
-  const sorted = [...teams].sort((a, b) => {
-    if (b.points !== a.points)       return b.points - a.points;
-    if (b.goalsFor !== a.goalsFor)   return b.goalsFor - a.goalsFor;
-    if (a.goalsAgainst !== b.goalsAgainst) return a.goalsAgainst - b.goalsAgainst;
-    return b.won - a.won;
-  });
+  const base = `/admin/toernooi/${t.id}`;
+  const teams = t.teams.length;
+  const complete = t.teams.filter(isTeamComplete).length;
+  const present = t.teams.filter((x) => x.isPresent).length;
+  const poules = t.poules.filter((p) => p.phase === "GROUP_STAGE").length;
+  const groupMatches = t.matches.filter((m) => m.phase === "GROUP_STAGE");
+  const koMatches = t.matches.filter((m) => m.phase !== "GROUP_STAGE");
+  const played = (ms: typeof t.matches) => ms.filter((m) => m.scoreA !== null && m.scoreB !== null).length;
+  const deadline = t.teamEditDeadline
+    ? new Date(t.teamEditDeadline).toLocaleDateString("nl-BE", { day: "numeric", month: "long" })
+    : null;
+
+  const perPoule = t.teamsPerPoule ?? 4;
+  const adv = t.teamsAdvancingPerPoule ?? 2;
+  const best = t.bestNthsAdvancing ?? 0;
+
+  const steps: Step[] = [
+    {
+      title: "Toernooi ingesteld",
+      sub: `Poules van ${perPoule} · top ${adv} door${best ? ` + ${best} beste ${adv + 1}des` : ""} · ${t.trackCount ?? "?"} banen`,
+      done: true,
+      href: `${base}/instellingen`,
+      action: "Wijzigen",
+    },
+    {
+      title: "Teams verzamelen",
+      sub: deadline ? `Teams kunnen zichzelf aanpassen tot ${deadline}.` : "Geen deadline ingesteld voor zelf aanpassen.",
+      done: poules > 0,
+      href: `${base}/teams`,
+      action: "Teams beheren",
+      body: teams > 0 && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <div className="rounded-xl border border-rule bg-surface px-3.5 py-3">
+            <p className="text-[13px] text-ink-2">Ingeschreven</p>
+            <p className="mt-1 font-mono text-xl font-semibold tabular-nums">{teams} teams</p>
+          </div>
+          <Progress label="Volledig (4 spelers)" value={complete} of={teams} tone="pink" />
+        </div>
+      ),
+    },
+    {
+      title: "Poules loten",
+      sub: poules > 0 ? `${poules} poules geloot.` : `${teams} teams → ${Math.ceil(teams / perPoule) || 0} poules van ${perPoule}.`,
+      done: poules > 0,
+      href: `${base}/schema`,
+      action: poules > 0 ? "Bekijken" : "Loten",
+    },
+    {
+      title: "Poulewedstrijden genereren",
+      sub: groupMatches.length > 0 ? `${groupMatches.length} wedstrijden ingepland.` : "Wedstrijden over de banen verdelen met starttijden.",
+      done: groupMatches.length > 0,
+      href: `${base}/schema`,
+      action: groupMatches.length > 0 ? "Bekijken" : "Genereren",
+    },
+    {
+      title: "Eventdag: aanmelden & scores",
+      sub: "Teams melden zich aan, daarna de uitslagen per baan.",
+      done: groupMatches.length > 0 && played(groupMatches) === groupMatches.length,
+      href: `${base}/scores`,
+      action: "Scores",
+      body: groupMatches.length > 0 && (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <Progress label="Aanwezig" value={present} of={teams} tone="pink" />
+          <Progress label="Poulewedstrijden gespeeld" value={played(groupMatches)} of={groupMatches.length} tone="ink" />
+        </div>
+      ),
+    },
+    {
+      title: "Knock-out",
+      sub: koMatches.length > 0
+        ? `${played(koMatches)} van ${koMatches.length} wedstrijden gespeeld.`
+        : "Wordt automatisch opgemaakt na de laatste poulematch.",
+      done: t.status === "COMPLETED" || (koMatches.length > 0 && played(koMatches) === koMatches.length),
+      href: koMatches.length > 0 ? `${base}/scores` : undefined,
+      action: "Scores",
+    },
+  ];
+  const current = steps.findIndex((s) => !s.done);
+  const doneCount = steps.filter((s) => s.done).length;
 
   return (
-    <table className="admin-table" style={{ marginBottom: "0.5rem" }}>
-      <thead>
-        <tr>
-          <th>#</th><th>Team</th><th>Sp</th><th>W</th><th>G</th><th>V</th>
-          <th>VP</th><th>TP</th><th>+/-</th><th>Pts</th>
-        </tr>
-      </thead>
-      <tbody>
-        {sorted.map((t, i) => (
-          <tr key={t.id}>
-            <td style={{ color: "var(--ink-2)", fontSize: "0.75rem" }}>{i + 1}</td>
-            <td>
-              <strong>{t.name}</strong>
-              {t.isPresent === false && (
-                <span className="badge badge--gray" style={{ marginLeft: "0.5rem" }}>Afwezig</span>
-              )}
-            </td>
-            <td className="mono">{t.played}</td>
-            <td className="mono">{t.won}</td>
-            <td className="mono">{t.drawn}</td>
-            <td className="mono">{t.lost}</td>
-            <td className="mono">{t.goalsFor}</td>
-            <td className="mono">{t.goalsAgainst}</td>
-            <td className="mono" style={{ color: t.saldo >= 0 ? "var(--ok-fg)" : "var(--err-fg)" }}>
-              {t.saldo >= 0 ? "+" : ""}{t.saldo}
-            </td>
-            <td><strong className="mono">{t.points}</strong></td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
-}
-
-// ── Tab: Overzicht ────────────────────────────────────────────────────────────
-
-/** Vandaag om 13:00 in het formaat dat datetime-local verwacht. */
-function defaultStartTime(): string {
-  const d = new Date();
-  d.setHours(13, 0, 0, 0);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-/** Eind van de poulefase (laatste poulematch + slotduur) als waarde voor een
- *  datetime-local veld, of null als er nog geen poulewedstrijden zijn. */
-function latestGroupEnd(t: ActiveTournament, slotMinutes: number): string | null {
-  const times = t.matches
-    .filter((m) => m.phase === "GROUP_STAGE" && m.scheduledAt)
-    .map((m) => new Date(m.scheduledAt as string).getTime());
-  if (times.length === 0) return null;
-  const d = new Date(Math.max(...times) + slotMinutes * 60_000);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function OverviewTab({
-  tournament,
-  onUpdate,
-}: Readonly<{
-  tournament: ActiveTournament;
-  onUpdate: (t: ActiveTournament) => void;
-}>) {
-  const [name, setName]     = useState(tournament.name);
-  const [year, setYear]     = useState(String(tournament.year));
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState("");
-  const [generating, setGenerating] = useState<"" | "poules" | "ko">("");
-  const [genError, setGenError]     = useState("");
-  const [genNote, setGenNote]       = useState("");
-  // Poulefase: 20 minuten per wedstrijd op alle banen van het terrein.
-  const [startTime, setStartTime]     = useState(defaultStartTime);
-  const [slotMinutes, setSlotMinutes] = useState("20");
-  const [trackCount, setTrackCount]   = useState(String(tournament.trackCount ?? 6));
-  // Knock-out: wordt automatisch opgemaakt na de laatste poulematch,
-  // met deze instellingen (bewaard op het toernooi).
-  const [koPause, setKoPause]           = useState(String(tournament.knockoutPauseMinutes ?? 15));
-  const [koSlot, setKoSlot]             = useState(tournament.knockoutSlotMinutes ? String(tournament.knockoutSlotMinutes) : "");
-  const [koBreak, setKoBreak]           = useState(String(tournament.roundBreakMinutes ?? 0));
-  // Vanaf de kwartfinales duren de matchen langer (2025: 30 i.p.v. 20 min).
-  const [koFinalsSlot, setKoFinalsSlot] = useState(String(tournament.finalsSlotMinutes ?? 30));
-  const [koConsolation, setKoConsolation] = useState(tournament.withConsolation ?? true);
-  const [perPoule, setPerPoule]         = useState(String(tournament.teamsPerPoule ?? 4));
-  // Wie gaat door naar de knock-out: top N per poule + X beste (N+1)-des.
-  const [advPerPoule, setAdvPerPoule]   = useState(String(tournament.teamsAdvancingPerPoule ?? 2));
-  const [bestNths, setBestNths]         = useState(String(tournament.bestNthsAdvancing ?? 0));
-  const [savingFormat, setSavingFormat] = useState(false);
-  const [formatNote, setFormatNote]     = useState("");
-  const [onlyPresent, setOnlyPresent]   = useState(false);
-  const [drawing, setDrawing]           = useState(false);
-  const [drawError, setDrawError]       = useState("");
-  const [drawNote, setDrawNote]         = useState("");
-
-  const teamCount    = tournament.teams.length;
-  const presentCount = tournament.teams.filter((t) => t.isPresent).length;
-  const matchCount   = tournament.matches.length;
-  const doneCount    = tournament.matches.filter((m) => m.scoreA !== null && m.scoreB !== null).length;
-  const groupPouleCount = tournament.poules.filter((p) => p.phase === "GROUP_STAGE").length;
-  const drawTeamCount   = onlyPresent ? presentCount : teamCount;
-  const perPouleNum     = Number.parseInt(perPoule, 10);
-  const drawPouleCount  = perPouleNum >= 2 ? Math.ceil(drawTeamCount / perPouleNum) : 0;
-
-  const advNum      = Math.max(0, Number.parseInt(advPerPoule, 10) || 0);
-  const bestNum     = Math.max(0, Number.parseInt(bestNths, 10) || 0);
-  const nthLabel    = `${advNum + 1}de`;
-  const koTeamCount = groupPouleCount * advNum + Math.min(bestNum, groupPouleCount);
-  const koSettings = {
-    teamsAdvancingPerPoule: advNum,
-    bestNthsAdvancing: bestNum,
-    knockoutPauseMinutes: Math.max(0, Number.parseInt(koPause, 10) || 0),
-    knockoutSlotMinutes: koSlot.trim() ? Number.parseInt(koSlot, 10) : null,
-    finalsSlotMinutes: Number.parseInt(koFinalsSlot, 10) || 30,
-    roundBreakMinutes: Math.max(0, Number.parseInt(koBreak, 10) || 0),
-    withConsolation: koConsolation,
-  };
-  const formatDirty =
-    advNum !== (tournament.teamsAdvancingPerPoule ?? 2) ||
-    bestNum !== (tournament.bestNthsAdvancing ?? 0) ||
-    koSettings.knockoutPauseMinutes !== (tournament.knockoutPauseMinutes ?? 15) ||
-    koSettings.knockoutSlotMinutes !== (tournament.knockoutSlotMinutes ?? null) ||
-    koSettings.finalsSlotMinutes !== (tournament.finalsSlotMinutes ?? 30) ||
-    koSettings.roundBreakMinutes !== (tournament.roundBreakMinutes ?? 0) ||
-    koSettings.withConsolation !== (tournament.withConsolation ?? true);
-
-  // Status van het automatische knock-outschema.
-  const groupMatches = tournament.matches.filter((m) => m.phase === "GROUP_STAGE");
-  const groupOpen    = groupMatches.filter((m) => m.scoreA === null || m.scoreB === null).length;
-  const koMatches    = tournament.matches.filter((m) => m.bracketPos);
-  const koStarted    = koMatches.some((m) => m.scoreA !== null || m.scoreB !== null);
-  const groupSlot    = slotMinutesOf(groupMatches);
-  const lastGroup    = Math.max(0, ...groupMatches.filter((m) => m.scheduledAt).map((m) => new Date(m.scheduledAt!).getTime()));
-  const koStartAt    = koMatches.length
-    ? Math.min(...koMatches.filter((m) => m.scheduledAt).map((m) => new Date(m.scheduledAt!).getTime()))
-    : lastGroup ? lastGroup + (groupSlot + koSettings.knockoutPauseMinutes) * 60_000 : 0;
-  const hhmm = (t: number) => new Date(t).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
-
-  async function saveFormat() {
-    setFormatNote(""); setSavingFormat(true);
-    try {
-      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
-        method: "PATCH",
-        body: JSON.stringify(koSettings),
-      });
-      onUpdate(updated);
-      setFormatNote("Opgeslagen.");
-    } catch (err) {
-      setFormatNote(err instanceof Error ? err.message : "Opslaan mislukt.");
-    } finally { setSavingFormat(false); }
-  }
-
-  async function saveBasics(e: { preventDefault(): void }) {
-    e.preventDefault();
-    setError(""); setSaving(true);
-    try {
-      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
-        method: "PATCH", body: JSON.stringify({ name: name.trim(), year: Number.parseInt(year, 10) }),
-      });
-      onUpdate(updated);
-    } catch (err) { setError(err instanceof Error ? err.message : "Fout."); }
-    finally { setSaving(false); }
-  }
-
-  /** Verdeelt de teams willekeurig over nieuwe poules. Bestaande poules en
-   *  poulewedstrijden gaan verloren, dus eerst bevestigen als die er zijn. */
-  async function drawPoules() {
-    if ((groupPouleCount > 0 || matchCount > 0) && !globalThis.confirm(
-      "De bestaande poules en poulewedstrijden worden gewist en de teams opnieuw willekeurig verdeeld. Doorgaan?"
-    )) return;
-    setDrawError(""); setDrawNote(""); setDrawing(true);
-    try {
-      const result = await apiFetch<{ poules: number; teams: number }>(
-        `tournaments/${tournament.id}/generate-poules`,
-        { method: "POST", body: JSON.stringify({ teamsPerPoule: perPouleNum, onlyPresent }) }
-      );
-      const fresh = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`);
-      onUpdate(fresh);
-      setDrawNote(`${result.teams} teams verdeeld over ${result.poules} poules.`);
-    } catch (err) { setDrawError(err instanceof Error ? err.message : "Poules genereren mislukt."); }
-    finally { setDrawing(false); }
-  }
-
-  /** De backend wil een starttijd en een rondeduur; zonder die twee kan ze de
-   *  wedstrijden niet inplannen. Na het genereren halen we het toernooi
-   *  opnieuw op, want het antwoord is enkel een teller. */
-  async function generate(kind: "poules" | "ko", force = false) {
-    const hasExisting = tournament.matches.some((m) =>
-      kind === "poules" ? m.phase === "GROUP_STAGE" : m.phase !== "GROUP_STAGE"
-    );
-    if (!force && hasExisting && !globalThis.confirm(
-      kind === "poules"
-        ? "De bestaande poulewedstrijden (en hun scores) worden gewist. Doorgaan?"
-        : "Het bestaande knockoutschema (en de scores) wordt gewist. Doorgaan?"
-    )) return;
-
-    setGenError(""); setGenNote(""); setGenerating(kind);
-    try {
-      const tracks = Number.parseInt(trackCount, 10) || 6;
-      const body: Record<string, unknown> =
-        kind === "poules"
-          ? {
-              startTime: new Date(startTime).toISOString(),
-              slotMinutes: Number.parseInt(slotMinutes, 10),
-              trackCount: tracks,
-            }
-          : {
-              startTime: new Date(koStartAt || Date.now()).toISOString(),
-              slotMinutes: Number.parseInt(koSlot, 10) || groupSlot,
-              breakMinutes: Number.parseInt(koBreak, 10) || 0,
-              finalsSlotMinutes: Number.parseInt(koFinalsSlot, 10) || 30,
-              trackCount: tracks,
-              withConsolation: koConsolation,
-              force,
-            };
-
-      const path = kind === "poules" ? "generate-matches" : "generate-knockout";
-      const result = await apiFetch<{ created: number; totalAdvancing?: number; lastSlotAt?: string | null }>(
-        `tournaments/${tournament.id}/${path}`,
-        { method: "POST", body: JSON.stringify(body) }
-      );
-      const fresh = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`);
-      onUpdate(fresh);
-      if (kind === "poules") {
-        const end = result.lastSlotAt ? new Date(result.lastSlotAt) : null;
-        setGenNote(
-          `${result.created} poulewedstrijden over ${tracks} banen` +
-          (end ? ` · laatste start om ${end.toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}.` : ".")
-        );
-      } else {
-        setGenNote(`Knock-out met ${result.totalAdvancing} teams: ${result.created} wedstrijden aangemaakt.`);
-      }
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : "Genereren mislukt.";
-      // De backend weigert zolang er poulewedstrijden zonder score zijn.
-      if (kind === "ko" && !force && msg.startsWith("Nog ") &&
-          globalThis.confirm(`${msg}. Toch een knockoutschema maken op basis van de huidige stand?`)) {
-        setGenerating("");
-        await generate("ko", true);
-        return;
-      }
-      setGenError(msg);
-    }
-    finally { setGenerating(""); }
-  }
-
-  return (
-    <div style={{ display: "grid", gap: "1.5rem", maxWidth: "680px" }}>
-      {/* Stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: "1rem" }}>
-        {[
-          { label: "Teams",    value: `${presentCount} / ${teamCount} aanwezig` },
-          { label: "Poules",   value: tournament.poules.filter((p) => p.phase === "GROUP_STAGE").length },
-          { label: "Matchen",  value: `${doneCount} / ${matchCount} gespeeld` },
-          { label: "Status",   value: tournament.isActive ? "Actief" : "Inactief" },
-        ].map((s) => (
-          <div key={s.label} className="admin-stat">
-            <p className="admin-stat__label">{s.label}</p>
-            <p className="admin-stat__value" style={{ fontSize: "1.1rem" }}>{s.value}</p>
+    <div className="flex flex-wrap items-start gap-6">
+      <section aria-labelledby="steps-title" className="min-w-0 flex-[999_1_520px] overflow-hidden rounded-2xl border border-rule bg-surface">
+        <div className="flex items-center justify-between gap-3 px-5 py-4">
+          <div>
+            <h2 id="steps-title" className="text-base font-semibold">Op weg naar de toernooidag</h2>
+            <p className="mt-0.5 text-[13px] text-ink-2">Wat er klaar is, en wat nu aan de beurt is.</p>
           </div>
-        ))}
-      </div>
-
-      {/* Edit basics */}
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header"><h2>Basisgegevens</h2></div>
-        <div style={{ padding: "1.25rem 1.4rem" }}>
-          <form className="admin-form" onSubmit={saveBasics}>
-            {error && <div className="form-error">{error}</div>}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: "1rem" }}>
-              <div className="form-field">
-                <label htmlFor="ov-name">Naam</label>
-                <input id="ov-name" type="text" value={name} required disabled={saving}
-                  onChange={(e) => setName(e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label htmlFor="ov-year">Jaar</label>
-                <input id="ov-year" type="number" value={year} min="2000" max="2100" required
-                  disabled={saving} style={{ width: "90px" }}
-                  onChange={(e) => setYear(e.target.value)} />
-              </div>
-            </div>
-            <button type="submit" className="btn-sm btn-sm--primary"
-              disabled={saving} style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              <IconSave /> {saving ? "Opslaan…" : "Opslaan"}
-            </button>
-          </form>
+          <span className="font-mono text-[13px] text-ink-2">{doneCount} / {steps.length}</span>
         </div>
-      </div>
-
-      {/* Generate poules */}
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <div className="title-row">
-            <h2>Poules genereren</h2>
-            <InfoButton title="Poules genereren">
-              <p>Verdeelt de teams willekeurig over poules (Poule A, B, C…). De poules verschillen hoogstens één team in grootte.</p>
-              <p>Met <strong>Enkel aanwezige teams</strong> tellen alleen ploegen die ingecheckt zijn.</p>
-              <p><strong>Opnieuw genereren wist de bestaande poules en poulewedstrijden.</strong></p>
-            </InfoButton>
-          </div>
-        </div>
-        <div style={{ padding: "1.25rem 1.4rem" }}>
-          {drawError && <div className="form-error" style={{ marginBottom: "1rem" }}>{drawError}</div>}
-          {drawNote && (
-            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>
-              ✓ {drawNote}
-            </p>
-          )}
-
-          <div style={{ display: "flex", gap: "1.25rem", alignItems: "flex-end", flexWrap: "wrap", marginBottom: "1rem" }}>
-            <div className="form-field">
-              <label htmlFor="draw-size">Teams per poule</label>
-              <input id="draw-size" type="number" min="2" max="16" value={perPoule}
-                style={{ width: "110px" }}
-                onChange={(e) => setPerPoule(e.target.value)} />
-            </div>
-            <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", paddingBottom: "0.5rem" }}>
-              <input type="checkbox" checked={onlyPresent}
-                onChange={(e) => setOnlyPresent(e.target.checked)} />
-              Enkel aanwezige teams
-            </label>
-          </div>
-
-          <div style={{ display: "flex", gap: "0.75rem", alignItems: "center", flexWrap: "wrap" }}>
-            <button type="button" className="btn-sm btn-sm--primary"
-              onClick={drawPoules}
-              disabled={drawing || drawTeamCount < 2 || perPouleNum < 2 || Number.isNaN(perPouleNum)}>
-              {drawing ? "Genereren…" : "Genereer poules"}
-            </button>
-            {drawPouleCount > 0 && (
-              <span style={{ fontSize: "0.8rem", color: "var(--ink-2)" }}>
-                {drawTeamCount} teams → {drawPouleCount} poules
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Generate matches */}
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <div className="title-row">
-            <h2>Wedstrijden genereren</h2>
-            <InfoButton title="Poulewedstrijden">
-              <p>Elke baan krijgt vaste poules. Poules die een baan delen spelen om beurten, zoals in 2025: baan 1 = poule A en B.</p>
-              <p>Er spelen nooit meer wedstrijden tegelijk dan er banen zijn.</p>
-              <p><strong>Opnieuw genereren wist de bestaande poulewedstrijden.</strong></p>
-            </InfoButton>
-          </div>
-        </div>
-        <div style={{ padding: "1.25rem 1.4rem" }}>
-          {genError && <div className="form-error" style={{ marginBottom: "1rem" }}>{genError}</div>}
-          {genNote && (
-            <p style={{ margin: "0 0 1rem", fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>
-              ✓ {genNote}
-            </p>
-          )}
-
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "1rem", marginBottom: "1rem" }}>
-            <div className="form-field">
-              <label htmlFor="gen-start">Eerste wedstrijd</label>
-              <input id="gen-start" type="datetime-local" value={startTime}
-                onChange={(e) => setStartTime(e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label htmlFor="gen-slot">Minuten per match</label>
-              <input id="gen-slot" type="number" min="5" max="120" value={slotMinutes}
-                style={{ width: "110px" }}
-                onChange={(e) => setSlotMinutes(e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label htmlFor="gen-tracks">Banen</label>
-              <input id="gen-tracks" type="number" min="1" max="40" value={trackCount}
-                style={{ width: "90px" }}
-                onChange={(e) => setTrackCount(e.target.value)} />
-            </div>
-          </div>
-
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap", marginBottom: "1.5rem" }}>
-            <button type="button" className="btn-sm btn-sm--primary"
-              onClick={() => generate("poules")}
-              disabled={generating !== "" || groupPouleCount === 0 || !startTime}>
-              {generating === "poules" ? "Genereren…" : "Genereer poulewedstrijden"}
-            </button>
-          </div>
-
-          <div className="title-row" style={{ margin: "0 0 0.5rem" }}>
-            <h3 style={{ margin: 0, fontSize: "0.95rem" }}>Knock-out</h3>
-            <InfoButton title="Knock-out">
-              <p>Je hoeft niets te genereren. Zodra de laatste poulematch een score heeft, maakt de site het knock-outschema zelf op met de instellingen hieronder. Tot dan zien de spelers een voorlopige bracket die na elke match verschuift.</p>
-              <p>
-                Rangschikking: eerst alle 1sten (beste eerst), dan alle 2den
-                {bestNum > 0 && <>, dan de beste {nthLabel}s</>}. Binnen elke groep tellen punten, dan saldo, dan gemaakte punten.
-                In ronde 1 speelt seed 1 tegen de laatste seed, 2 tegen de voorlaatste, …
-                {bestNum > 0 && <> De beste 1ste speelt dus tegen de slechtste {nthLabel} die doorgaat.</>}
-              </p>
-              <p>Nooit twee ploegen uit dezelfde poule in ronde 1. Latere rondes vullen zich automatisch zodra je scores ingeeft.</p>
-              <p>Pas je daarna nog een poulescore aan, dan wordt het schema opnieuw geloot, tot de eerste knock-outmatch gespeeld is. Vanaf dan ligt alles vast.</p>
-            </InfoButton>
-          </div>
-
-          <p style={{ margin: "0 0 0.9rem", fontSize: "0.875rem", lineHeight: 1.6 }}>
-            {koStarted ? (
-              <><span className="badge badge--green">Bezig</span>{" "}De knock-out is begonnen; het schema ligt vast.</>
-            ) : koMatches.length ? (
-              <><span className="badge badge--green">Klaar</span>{" "}Schema opgemaakt, eerste knock-outmatch om <strong>{hhmm(koStartAt)}</strong>.</>
-            ) : groupMatches.length ? (
-              <span style={{ color: "var(--text-2)" }}>
-                Wordt automatisch opgemaakt na de laatste poulematch (nog {groupOpen} open).
-                {koStartAt > 0 && <> Verwachte start: <strong style={{ color: "var(--text)" }}>{hhmm(koStartAt)}</strong>.</>}
-              </span>
-            ) : (
-              <span style={{ color: "var(--text-2)" }}>Maak eerst de poulewedstrijden aan.</span>
-            )}
-          </p>
-
-          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "flex-end", gap: "1rem", marginBottom: "0.5rem" }}>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-adv">Door per poule</label>
-              <input id="ko-adv" type="number" min="1" max="8" value={advPerPoule} style={{ width: "6rem" }}
-                onChange={(e) => setAdvPerPoule(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-best">+ beste {nthLabel}s</label>
-              <input id="ko-best" type="number" min="0" max={groupPouleCount || 32} value={bestNths} style={{ width: "6rem" }}
-                onChange={(e) => setBestNths(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-pause">Pauze na de poules</label>
-              <input id="ko-pause" type="number" min="0" max="240" value={koPause} style={{ width: "6rem" }}
-                onChange={(e) => setKoPause(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-slot">Min. per match 1/16, 1/8</label>
-              <input id="ko-slot" type="number" min="5" max="120" value={koSlot} placeholder={String(groupSlot)} style={{ width: "6rem" }}
-                onChange={(e) => setKoSlot(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-finals-slot">Min. vanaf kwartfinale</label>
-              <input id="ko-finals-slot" type="number" min="5" max="120" value={koFinalsSlot} style={{ width: "6rem" }}
-                onChange={(e) => setKoFinalsSlot(e.target.value)} />
-            </div>
-            <div className="form-field" style={{ margin: 0 }}>
-              <label htmlFor="ko-break">Pauze tussen rondes</label>
-              <input id="ko-break" type="number" min="0" max="120" value={koBreak} style={{ width: "6rem" }}
-                onChange={(e) => setKoBreak(e.target.value)} />
-            </div>
-          </div>
-          <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", fontSize: "0.875rem", margin: "0.5rem 0 0.9rem" }}>
-            <input type="checkbox" checked={koConsolation}
-              onChange={(e) => setKoConsolation(e.target.checked)} />
-            Kleine finale (3de plaats)
-          </label>
-
-          <p style={{ margin: "0 0 0.9rem", fontSize: "0.875rem", color: "var(--text-2)" }}>
-            {groupPouleCount > 0 ? (
-              <>
-                <strong style={{ color: "var(--text)" }}>{koTeamCount} ploegen door</strong>: top {advNum} van
-                elk van de {groupPouleCount} poules ({groupPouleCount * advNum})
-                {bestNum > 0 && <> + de {Math.min(bestNum, groupPouleCount)} beste {nthLabel}s</>}.
-              </>
-            ) : (
-              <>Top {advNum} per poule{bestNum > 0 && <> + de {bestNum} beste {nthLabel}s</>}.</>
-            )}
-            {groupPouleCount > 0 && koTeamCount > 0 && (koTeamCount & (koTeamCount - 1)) !== 0 && (
-              <span style={{ display: "block", marginTop: "0.35rem", color: "var(--warn-fg)" }}>
-                {koTeamCount} is geen macht van 2: de hoogste seeds krijgen een vrijloting in ronde 1.
-              </span>
-            )}
-          </p>
-
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            <button type="button" className="btn-sm btn-sm--primary" onClick={saveFormat}
-              disabled={savingFormat || !formatDirty || advNum < 1}>
-              {savingFormat ? "Opslaan…" : "Instellingen opslaan"}
-            </button>
-            {formatNote && <span style={{ fontSize: "0.8rem", color: "var(--text-2)" }}>{formatNote}</span>}
-            {koStarted && formatDirty && (
-              <span style={{ fontSize: "0.8rem", color: "var(--warn-fg)" }}>De knock-out is al bezig: dit verandert het schema niet meer.</span>
-            )}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Tab: Teams ────────────────────────────────────────────────────────────────
-
-function TeamsTab({
-  tournament,
-  onUpdate,
-}: Readonly<{
-  tournament: ActiveTournament;
-  onUpdate: (t: ActiveTournament) => void;
-}>) {
-  const [editTeam, setEditTeam]     = useState<TournamentTeam | null | "new">(null);
-  const [deleteTeam, setDeleteTeam] = useState<TournamentTeam | null>(null);
-  const [deleting, setDeleting]     = useState(false);
-
-  const groupPoules = tournament.poules.filter((p) => p.phase === "GROUP_STAGE");
-  const pouleMap    = new Map(groupPoules.map((p) => [p.id, p.name]));
-
-  function handleSaved(saved: TournamentTeam) {
-    const teams = tournament.teams.find((t) => t.id === saved.id)
-      ? tournament.teams.map((t) => (t.id === saved.id ? saved : t))
-      : [...tournament.teams, saved];
-    onUpdate({ ...tournament, teams });
-    setEditTeam(null);
-  }
-
-  async function togglePresent(team: TournamentTeam) {
-    try {
-      const updated = await apiFetch<TournamentTeam>(
-        `tournaments/${tournament.id}/teams/${team.id}`,
-        { method: "PATCH", body: JSON.stringify({ isPresent: !team.isPresent }) }
-      );
-      onUpdate({ ...tournament, teams: tournament.teams.map((t) => (t.id === updated.id ? updated : t)) });
-    } catch { /* ignore */ }
-  }
-
-  async function setPayment(team: TournamentTeam, value: string) {
-    try {
-      const updated = await apiFetch<TournamentTeam>(
-        `tournaments/${tournament.id}/teams/${team.id}`,
-        { method: "PATCH", body: JSON.stringify(paymentBody(value)) }
-      );
-      onUpdate({ ...tournament, teams: tournament.teams.map((t) => (t.id === updated.id ? updated : t)) });
-    } catch { /* ignore */ }
-  }
-
-  async function doDelete() {
-    if (!deleteTeam) return;
-    setDeleting(true);
-    try {
-      await apiFetch(`tournaments/${tournament.id}/teams/${deleteTeam.id}`, { method: "DELETE" });
-      onUpdate({ ...tournament, teams: tournament.teams.filter((t) => t.id !== deleteTeam.id) });
-      setDeleteTeam(null);
-    } catch (e) {
-      globalThis.alert(`Verwijderen mislukt: ${e instanceof Error ? e.message : "onbekende fout"}`);
-    } finally { setDeleting(false); }
-  }
-
-  return (
-    <>
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <h2>Teams ({tournament.teams.length})</h2>
-          <button type="button" className="btn-sm btn-sm--primary"
-            onClick={() => setEditTeam("new")}
-            style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-            <IconPlus /> Team toevoegen
-          </button>
-        </div>
-
-        {tournament.teams.length === 0 ? (
-          <p className="admin-empty">Nog geen teams. Klik op &quot;Team toevoegen&quot; om te beginnen.</p>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Team</th><th>Kapitein</th><th>Poule</th><th>Betaald</th><th>Aanwezig</th><th>Acties</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tournament.teams.map((team) => (
-                <tr key={team.id}>
-                  <td><strong>{team.name}</strong></td>
-                  <td>
-                    {team.captainName || <span style={{ color: "var(--ink-2)" }}>—</span>}
-                    {team.phone && (
-                      <div style={{ fontSize: "0.75rem" }}>
-                        <a href={`tel:${team.phone}`} style={{ color: "var(--ink-2)" }}>{team.phone}</a>
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    {team.pouleId ? (
-                      <span className="badge badge--blue">{pouleMap.get(team.pouleId) ?? `#${team.pouleId}`}</span>
-                    ) : (
-                      <span style={{ color: "var(--ink-2)", fontSize: "0.8rem" }}>Niet toegewezen</span>
-                    )}
-                  </td>
-                  <td>
-                    <PaymentSelect value={paymentValue(team)} onChange={(v) => setPayment(team, v)} />
-                  </td>
-                  <td>
-                    <button type="button"
-                      className={`btn-sm ${team.isPresent ? "btn-sm--success" : "btn-sm--ghost"}`}
-                      onClick={() => togglePresent(team)}>
-                      {team.isPresent ? "✓ Aanwezig" : "Afwezig"}
-                    </button>
-                  </td>
-                  <td>
-                    <div className="row-actions">
-                      <button type="button" className="btn-sm btn-sm--ghost"
-                        onClick={() => setEditTeam(team)}
-                        style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                        <IconEdit /> Bewerken
-                      </button>
-                      <button type="button" className="btn-sm btn-sm--danger"
-                        onClick={() => setDeleteTeam(team)}
-                        style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-                        <IconTrash /> Verwijderen
-                      </button>
+        <ol>
+          {steps.map((s, i) => {
+            const isCurrent = i === current;
+            return (
+              <li key={s.title} className={`flex items-start gap-4 border-t border-rule px-5 py-4 ${isCurrent ? "bg-paper" : ""}`}>
+                <span
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-mono text-xs font-bold ${
+                    s.done
+                      ? "bg-[var(--ok-bg)] text-[var(--ok-fg)]"
+                      : isCurrent
+                        ? "bg-pink text-[#16161a]"
+                        : "border-[1.5px] border-rule text-ink-2"
+                  }`}
+                  aria-hidden
+                >
+                  {s.done ? <Check size={14} strokeWidth={2.5} /> : i + 1}
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-3">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <p className={`text-[15px] font-semibold ${!s.done && !isCurrent ? "text-ink-2" : ""}`}>{s.title}</p>
+                      {isCurrent && (
+                        <span className="rounded-full bg-pink-soft px-2 py-px text-[11px] font-semibold text-pink-ink">Nu bezig</span>
+                      )}
+                      <span className="sr-only">{s.done ? "(klaar)" : ""}</span>
                     </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    <p className="mt-0.5 text-[13px] text-ink-2">{s.sub}</p>
+                  </div>
+                  {isCurrent && s.body}
+                  {isCurrent && s.href && (
+                    <span className="sm:hidden">
+                      <Link href={s.href} className="btn-sm btn-sm--primary">{s.action}</Link>
+                    </span>
+                  )}
+                </div>
+                {s.href && (s.done || isCurrent) && (
+                  <span className={isCurrent ? "hidden shrink-0 sm:block" : "shrink-0"}>
+                    <Link
+                      href={s.href}
+                      className={isCurrent ? "btn-sm btn-sm--primary" : "text-[13px] font-semibold text-ink-2 hover:text-ink"}
+                    >
+                      {s.action}
+                    </Link>
+                  </span>
+                )}
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
+      <div className="flex min-w-0 flex-[1_1_300px] flex-col gap-5">
+        <section aria-labelledby="fmt-title" className="rounded-2xl border border-rule bg-surface px-5 pb-2 pt-4">
+          <div className="mb-2 flex items-center justify-between">
+            <h2 id="fmt-title" className="text-[15px] font-semibold">Formaat</h2>
+            <Link href={`${base}/instellingen`} className="text-[13px] font-semibold text-ink-2 hover:text-ink">Instellingen</Link>
+          </div>
+          {[
+            ["Teams per poule", String(perPoule)],
+            ["Door naar knock-out", `Top ${adv}${best ? ` + ${best} beste ${adv + 1}des` : ""}`],
+            ["Banen", String(t.trackCount ?? "—")],
+            ["Kleine finale", t.withConsolation ?? true ? "Ja" : "Nee"],
+          ].map(([k, v]) => (
+            <div key={k} className="flex justify-between gap-3 border-t border-rule py-2.5 text-sm">
+              <span className="text-ink-2">{k}</span>
+              <span className="font-medium">{v}</span>
+            </div>
+          ))}
+        </section>
+
+        {origin && (
+          <section aria-labelledby="share-title" className="flex flex-col gap-3 rounded-2xl border border-rule bg-surface p-5">
+            <h2 id="share-title" className="text-[15px] font-semibold">Delen</h2>
+            <p className="text-[13px] text-ink-2">Zelf-inschrijving voor teams</p>
+            <CopyLink url={`${origin}/team-aanmelden`} />
+            <p className="text-[13px] text-ink-2">Publieke toernooipagina</p>
+            <CopyLink url={`${origin}/toernooi/${t.id}`} />
+          </section>
         )}
       </div>
-
-      {editTeam === "new" && (
-        <TeamDrawer
-          tournamentId={tournament.id}
-          poules={tournament.poules}
-          team={null}
-          onClose={() => setEditTeam(null)}
-          onSaved={handleSaved}
-        />
-      )}
-      {editTeam !== null && editTeam !== "new" && (
-        <TeamDrawer
-          tournamentId={tournament.id}
-          poules={tournament.poules}
-          team={editTeam}
-          onClose={() => setEditTeam(null)}
-          onSaved={handleSaved}
-        />
-      )}
-
-      {deleteTeam && (
-        <DeleteTeamConfirm
-          team={deleteTeam}
-          onConfirm={doDelete}
-          onCancel={() => setDeleteTeam(null)}
-          loading={deleting}
-        />
-      )}
-    </>
-  );
-}
-
-function DeleteTeamConfirm({
-  team, onConfirm, onCancel, loading,
-}: Readonly<{ team: TournamentTeam; onConfirm: () => void; onCancel: () => void; loading: boolean }>) {
-  const dialogRef = useDialogModal();
-  return (
-    <dialog ref={dialogRef} onCancel={escapeTo(onCancel)} className="admin-confirm" aria-label="Team verwijderen">
-      <h2 style={{ margin: "0 0 0.5rem", fontSize: "1.1rem", fontWeight: 500, color: "var(--text)" }}>
-        Team verwijderen?
-      </h2>
-      <p style={{ margin: "0 0 1.5rem", fontSize: "0.875rem", color: "var(--ink-2)" }}>
-        <strong style={{ color: "var(--text)" }}>{team.name}</strong> en alle bijbehorende
-        data worden permanent verwijderd.
-      </p>
-      <div style={{ display: "flex", gap: "0.75rem" }}>
-        <button type="button" className="btn-sm btn-sm--danger" onClick={onConfirm} disabled={loading}>
-          {loading ? "Verwijderen…" : "Verwijderen"}
-        </button>
-        <button type="button" className="btn-sm btn-sm--ghost" onClick={onCancel}>Annuleren</button>
-      </div>
-    </dialog>
-  );
-}
-
-// ── Tab: Schema ───────────────────────────────────────────────────────────────
-
-function SchemaTab({
-  tournament,
-  onUpdate,
-}: Readonly<{
-  tournament: ActiveTournament;
-  onUpdate: (t: ActiveTournament) => void;
-}>) {
-  function handleMatchSaved(updated: TournamentMatch) {
-    onUpdate({
-      ...tournament,
-      matches: tournament.matches.map((m) => (m.id === updated.id ? updated : m)),
-    });
-  }
-
-  const groupPoules = tournament.poules.filter((p) => p.phase === "GROUP_STAGE");
-
-  return (
-    <div>
-      <DelaySection tournamentId={tournament.id} />
-
-      {groupPoules.length === 0 && (
-        <p className="admin-empty">
-          Nog geen poules of wedstrijden. Genereer wedstrijden via het tabblad &quot;Overzicht&quot;.
-        </p>
-      )}
-
-      {groupPoules.map((poule) => {
-        const pouleTeams   = tournament.teams.filter((t) => t.pouleId === poule.id);
-        const pouleMatches = tournament.matches.filter((m) => m.pouleId === poule.id);
-        return (
-          <div key={poule.id} style={{ marginBottom: "2rem" }}>
-            <h3 style={{
-              margin: "0 0 0.75rem",
-              fontSize: "0.875rem",
-              fontWeight: 600,
-              letterSpacing: "0.06em",
-              textTransform: "uppercase",
-              color: "var(--accent)",
-            }}>
-              {poule.name}
-            </h3>
-
-            {pouleTeams.length > 0 && <StandingsTable teams={pouleTeams} />}
-
-            {pouleMatches.length > 0 && (
-              <div className="admin-table-wrapper" style={{ marginTop: "0.75rem" }}>
-                <table className="admin-table">
-                  <thead>
-                    <tr>
-                      <th style={{ width: 4, padding: 0 }} aria-hidden="true" />
-                      <th>Team A</th>
-                      <th style={{ textAlign: "center" }}>Score</th>
-                      <th>Team B</th>
-                      <th>Tijd</th>
-                      <th>Baan</th>
-                      <th>Opslaan</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {pouleMatches.map((m) => (
-                      <MatchRow
-                        key={m.id}
-                        tournamentId={tournament.id}
-                        match={m}
-                        teams={tournament.teams}
-                        onSaved={handleMatchSaved}
-                      />
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
-        );
-      })}
-
-      <KnockoutSection
-        tournament={tournament}
-        onMatchSaved={handleMatchSaved}
-      />
     </div>
-  );
-}
-
-/** De knockoutwedstrijden hangen aan geen enkele poule, dus ze vielen tot nu
- *  toe buiten dit scherm. Winnaars schuiven serverside door; de selects blijven
- *  staan om een rechtzetting te doen. */
-function KnockoutSection({
-  tournament,
-  onMatchSaved,
-}: Readonly<{
-  tournament: ActiveTournament;
-  onMatchSaved: (m: TournamentMatch) => void;
-}>) {
-  const koMatches = tournament.matches
-    .filter((m) => m.phase !== "GROUP_STAGE")
-    .sort((a, b) => PHASE_ORDER.indexOf(a.phase) - PHASE_ORDER.indexOf(b.phase) ||
-      (a.bracketPos ?? "").localeCompare(b.bracketPos ?? ""));
-
-  if (koMatches.length === 0) return null;
-
-  return (
-    <div style={{ marginBottom: "2rem" }}>
-      <h3 style={{
-        margin: "0 0 0.75rem",
-        fontSize: "0.875rem",
-        fontWeight: 600,
-        letterSpacing: "0.06em",
-        textTransform: "uppercase",
-        color: "var(--accent)",
-      }}>
-        Knockout
-      </h3>
-      <div className="admin-table-wrapper">
-        <table className="admin-table">
-          <thead>
-            <tr>
-              <th style={{ width: 4, padding: 0 }} aria-hidden="true" />
-              <th>Fase</th>
-              <th>Team A</th>
-              <th style={{ textAlign: "center" }}>Score</th>
-              <th>Team B</th>
-              <th>Tijd</th>
-              <th>Baan</th>
-              <th>Opslaan</th>
-            </tr>
-          </thead>
-          <tbody>
-            {koMatches.map((m) => (
-              <MatchRow
-                key={m.id}
-                tournamentId={tournament.id}
-                match={m}
-                teams={tournament.teams}
-                onSaved={onMatchSaved}
-                phaseLabel={PHASE_LABELS[m.phase]}
-              />
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-}
-
-// ── Tab: Reglement ────────────────────────────────────────────────────────────
-
-function ReglementTab({
-  tournament,
-  onUpdate,
-}: Readonly<{
-  tournament: ActiveTournament;
-  onUpdate: (t: ActiveTournament) => void;
-}>) {
-  const [text, setText] = useState(tournament.rules ?? DEFAULT_RULES);
-  const [saving, setSaving] = useState(false);
-  const [error, setError]   = useState("");
-  const [saved, setSaved]   = useState(false);
-
-  async function save() {
-    setError(""); setSaving(true);
-    try {
-      const saved = await apiFetch<{ rules: string; rulesUpdatedAt: string }>(
-        `tournaments/${tournament.id}/rules`,
-        { method: "PUT", body: JSON.stringify({ rules: text }) }
-      );
-      onUpdate({ ...tournament, rules: saved.rules, rulesUpdatedAt: saved.rulesUpdatedAt });
-      setSaved(true);
-      setTimeout(() => setSaved(false), 2000);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Opslaan mislukt.");
-    } finally { setSaving(false); }
-  }
-
-  return (
-    <div style={{ maxWidth: "720px" }}>
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <h2>Reglement</h2>
-          <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-            {saved && <span style={{ fontSize: "0.8rem", color: "var(--ok-fg)", fontWeight: 500 }}>✓ Opgeslagen</span>}
-            {error && <span style={{ fontSize: "0.8rem", color: "var(--err-fg)" }}>{error}</span>}
-            <button type="button" className="btn-sm btn-sm--primary"
-              onClick={save} disabled={saving}
-              style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
-              <IconSave /> {saving ? "Opslaan…" : "Opslaan"}
-            </button>
-          </div>
-        </div>
-        <div style={{ padding: "1rem 1.4rem" }}>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            rows={28}
-            aria-label="Reglement tekst"
-            style={{
-              width: "100%",
-              resize: "vertical",
-              fontFamily: "var(--font-geist-mono), monospace",
-              fontSize: "0.82rem",
-              lineHeight: 1.7,
-              padding: "0.75rem",
-              border: "1px solid var(--border)",
-              borderRadius: "8px",
-              background: "var(--bg)",
-              color: "var(--text)",
-              outline: "none",
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Tab navigation ────────────────────────────────────────────────────────────
-
-const TAB_LABELS: Record<Tab, string> = {
-  overzicht:  "Overzicht",
-  aanmelding: "Aanmelding",
-  teams:      "Teams",
-  schema:    "Schema",
-  mail:      "Mail",
-  reglement: "Reglement",
-};
-
-// ── Main page ─────────────────────────────────────────────────────────────────
-
-export default function TournamentDetailPage({
-  params,
-}: Readonly<{ params: Promise<{ id: string }> }>) {
-  const { id } = use(params);
-  const [tournament, setTournament] = useState<ActiveTournament | null>(null);
-  const [loading, setLoading]       = useState(true);
-  const [fetchError, setFetchError] = useState("");
-  const [tab, setTab]               = useState<Tab>("overzicht");
-
-  useEffect(() => {
-    apiFetch<ActiveTournament>(`tournaments/${id}`)
-      .then(setTournament)
-      .catch((e) => setFetchError(e instanceof Error ? e.message : "Niet gevonden."))
-      .finally(() => setLoading(false));
-  }, [id]);
-
-  if (loading) return <p className="admin-empty">Laden…</p>;
-  if (fetchError) return <p className="admin-empty" style={{ color: "var(--accent)" }}>{fetchError}</p>;
-  if (!tournament) return null;
-
-  return (
-    <>
-      {/* Back + Header */}
-      <div style={{ marginBottom: "1.5rem" }}>
-        <BackLink href="/admin/toernooi" className="mb-4">Alle toernooien</BackLink>
-        <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap" }}>
-          <h1 style={{ margin: 0, fontSize: "1.75rem", fontWeight: 500, letterSpacing: "-0.03em", color: "var(--text)" }}>
-            {tournament.name}
-          </h1>
-          <span className="mono" style={{ color: "var(--ink-2)", fontSize: "0.9rem" }}>{tournament.year}</span>
-          {tournament.isActive && <span className="badge badge--pink">Actief</span>}
-          <div style={{ marginLeft: "auto", display: "flex", gap: "0.5rem" }}>
-            <a href={`/toernooi/${tournament.id}`} target="_blank" rel="noreferrer" className="btn-sm btn-sm--ghost"
-              style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
-              Publieke site
-            </a>
-            <a href={`/tv/${tournament.id}`} target="_blank" rel="noreferrer" className="btn-sm btn-sm--primary"
-              style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}
-              title="Open op de laptop aan de tv en druk F voor volledig scherm">
-              TV-scherm openen
-            </a>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div style={{
-        display: "flex", gap: "0.25rem", borderBottom: "1px solid var(--border)",
-        marginBottom: "1.75rem",
-      }}>
-        {(Object.keys(TAB_LABELS) as Tab[]).map((t) => (
-          <button
-            key={t} type="button"
-            onClick={() => setTab(t)}
-            style={{
-              padding: "0.55rem 1rem",
-              fontSize: "0.875rem",
-              fontWeight: tab === t ? 600 : 400,
-              color: tab === t ? "var(--accent)" : "var(--text-2)",
-              background: "none",
-              border: "none",
-              borderBottom: tab === t ? "2px solid var(--accent)" : "2px solid transparent",
-              cursor: "pointer",
-              fontFamily: "inherit",
-              marginBottom: "-1px",
-              transition: "color 120ms ease",
-            }}
-          >
-            {TAB_LABELS[t]}
-            {t === "teams" && (
-              <span style={{
-                marginLeft: "0.4rem", fontSize: "0.7rem", fontWeight: 600,
-                background: "var(--bg-alt)", border: "1px solid var(--border)",
-                borderRadius: "99px", padding: "0.1rem 0.4rem", color: "var(--ink-2)",
-              }}>
-                {tournament.teams.length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Tab content */}
-      {tab === "overzicht"  && <OverviewTab  tournament={tournament} onUpdate={setTournament} />}
-      {tab === "aanmelding" && <AanmeldingTab tournament={tournament} onUpdate={setTournament} />}
-      {tab === "teams"      && <TeamsTab     tournament={tournament} onUpdate={setTournament} />}
-      {tab === "schema"     && <SchemaTab    tournament={tournament} onUpdate={setTournament} />}
-      {tab === "mail"       && <MailTab      tournament={tournament} />}
-      {tab === "reglement"  && <ReglementTab tournament={tournament} onUpdate={setTournament} />}
-    </>
   );
 }

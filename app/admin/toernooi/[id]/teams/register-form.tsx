@@ -3,10 +3,10 @@
 import { useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
-import { PaymentSelect, paymentBody, paymentValue } from "./payment-select";
+import { PaymentSelect, paymentBody } from "../payment-select";
 import type { ActiveTournament, TournamentTeam } from "@/lib/tournament-types";
-import { TeamLinkActions, portalUrl } from "./team-link";
-import { IconPlus, IconTrash } from "@/components/ui/icons";
+import { TeamLinkActions, portalUrl } from "../team-link";
+import { IconPlus } from "@/components/ui/icons";
 import { QrModal } from "@/components/ui/qr-modal";
 
 const fieldInput: React.CSSProperties = {
@@ -39,7 +39,7 @@ interface Props {
   onUpdate: (t: ActiveTournament) => void;
 }
 
-export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
+export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
   const nameRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
@@ -55,18 +55,10 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
   const [error, setError] = useState("");
   const [justAdded, setJustAdded] = useState<TournamentTeam | null>(null);
 
-  const [deadline, setDeadline] = useState(
-    tournament.teamEditDeadline ? tournament.teamEditDeadline.slice(0, 16) : ""
-  );
-  const [deadlineBusy, setDeadlineBusy] = useState(false);
-  const [deadlineSaved, setDeadlineSaved] = useState(false);
-
   const [bulkCount, setBulkCount] = useState("4");
   const [bulkBusy, setBulkBusy] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
-  // Hoogste id eerst = laatst aangemaakt bovenaan.
-  const sorted = [...tournament.teams].sort((a, b) => b.id - a.id);
   const paidCount = tournament.teams.filter((t) => t.isPaid).length;
   const cashCount = tournament.teams.filter((t) => t.paymentMethod === "CASH").length;
   const payconiqCount = tournament.teams.filter((t) => t.paymentMethod === "PAYCONIQ").length;
@@ -151,50 +143,6 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
         onUpdate({ ...tournament, teams: [...tournament.teams, ...created] });
       }
       setBulkBusy(false);
-    }
-  }
-
-  async function saveDeadline() {
-    setDeadlineBusy(true);
-    setDeadlineSaved(false);
-    try {
-      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          teamEditDeadline: deadline ? new Date(deadline).toISOString() : null,
-        }),
-      });
-      onUpdate({ ...tournament, teamEditDeadline: updated.teamEditDeadline ?? null });
-      setDeadlineSaved(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Deadline opslaan mislukt.");
-    } finally {
-      setDeadlineBusy(false);
-    }
-  }
-
-  async function updatePayment(team: TournamentTeam, value: string) {
-    try {
-      const updated = await apiFetch<TournamentTeam>(
-        `tournaments/${tournament.id}/teams/${team.id}`,
-        { method: "PATCH", body: JSON.stringify(paymentBody(value)) }
-      );
-      onUpdate({
-        ...tournament,
-        teams: tournament.teams.map((t) => (t.id === updated.id ? updated : t)),
-      });
-    } catch {
-      /* stil — de balie mag hier niet op vastlopen */
-    }
-  }
-
-  async function removeTeam(team: TournamentTeam) {
-    if (!globalThis.confirm(`Ploeg "${team.name}" verwijderen?`)) return;
-    try {
-      await apiFetch(`tournaments/${tournament.id}/teams/${team.id}`, { method: "DELETE" });
-      onUpdate({ ...tournament, teams: tournament.teams.filter((t) => t.id !== team.id) });
-    } catch (e) {
-      globalThis.alert(`Verwijderen mislukt: ${e instanceof Error ? e.message : "onbekende fout"}`);
     }
   }
 
@@ -317,36 +265,6 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
         </form>
       </div>
 
-      {/* ── Deadline voor zelf aanpassen ────────────────────── */}
-      <div className="admin-table-wrapper" style={{ marginBottom: "1.5rem" }}>
-        <div className="admin-table-header">
-          <h2>Teams mogen zichzelf aanpassen tot</h2>
-        </div>
-        <div style={{ padding: "1.25rem", display: "flex", gap: "0.75rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-          <div className="form-field" style={{ flex: "0 0 240px" }}>
-            <label htmlFor="a-deadline">Deadline</label>
-            <input
-              id="a-deadline" type="datetime-local" disabled={deadlineBusy} style={fieldInput}
-              value={deadline}
-              onChange={(e) => { setDeadline(e.target.value); setDeadlineSaved(false); }}
-            />
-          </div>
-          <button
-            type="button" className="btn-sm btn-sm--primary" disabled={deadlineBusy}
-            onClick={saveDeadline} style={{ padding: "0.6rem 1rem" }}
-          >
-            {deadlineBusy ? "Opslaan…" : "Opslaan"}
-          </button>
-          {deadlineSaved && (
-            <span style={{ fontSize: "0.8rem", color: "var(--ink-2)" }}>✓ Bewaard</span>
-          )}
-          <p style={{ margin: 0, flex: "1 1 240px", fontSize: "0.8rem", color: "var(--ink-2)" }}>
-            Na dit moment kunnen teams hun naam, spelers en logo niet meer wijzigen via hun
-            eigen link. Leeg laten = geen deadline.
-          </p>
-        </div>
-      </div>
-
       {/* ── Plaatshouders ───────────────────────────────────── */}
       {SHOW_PLACEHOLDERS && (
       <div className="admin-table-wrapper" style={{ marginBottom: "1.5rem" }}>
@@ -377,56 +295,6 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
       </div>
       )}
 
-      {/* ── Aangemelde teams ────────────────────────────────── */}
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <h2>Aangemeld ({tournament.teams.length})</h2>
-        </div>
-
-        {sorted.length === 0 ? (
-          <p className="admin-empty">Nog niemand aangemeld.</p>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Team</th><th>Kapitein</th><th>Betaald</th><th>Teamlink</th><th>Acties</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((team) => (
-                <tr key={team.id}>
-                  <td><strong>{team.name}</strong></td>
-                  <td>
-                    {team.captainName || <span style={{ color: "var(--ink-2)" }}>—</span>}
-                    {team.phone && (
-                      <div style={{ fontSize: "0.75rem" }}>
-                        <a href={`tel:${team.phone}`} style={{ color: "var(--ink-2)" }}>{team.phone}</a>
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <PaymentSelect value={paymentValue(team)} onChange={(v) => updatePayment(team, v)} />
-                  </td>
-                  <td>
-                    <TeamLinkActions tournamentId={tournament.id} team={team} />
-                  </td>
-                  <td>
-                    <div className="row-actions">
-                      <button
-                        type="button" className="btn-sm btn-sm--danger"
-                        onClick={() => removeTeam(team)}
-                        style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}
-                      >
-                        <IconTrash /> Verwijderen
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
     </>
   );
 }

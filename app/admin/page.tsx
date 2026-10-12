@@ -7,6 +7,7 @@ import { ArrowRight, Bike, ChevronRight, ExternalLink, Mail, Newspaper, Tv, User
 import { apiFetch, getTokenPayload } from "@/lib/api";
 import type { ActiveTournament, TournamentListItem } from "@/lib/tournament-types";
 import type { Registration } from "@/lib/registration-types";
+import { TOURNAMENT_PHASES as PHASES, isTeamComplete as isComplete, tournamentPhase } from "@/lib/tournament-phase";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -24,20 +25,6 @@ type Tone = "pink" | "warn" | "neutral";
 interface Todo { key: string; tone: Tone; Icon: LucideIcon; title: string; sub: string; action: string; href: string }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-const PHASES = ["Inschrijvingen", "Poules geloot", "Schema klaar", "Eventdag", "Afgerond"] as const;
-
-function tournamentPhase(t: ActiveTournament): number {
-  if (t.status === "COMPLETED") return 4;
-  if (t.status === "ONGOING") return 3;
-  if (t.matches.some((m) => m.phase === "GROUP_STAGE")) return 2;
-  if (t.poules.some((p) => p.phase === "GROUP_STAGE")) return 1;
-  return 0;
-}
-
-function isComplete(team: ActiveTournament["teams"][number]): boolean {
-  return [team.speler1, team.speler2, team.speler3, team.speler4].every((s) => s?.trim());
-}
 
 function daysAgo(iso: string): number {
   return Math.max(0, Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000));
@@ -218,7 +205,7 @@ export default function AdminDashboardPage() {
     const incomplete = tournament.teams.filter((t) => !isComplete(t)).length;
     if (incomplete > 0) {
       todos.push({
-        key: "teams", tone: "warn", Icon: Users, href: `/admin/toernooi/${tournament.id}`, action: "Bekijken",
+        key: "teams", tone: "warn", Icon: Users, href: `/admin/toernooi/${tournament.id}/teams`, action: "Bekijken",
         title: `${incomplete} ${incomplete === 1 ? "team is" : "teams zijn"} onvolledig`,
         sub: `${tournament.name} · minder dan 4 spelers ingevuld`,
       });
@@ -247,7 +234,7 @@ export default function AdminDashboardPage() {
     <div className="mx-auto flex max-w-[1120px] flex-col gap-7">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mb-1.5 text-[13px] capitalize text-ink-2">{today}</p>
+          <p className="mb-1.5 text-[13px] text-ink-2 first-letter:uppercase">{today}</p>
           <h1 className="text-[28px] font-semibold tracking-[-0.03em] sm:text-[32px]">
             {greeting()}{name && `, ${name}`}
           </h1>
@@ -267,7 +254,7 @@ export default function AdminDashboardPage() {
         <div className="flex min-w-0 flex-[1_1_280px] flex-col gap-6">
           <section aria-labelledby="quick-title" className="flex flex-col gap-2.5">
             <h2 id="quick-title" className="text-base font-semibold">Snel</h2>
-            {tournament && <QuickLink href={`/admin/toernooi/${tournament.id}`} Icon={UserPlus} label="Team toevoegen" />}
+            {tournament && <QuickLink href={`/admin/toernooi/${tournament.id}/teams`} Icon={UserPlus} label="Team toevoegen" />}
             <QuickLink href="/admin/news" Icon={Newspaper} label="Nieuwsbericht schrijven" />
             <QuickLink href="/admin/uitnodigingen" Icon={Mail} label="Uitnodiging maken" />
             {tournament && <QuickLink href={`/tv/${tournament.id}`} Icon={Tv} label="TV-scherm openen" external />}
