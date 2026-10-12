@@ -238,8 +238,8 @@ function StandingsTable({ teams, showAbsent }: Readonly<{ teams: TournamentTeam[
         <thead>
           <tr>
             <th style={{ width: 32 }}>#</th><th>Team</th>
-            <th style={{ textAlign: "right" }}>Sp</th><th style={{ textAlign: "right" }}>W</th><th style={{ textAlign: "right" }}>G</th><th style={{ textAlign: "right" }}>V</th>
-            <th style={{ textAlign: "right" }}>VP</th><th style={{ textAlign: "right" }}>TP</th><th style={{ textAlign: "right" }}>+/-</th><th style={{ textAlign: "right" }}>Pts</th>
+            <th style={{ textAlign: "right" }}>Sp</th><th className="hidden sm:table-cell" style={{ textAlign: "right" }}>W</th><th className="hidden sm:table-cell" style={{ textAlign: "right" }}>G</th><th className="hidden sm:table-cell" style={{ textAlign: "right" }}>V</th>
+            <th className="hidden sm:table-cell" style={{ textAlign: "right" }}>VP</th><th className="hidden sm:table-cell" style={{ textAlign: "right" }}>TP</th><th style={{ textAlign: "right" }}>+/-</th><th style={{ textAlign: "right" }}>Pts</th>
           </tr>
         </thead>
         <tbody>
@@ -255,11 +255,11 @@ function StandingsTable({ teams, showAbsent }: Readonly<{ teams: TournamentTeam[
                 {showAbsent && t.isPresent === false && <span className="badge badge--gray ml-2">Afwezig</span>}
               </td>
               <td className="mono text-right">{t.played}</td>
-              <td className="mono text-right">{t.won}</td>
-              <td className="mono text-right">{t.drawn}</td>
-              <td className="mono text-right">{t.lost}</td>
-              <td className="mono text-right">{t.goalsFor}</td>
-              <td className="mono text-right">{t.goalsAgainst}</td>
+              <td className="mono text-right hidden sm:table-cell">{t.won}</td>
+              <td className="mono text-right hidden sm:table-cell">{t.drawn}</td>
+              <td className="mono text-right hidden sm:table-cell">{t.lost}</td>
+              <td className="mono text-right hidden sm:table-cell">{t.goalsFor}</td>
+              <td className="mono text-right hidden sm:table-cell">{t.goalsAgainst}</td>
               <td className="mono text-right" style={{ color: t.saldo >= 0 ? "var(--ok-fg)" : "var(--err-fg)" }}>
                 {t.saldo >= 0 ? "+" : ""}{t.saldo}
               </td>
@@ -345,7 +345,7 @@ export function ScoresView({
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div role="group" aria-label="Toon" className="flex flex-wrap gap-2">
+        <div role="group" aria-label="Toon" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-0.5 sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0 [&>*]:shrink-0">
           <button type="button" className="chip" aria-pressed={focus === "all"} onClick={() => setFocus("all")}>
             Alles <span className="chip__n">{allGroup.filter(isPlayed).length}/{allGroup.length}</span>
           </button>

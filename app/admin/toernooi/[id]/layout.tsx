@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, Tv } from "lucide-react";
+import { ExternalLink, Tv, Zap } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament } from "@/lib/tournament-types";
 import { TOURNAMENT_PHASES, tournamentPhase } from "@/lib/tournament-phase";
@@ -49,6 +49,15 @@ export default function TournamentLayout({
   const base = `/admin/toernooi/${tournament.id}`;
   const phase = tournamentPhase(tournament);
 
+  // Eventdag-modus: eigen, compacte kop voor op de gsm.
+  if (pathname.startsWith(`${base}/eventdag`)) {
+    return (
+      <TournamentProvider value={{ tournament, setTournament, reload }}>
+        <div className="mx-auto min-w-0 max-w-[640px]">{children}</div>
+      </TournamentProvider>
+    );
+  }
+
   return (
     <TournamentProvider value={{ tournament, setTournament, reload }}>
       <div className="mx-auto flex min-w-0 max-w-[1120px] flex-col gap-6">
@@ -69,18 +78,29 @@ export default function TournamentLayout({
               {!tournament.isActive && <span className="badge badge--gray">Niet actief</span>}
             </div>
             <div className="flex flex-wrap gap-2">
-              <a href={`/toernooi/${tournament.id}`} target="_blank" rel="noreferrer" className="btn-sm btn-sm--ghost">
-                <ExternalLink size={16} strokeWidth={1.75} /> Publieke pagina
-              </a>
-              <a
-                href={`/tv/${tournament.id}`}
-                target="_blank"
-                rel="noreferrer"
-                className="btn-sm btn-sm--primary"
-                title="Open op de laptop aan de tv en druk F voor volledig scherm"
-              >
-                <Tv size={16} strokeWidth={1.75} /> TV-scherm
-              </a>
+              {/* Op gsm enkel de eventdag-knop: tv en publieke pagina open je niet van daar. */}
+              <span className="sm:hidden">
+                <Link href={`${base}/eventdag`} className="btn-sm btn-sm--primary">
+                  <Zap size={16} strokeWidth={1.75} /> Eventdag-modus
+                </Link>
+              </span>
+              <span className="flex gap-2 max-sm:hidden">
+                <Link href={`${base}/eventdag`} className="btn-sm btn-sm--ghost">
+                  <Zap size={16} strokeWidth={1.75} /> Eventdag
+                </Link>
+                <a href={`/toernooi/${tournament.id}`} target="_blank" rel="noreferrer" className="btn-sm btn-sm--ghost">
+                  <ExternalLink size={16} strokeWidth={1.75} /> Publieke pagina
+                </a>
+                <a
+                  href={`/tv/${tournament.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="btn-sm btn-sm--primary"
+                  title="Open op de laptop aan de tv en druk F voor volledig scherm"
+                >
+                  <Tv size={16} strokeWidth={1.75} /> TV-scherm
+                </a>
+              </span>
             </div>
           </div>
 

@@ -117,8 +117,8 @@ export default function TournamentOverviewPage() {
       title: "Eventdag: aanmelden & scores",
       sub: "Teams melden zich aan, daarna de uitslagen per baan.",
       done: groupMatches.length > 0 && played(groupMatches) === groupMatches.length,
-      href: `${base}/scores`,
-      action: "Scores",
+      href: `${base}/eventdag`,
+      action: "Eventdag-modus",
       body: groupMatches.length > 0 && (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <Progress label="Aanwezig" value={present} of={teams} tone="pink" />
