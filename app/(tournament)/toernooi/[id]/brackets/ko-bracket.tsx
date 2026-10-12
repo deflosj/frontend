@@ -30,7 +30,7 @@ export interface BracketCommon {
   isFollowed?: (id: number | null | undefined) => boolean;
   onPick?: (id: number) => void;
   projected?: boolean;
-  /** Tv-scherm: geen tijden, banen of "voorlopig" — enkel de rondes en de ploegen. */
+  /** Tv-scherm: geen "voorlopig" en geen tijdvak per ronde; uur en baan per wedstrijd blijven. */
   minimal?: boolean;
 }
 
@@ -71,8 +71,8 @@ function KoCard({
   const [fa, fb] = feederLabels(pos, size);
   const w = winnerOf(m);
   const mine = !!teamId && (m?.teamAId === teamId || m?.teamBId === teamId);
-  const time = !minimal && m?.scheduledAt ? fmtTime(m.scheduledAt) : "";
-  const baan = !minimal && m?.track ? `Baan ${m.track}` : "";
+  const time = m?.scheduledAt ? fmtTime(m.scheduledAt) : "";
+  const baan = m?.track ? `Baan ${m.track}` : "";
   const [tl, tr] = mirrored ? [baan, time] : [time, baan];
   const hot = mine || big;
   const tab = `absolute -top-[0.72em] inline-flex h-[1.45em] items-center rounded-full border bg-surface px-[0.55em] text-[0.8em] font-bold tabular-nums ${
@@ -107,7 +107,7 @@ function KoCard({
 
   return (
     <div
-      className={`relative z-[2] flex w-full items-center rounded-[0.75em] border bg-surface px-[0.7em] transition-opacity duration-300 ${minimal ? "h-[3.7em]" : "h-[4.6em] pt-[0.4em]"} ${
+      className={`relative z-[2] flex w-full items-center rounded-[0.75em] border bg-surface px-[0.7em] transition-opacity duration-300 ${minimal ? "h-[4em] pt-[0.4em]" : "h-[4.6em] pt-[0.4em]"} ${
         mine ? "border-pink bg-pink-soft" : big ? "border-pink shadow-[0_1.2em_2.6em_-1.6em_rgba(255,93,146,.75)]" : "border-rule"
       } ${!big && !mine && (dashed || projected || !m || m.scoreA === null) ? "border-dashed" : ""} ${teamId && !mine ? "opacity-35" : ""}`}
     >

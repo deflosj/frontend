@@ -179,7 +179,7 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
         )}
         {slide.kind === "bracket" && (
           <div className="flex h-full flex-col justify-center">
-            <MirroredBracket matches={ko} nameOf={nameOf} year={year} projected={!hasKO} minimal rowEm={4.7} />
+            <MirroredBracket matches={ko} nameOf={nameOf} year={year} projected={!hasKO} minimal rowEm={5.4} />
           </div>
         )}
       </main>
