@@ -21,8 +21,8 @@ import { fmtTime } from "@/utils/DateHelpers";
 import { MirroredBracket } from "@/app/(tournament)/toernooi/[id]/brackets/ko-bracket";
 
 const SLIDE_MS = 15_000;
-/** Minder per dia = groter en leesbaar vanop afstand. */
-const POULES_PER_SLIDE = 4;
+/** De tv hangt aan het raam: leesbaar tot ~3 m, dus er mag veel op één dia. */
+const POULES_PER_SLIDE = 6;
 const COURTS_PER_SLIDE = 6;
 
 type Slide =
@@ -116,7 +116,7 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
     : hasKO ? "Finales" : "Finales: als het nu stopt";
 
   return (
-    <div style={LIGHT_THEME} className="fixed inset-0 flex flex-col overflow-hidden bg-paper text-ink [font-size:clamp(14px,1.2vw,30px)]">
+    <div style={LIGHT_THEME} className="fixed inset-0 flex flex-col overflow-hidden bg-paper text-ink [font-size:clamp(13px,1.1vw,27px)]">
       {/* Kop */}
       <header className="flex items-center gap-[1.4em] border-b border-rule bg-surface px-[2em] py-[0.8em]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -144,15 +144,15 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
       <main key={`${idx}-${tick}`} className="t-rise min-h-0 flex-1 px-[2em] py-[1.4em]">
         {slide.kind === "courts" && <Courts matches={matches} nameOf={nameOf} now={now} page={slide.page} />}
         {slide.kind === "poules" && (
-          <div className="grid h-full grid-cols-2 grid-rows-2 gap-[1.2em]">
+          <div className="grid h-full grid-cols-3 grid-rows-2 gap-[1em]">
             {tables.slice(slide.page * POULES_PER_SLIDE, (slide.page + 1) * POULES_PER_SLIDE).map(({ poule, rows }) => (
               <section key={poule.id} className="flex min-h-0 flex-col overflow-hidden rounded-[1.1em] border border-rule bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
                 <div className="flex items-baseline justify-between gap-[0.6em] border-b border-rule px-[1.2em] pb-[0.5em] pt-[0.7em]">
-                  <h2 className="text-[1.7em] font-semibold">Poule {pouleLetter(poule)}</h2>
+                  <h2 className="text-[1.5em] font-semibold">Poule {pouleLetter(poule)}</h2>
                   {trackOf.get(poule.id) && <span className="text-[1.1em] text-ink-2">baan {trackOf.get(poule.id)}</span>}
                 </div>
                 <div className="flex flex-1 flex-col justify-around py-[0.3em]">
-                  <div className="grid grid-cols-[0.35em_1.6em_minmax(0,1fr)_2.2em_2.8em_2.3em] items-center gap-[0.5em] pr-[1em] text-[1.6em] text-ink-2" aria-hidden="true">
+                  <div className="grid grid-cols-[0.35em_1.6em_minmax(0,1fr)_2.2em_2.8em_2.3em] items-center gap-[0.5em] pr-[1em] text-[1.35em] text-ink-2" aria-hidden="true">
                     <span /><span /><span />
                     <span className="text-right text-[0.6em] font-medium">G</span>
                     <span className="text-right text-[0.6em] font-medium">+/-</span>
@@ -162,7 +162,7 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
                     const r = rankById.get(t.id);
                     const bar = i < advancing ? "bg-pink" : r?.kind === "nth" ? "bg-ink/40" : "bg-transparent";
                     return (
-                      <div key={t.id} className="grid grid-cols-[0.35em_1.6em_minmax(0,1fr)_2.2em_2.8em_2.3em] items-center gap-[0.5em] pr-[1em] text-[1.6em] tabular-nums">
+                      <div key={t.id} className="grid grid-cols-[0.35em_1.6em_minmax(0,1fr)_2.2em_2.8em_2.3em] items-center gap-[0.5em] pr-[1em] text-[1.35em] tabular-nums">
                         <span className={`h-[1.2em] rounded-r ${bar}`} />
                         <span className="font-semibold text-ink-2">{i + 1}</span>
                         <span className={`truncate ${i < advancing ? "font-semibold" : ""}`}>{t.name}</span>
@@ -221,14 +221,13 @@ function Courts({ matches, nameOf, now, page }: Readonly<{ matches: TournamentMa
     <div
       className="grid h-full gap-[1.2em]"
       style={{
-        gridTemplateColumns: `repeat(${Math.min(tracks.length, 3)}, minmax(0, 1fr))`,
-        gridTemplateRows: `repeat(${Math.ceil(tracks.length / 3)}, minmax(0, 1fr))`,
+        gridTemplateColumns: `repeat(${Math.min(tracks.length, 6)}, minmax(0, 1fr))`,
       }}
     >
       {tracks.map((t) => {
         const own = sorted.filter((m) => m.track === t);
         const cur = own.find((m) => matchStatus(m, now) === "live") ?? own.find((m) => matchStatus(m, now) === "next");
-        const after = own.filter((m) => m !== cur && matchStatus(m, now) === "next").slice(0, 1);
+        const after = own.filter((m) => m !== cur && matchStatus(m, now) === "next").slice(0, 2);
         const live = cur && matchStatus(cur, now) === "live";
         return (
           <section
@@ -236,7 +235,7 @@ function Courts({ matches, nameOf, now, page }: Readonly<{ matches: TournamentMa
             className={`flex min-h-0 flex-col overflow-hidden rounded-[1.1em] border-2 bg-surface ${live ? "border-pink" : "border-rule"}`}
           >
             <div className={`flex items-center justify-between px-[1.1em] py-[0.6em] ${live ? "bg-pink-soft" : ""}`}>
-              <h2 className="text-[1.8em] font-bold tracking-tight">Baan {t}</h2>
+              <h2 className="text-[1.6em] font-bold tracking-tight">Baan {t}</h2>
               {live ? (
                 <span className="inline-flex items-center gap-[0.45em] text-[1.15em] font-semibold text-pink-ink"><span className="t-live-dot" /> bezig</span>
               ) : cur ? (
@@ -245,18 +244,23 @@ function Courts({ matches, nameOf, now, page }: Readonly<{ matches: TournamentMa
             </div>
             {cur ? (
               <div className="flex flex-1 flex-col justify-center gap-[0.25em] px-[1.1em]">
-                <span className="line-clamp-2 text-[2.1em] font-semibold leading-[1.1]">{name(cur.teamAId)}</span>
+                <span className="line-clamp-2 text-[1.75em] font-semibold leading-[1.15]">{name(cur.teamAId)}</span>
                 <span className="text-[1.1em] font-medium text-ink-2">tegen</span>
-                <span className="line-clamp-2 text-[2.1em] font-semibold leading-[1.1]">{name(cur.teamBId)}</span>
+                <span className="line-clamp-2 text-[1.75em] font-semibold leading-[1.15]">{name(cur.teamBId)}</span>
               </div>
             ) : (
               <p className="flex flex-1 items-center px-[1.1em] text-[1.5em] text-ink-2">Geen wedstrijden meer</p>
             )}
             {after.length > 0 && (
-              <div className="flex items-baseline gap-[0.7em] border-t border-rule bg-paper px-[1.1em] py-[0.6em] text-[1.2em]">
-                <span className="shrink-0 text-ink-2">Daarna</span>
-                <span className="shrink-0 font-mono font-semibold">{fmtTime(after[0].scheduledAt)}</span>
-                <span className="min-w-0 truncate">{name(after[0].teamAId)} – {name(after[0].teamBId)}</span>
+              <div className="flex flex-col gap-[0.6em] border-t border-rule bg-paper px-[1.1em] py-[0.8em]">
+                <span className="text-[0.95em] font-medium text-ink-2">Daarna</span>
+                {after.map((m) => (
+                  <div key={m.id} className="flex flex-col text-[1.1em] leading-snug">
+                    <span className="font-mono font-semibold text-ink-2">{fmtTime(m.scheduledAt)}</span>
+                    <span className="truncate">{name(m.teamAId)}</span>
+                    <span className="truncate">{name(m.teamBId)}</span>
+                  </div>
+                ))}
               </div>
             )}
           </section>
