@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api";
 import type { TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
 import { IconX } from "@/components/ui/icons";
 import { PaymentSelect, paymentBody, paymentValue } from "../payment-select";
-import { escapeTo, fieldInput, useDialogModal } from "../shared";
+import { escapeTo, useDialogModal } from "../shared";
 
 // ── Team drawer (add / edit) ──────────────────────────────────────────────────
 
@@ -144,7 +144,7 @@ export function TeamDrawer({
           </div>
           <div className="form-field">
             <label htmlFor="t-poule">Poule</label>
-            <select id="t-poule" disabled={saving} style={fieldInput}
+            <select id="t-poule" disabled={saving}
               value={form.pouleId} onChange={(e) => set("pouleId", e.target.value)}>
               <option value="">— Nog niet toegewezen —</option>
               {poules.filter((p) => p.phase === "GROUP_STAGE").map((p) => (

@@ -196,24 +196,47 @@ table.admin-table {
 }
 
 .form-field label {
-  font-size: 0.8rem;
+  font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--text-2);
+  color: var(--text);
 }
 
 .form-field input,
 .form-field textarea,
 .form-field select {
   width: 100%;
-  padding: 0.6rem 0.875rem;
+  height: 40px;
+  padding: 0 0.75rem;
   border: 1px solid var(--border);
   border-radius: 10px;
-  background: var(--bg);
+  background: var(--surface);
   color: var(--text);
-  font-size: 0.9rem;
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
-  transition: border-color 120ms ease;
+  font-size: 0.875rem;
+  font-family: inherit;
+  transition: border-color 120ms ease, box-shadow 120ms ease;
   outline: none;
+}
+
+.form-field input:hover:not(:disabled):not(:focus),
+.form-field textarea:hover:not(:disabled):not(:focus),
+.form-field select:hover:not(:disabled):not(:focus) {
+  border-color: color-mix(in srgb, var(--text) 22%, var(--border));
+}
+
+.form-field input::placeholder,
+.form-field textarea::placeholder {
+  color: color-mix(in srgb, var(--color-ink-2) 70%, transparent);
+}
+
+.form-field select,
+select.tb-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-right: 2.1rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238f8b85' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  cursor: pointer;
 }
 
 .form-field input:focus,
@@ -224,9 +247,17 @@ table.admin-table {
 }
 
 .form-field textarea {
+  height: auto;
   min-height: 100px;
+  padding: 0.65rem 0.75rem;
+  line-height: 1.6;
   resize: vertical;
 }
+
+/* Spinners weg bij getalvelden met eigen −/+ knoppen */
+.admin-number::-webkit-inner-spin-button,
+.admin-number::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.admin-number { -moz-appearance: textfield; appearance: textfield; }
 
 .form-checkbox {
   display: flex;
@@ -274,8 +305,8 @@ table.admin-table {
 
 .admin-drawer__header h2 {
   margin: 0;
-  font-size: 1.15rem;
-  font-weight: 500;
+  font-size: 1.25rem;
+  font-weight: 600;
   letter-spacing: -0.02em;
 }
 
@@ -511,8 +542,8 @@ table.admin-table {
 
 .admin-drawer__header .admin-sheet__title {
   margin: 0;
-  font-size: 2rem;
-  font-weight: 500;
+  font-size: 1.25rem;
+  font-weight: 600;
   letter-spacing: -0.02em;
   color: var(--text);
 }
@@ -1169,4 +1200,23 @@ dialog::backdrop {
   font-size: 0.75rem;
   font-variant-numeric: tabular-nums;
   opacity: 0.7;
+}
+
+/* ── Native <dialog class="admin-drawer">: als paneel van rechts ── */
+dialog.admin-drawer {
+  position: fixed;
+  inset: 0 0 0 auto;
+  margin: 0;
+  height: 100dvh;
+  max-height: none;
+  width: min(520px, 100vw);
+  max-width: 100vw;
+  border: 0;
+  border-left: 1px solid var(--border);
+  color: var(--text);
+  animation: sheet-slide-in 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+dialog.admin-drawer::backdrop {
+  background: rgba(0, 0, 0, 0.35);
+  animation: sheet-overlay-in 150ms ease;
 }

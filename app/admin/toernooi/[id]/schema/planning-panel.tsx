@@ -6,7 +6,7 @@ import type { ActiveTournament } from "@/lib/tournament-types";
 import { IconSave } from "@/components/ui/icons";
 import { slotMinutes as slotMinutesOf } from "@/lib/tournament-live";
 import { InfoButton } from "@/components/admin/info-button";
-import { Notice, Panel, Subhead } from "@/components/admin/ui";
+import { Notice, NumberField, Panel, Subhead } from "@/components/admin/ui";
 
 /** Vandaag om 13:00 in het formaat dat datetime-local verwacht. */
 function defaultStartTime(): string {
@@ -207,6 +207,8 @@ export function PlanningPanel({
       {/* ── 1. Poules loten ─────────────────────────────── */}
       <Panel
         id="draw"
+        collapsible
+        defaultOpen={groupPouleCount === 0}
         step={groupPouleCount > 0 ? "done" : 1}
         title="Poules loten"
         description={groupPouleCount > 0
@@ -224,13 +226,8 @@ export function PlanningPanel({
           {drawError && <Notice tone="err">{drawError}</Notice>}
           {drawNote && <Notice tone="ok">✓ {drawNote}</Notice>}
           <div className="flex flex-wrap items-end gap-4">
-            <div className="form-field">
-              <label htmlFor="draw-size">Teams per poule</label>
-              <input id="draw-size" type="number" min="2" max="16" value={perPoule}
-                style={{ width: "110px" }}
-                onChange={(e) => setPerPoule(e.target.value)} />
-            </div>
-            <label className="form-checkbox" style={{ paddingBottom: "0.7rem" }}>
+            <NumberField id="draw-size" label="Teams per poule" min={2} max={16} value={perPoule} onChange={setPerPoule} />
+            <label className="form-checkbox" style={{ paddingBottom: "0.6rem" }}>
               <input type="checkbox" checked={onlyPresent}
                 onChange={(e) => setOnlyPresent(e.target.checked)} />
               Enkel aanwezige teams
@@ -252,6 +249,8 @@ export function PlanningPanel({
       {/* ── 2. Poulewedstrijden ─────────────────────────── */}
       <Panel
         id="gen"
+        collapsible
+        defaultOpen={groupMatchCount === 0}
         step={groupMatchCount > 0 ? "done" : 2}
         title="Poulewedstrijden genereren"
         description={groupMatchCount > 0
@@ -268,24 +267,14 @@ export function PlanningPanel({
         <div className="flex flex-col gap-4">
           {genError && <Notice tone="err">{genError}</Notice>}
           {genNote && <Notice tone="ok">✓ {genNote}</Notice>}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
-            <div className="form-field">
+          <div className="flex flex-wrap items-end gap-x-6 gap-y-4">
+            <div className="form-field" style={{ width: 240 }}>
               <label htmlFor="gen-start">Eerste wedstrijd</label>
               <input id="gen-start" type="datetime-local" value={startTime}
                 onChange={(e) => setStartTime(e.target.value)} />
             </div>
-            <div className="form-field">
-              <label htmlFor="gen-slot">Minuten per match</label>
-              <input id="gen-slot" type="number" min="5" max="120" value={slotMinutes}
-                style={{ width: "120px" }}
-                onChange={(e) => setSlotMinutes(e.target.value)} />
-            </div>
-            <div className="form-field">
-              <label htmlFor="gen-tracks">Banen</label>
-              <input id="gen-tracks" type="number" min="1" max="40" value={trackCount}
-                style={{ width: "96px" }}
-                onChange={(e) => setTrackCount(e.target.value)} />
-            </div>
+            <NumberField id="gen-slot" label="Per match" suffix="min" min={5} max={120} step={5} value={slotMinutes} onChange={setSlotMinutes} />
+            <NumberField id="gen-tracks" label="Banen" min={1} max={40} value={trackCount} onChange={setTrackCount} />
           </div>
           <div>
             <button type="button" className={`btn-sm ${groupMatchCount > 0 ? "btn-sm--ghost" : "btn-sm--primary"}`}
@@ -300,6 +289,8 @@ export function PlanningPanel({
       {/* ── 3. Knock-out ────────────────────────────────── */}
       <Panel
         id="ko"
+        collapsible
+        defaultOpen={!koStarted}
         step={koMatches.length > 0 ? "done" : 3}
         title="Knock-out"
         description="Wordt automatisch opgemaakt na de laatste poulematch, met deze instellingen."
@@ -336,17 +327,9 @@ export function PlanningPanel({
           <div>
             <Subhead>Wie gaat door</Subhead>
             <div className="flex flex-wrap items-end gap-4">
-              <div className="form-field">
-                <label htmlFor="ko-adv">Door per poule</label>
-                <input id="ko-adv" type="number" min="1" max="8" value={advPerPoule} style={{ width: "6.5rem" }}
-                  onChange={(e) => setAdvPerPoule(e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label htmlFor="ko-best">+ beste {nthLabel}s</label>
-                <input id="ko-best" type="number" min="0" max={groupPouleCount || 32} value={bestNths} style={{ width: "6.5rem" }}
-                  onChange={(e) => setBestNths(e.target.value)} />
-              </div>
-              <label className="form-checkbox" style={{ paddingBottom: "0.7rem" }}>
+              <NumberField id="ko-adv" label="Door per poule" min={1} max={8} value={advPerPoule} onChange={setAdvPerPoule} />
+              <NumberField id="ko-best" label={`+ beste ${nthLabel}s`} min={0} max={groupPouleCount || 32} value={bestNths} onChange={setBestNths} />
+              <label className="form-checkbox" style={{ paddingBottom: "0.6rem" }}>
                 <input type="checkbox" checked={koConsolation}
                   onChange={(e) => setKoConsolation(e.target.checked)} />
                 Kleine finale (3de plaats)
@@ -372,27 +355,11 @@ export function PlanningPanel({
 
           <div>
             <Subhead>Timing</Subhead>
-            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-              <div className="form-field">
-                <label htmlFor="ko-pause">Pauze na poules</label>
-                <input id="ko-pause" type="number" min="0" max="240" value={koPause}
-                  onChange={(e) => setKoPause(e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label htmlFor="ko-slot">Min. 1/16 en 1/8</label>
-                <input id="ko-slot" type="number" min="5" max="120" value={koSlot} placeholder={String(groupSlot)}
-                  onChange={(e) => setKoSlot(e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label htmlFor="ko-finals-slot">Min. vanaf kwartfinale</label>
-                <input id="ko-finals-slot" type="number" min="5" max="120" value={koFinalsSlot}
-                  onChange={(e) => setKoFinalsSlot(e.target.value)} />
-              </div>
-              <div className="form-field">
-                <label htmlFor="ko-break">Pauze tussen rondes</label>
-                <input id="ko-break" type="number" min="0" max="120" value={koBreak}
-                  onChange={(e) => setKoBreak(e.target.value)} />
-              </div>
+            <div className="flex flex-wrap gap-x-6 gap-y-4">
+              <NumberField id="ko-pause" label="Pauze na poules" suffix="min" min={0} max={240} step={5} value={koPause} onChange={setKoPause} />
+              <NumberField id="ko-slot" label="Match 1/16 en 1/8" suffix="min" min={5} max={120} step={5} value={koSlot} placeholder={String(groupSlot)} onChange={setKoSlot} />
+              <NumberField id="ko-finals-slot" label="Match vanaf kwartfinale" suffix="min" min={5} max={120} step={5} value={koFinalsSlot} onChange={setKoFinalsSlot} />
+              <NumberField id="ko-break" label="Pauze tussen rondes" suffix="min" min={0} max={120} step={5} value={koBreak} onChange={setKoBreak} />
             </div>
           </div>
 

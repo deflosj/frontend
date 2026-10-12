@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ClipboardPen } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useTournament } from "../tournament-context";
-import { RegisterTeamForm } from "./register-form";
+import { RegisterDrawer } from "./register-drawer";
 import { TeamsTable } from "./teams-table";
 
 export default function TournamentTeamsPage() {
@@ -12,25 +12,18 @@ export default function TournamentTeamsPage() {
 
   return (
     <div>
-      {registerOpen && (
-        <div className="mb-6">
-          <RegisterTeamForm tournament={tournament} onUpdate={setTournament} />
-        </div>
-      )}
       <TeamsTable
         tournament={tournament}
         onUpdate={setTournament}
         toolbarExtra={
-          <button
-            type="button"
-            className={`btn-sm btn-sm--ghost ${registerOpen ? "tb-btn--active" : ""}`}
-            aria-expanded={registerOpen}
-            onClick={() => setRegisterOpen((o) => !o)}
-          >
-            <ClipboardPen size={16} strokeWidth={1.75} /> {registerOpen ? "Inschrijftafel sluiten" : "Inschrijftafel"}
+          <button type="button" className="btn-sm btn-sm--primary" onClick={() => setRegisterOpen(true)}>
+            <Plus size={16} strokeWidth={2} /> Team inschrijven
           </button>
         }
       />
+      {registerOpen && (
+        <RegisterDrawer tournament={tournament} onUpdate={setTournament} onClose={() => setRegisterOpen(false)} />
+      )}
     </div>
   );
 }

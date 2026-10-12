@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament, TournamentTeam } from "@/lib/tournament-types";
-import { IconEdit, IconPlus, IconTrash } from "@/components/ui/icons";
+import { IconEdit, IconTrash } from "@/components/ui/icons";
 import { PaymentSelect, paymentBody, paymentValue } from "../payment-select";
 import { escapeTo, useDialogModal } from "../shared";
 import { Search } from "lucide-react";
@@ -33,7 +33,7 @@ export function TeamsTable({
   /** Extra knoppen rechts in de werkbalk (bv. "Inschrijven"). */
   toolbarExtra?: React.ReactNode;
 }>) {
-  const [editTeam, setEditTeam]     = useState<TournamentTeam | null | "new">(null);
+  const [editTeam, setEditTeam]     = useState<TournamentTeam | null>(null);
   const [deleteTeam, setDeleteTeam] = useState<TournamentTeam | null>(null);
   const [deleting, setDeleting]     = useState(false);
   const [query, setQuery]           = useState("");
@@ -107,15 +107,12 @@ export function TeamsTable({
               value={query} onChange={(e) => setQuery(e.target.value)} />
           </label>
           {toolbarExtra}
-          <button type="button" className="btn-sm btn-sm--primary" onClick={() => setEditTeam("new")}>
-            <IconPlus /> Team
-          </button>
         </div>
       </div>
 
       <div className="admin-table-wrapper" style={{ overflowX: "auto" }}>
         {tournament.teams.length === 0 ? (
-          <p className="admin-empty">Nog geen teams. Schrijf er een in of klik op &quot;Team&quot;.</p>
+          <p className="admin-empty">Nog geen teams. Klik op &quot;Team inschrijven&quot; om te beginnen.</p>
         ) : visible.length === 0 ? (
           <p className="admin-empty">Geen teams die hieraan voldoen.</p>
         ) : (
@@ -185,16 +182,7 @@ export function TeamsTable({
         )}
       </div>
 
-      {editTeam === "new" && (
-        <TeamDrawer
-          tournamentId={tournament.id}
-          poules={tournament.poules}
-          team={null}
-          onClose={() => setEditTeam(null)}
-          onSaved={handleSaved}
-        />
-      )}
-      {editTeam !== null && editTeam !== "new" && (
+      {editTeam !== null && (
         <TeamDrawer
           tournamentId={tournament.id}
           poules={tournament.poules}

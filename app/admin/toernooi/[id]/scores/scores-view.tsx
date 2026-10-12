@@ -5,7 +5,7 @@ import { apiFetch } from "@/lib/api";
 import type { ActiveTournament, TournamentMatch, TournamentTeam } from "@/lib/tournament-types";
 import { PHASE_LABELS, PHASE_ORDER } from "@/lib/tournament-types";
 import Link from "next/link";
-import { Clock } from "lucide-react";
+import { Clock, Pencil } from "lucide-react";
 import { Notice, Panel } from "@/components/admin/ui";
 import { smallInput } from "../shared";
 
@@ -20,12 +20,6 @@ function toTimeField(iso: string | null): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
-function matchStatusColor(m: TournamentMatch): string {
-  if (m.scoreA !== null && m.scoreB !== null) return "var(--ok-fg)";
-  if (m.scoreA !== null || m.scoreB !== null) return "var(--warn-fg)";
-  return "var(--border)";
-}
-
 function MatchRow({
   tournamentId,
   match,
@@ -37,7 +31,7 @@ function MatchRow({
   match: TournamentMatch;
   teams: TournamentTeam[];
   onSaved: (m: TournamentMatch) => void;
-  /** Alleen gezet in het knockoutblok, dat een fasekolom extra heeft. */
+  /** Alleen gezet in het knockoutblok. */
   phaseLabel?: string;
 }>) {
   const [scoreA, setScoreA]   = useState(match.scoreA !== null ? String(match.scoreA) : "");
@@ -46,6 +40,7 @@ function MatchRow({
   const [track, setTrack]     = useState(match.track !== null ? String(match.track) : "");
   const [teamAId, setTeamAId] = useState(match.teamAId !== null ? String(match.teamAId) : "");
   const [teamBId, setTeamBId] = useState(match.teamBId !== null ? String(match.teamBId) : "");
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving]   = useState(false);
   const [error, setError]     = useState("");
 
@@ -59,7 +54,11 @@ function MatchRow({
     teamBId !== toStr(match.teamBId);
 
   const isComplete = match.scoreA !== null && match.scoreB !== null;
-  const statusColor = matchStatusColor(match);
+  const nameOf = (id: string) => teams.find((t) => String(t.id) === id)?.name ?? "Nog te bepalen";
+  const a = Number.parseInt(scoreA, 10);
+  const b = Number.parseInt(scoreB, 10);
+  const aWins = isComplete && a > b;
+  const bWins = isComplete && b > a;
 
   async function save() {
     setSaving(true); setError("");
@@ -74,65 +73,113 @@ function MatchRow({
         { method: "PATCH", body: JSON.stringify(body) }
       );
       onSaved(updated);
+      setEditing(false);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Fout");
+      setError(err instanceof Error ? err.message : "Opslaan mislukt");
     } finally { setSaving(false); }
   }
 
-  const selectStyle: React.CSSProperties = { ...smallInput, width: "100%", minWidth: 150, textAlign: "left" as const };
+  function reset() {
+    setScoreA(toStr(match.scoreA)); setScoreB(toStr(match.scoreB));
+    setTime(toTimeField(match.scheduledAt)); setTrack(toStr(match.track));
+    setTeamAId(toStr(match.teamAId)); setTeamBId(toStr(match.teamBId));
+    setEditing(false); setError("");
+  }
+
+  const scoreInput = "admin-number h-9 w-11 rounded-lg border border-rule bg-surface text-center font-mono text-[15px] font-semibold tabular-nums outline-none transition-colors hover:border-ink-2/40 focus:border-pink focus:shadow-[0_0_0_3px_var(--pink-soft)]";
+  const label = `${nameOf(teamAId)} tegen ${nameOf(teamBId)}`;
 
   return (
-    <tr style={{ background: isComplete ? "color-mix(in srgb, var(--ok-fg) 8%, transparent)" : undefined }}>
-      <td style={{ width: 4, padding: 0, background: statusColor }} aria-hidden="true" />
-      {phaseLabel !== undefined && (
-        <td style={{ whiteSpace: "nowrap", fontSize: "0.8rem", color: "var(--ink-2)" }}>{phaseLabel}</td>
-      )}
-      <td>
-        <select value={teamAId} onChange={(e) => setTeamAId(e.target.value)} style={selectStyle} aria-label="Team A">
-          <option value="">—</option>
-          {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-      </td>
-      <td style={{ textAlign: "center", width: 60 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: "4px", justifyContent: "center" }}>
-          <input type="number" value={scoreA} min="0" max="99" aria-label="Score A"
-            onChange={(e) => setScoreA(e.target.value)}
-            style={{ ...smallInput, width: 48 }} />
-          <span style={{ color: "var(--ink-2)", fontWeight: 600 }}>–</span>
-          <input type="number" value={scoreB} min="0" max="99" aria-label="Score B"
-            onChange={(e) => setScoreB(e.target.value)}
-            style={{ ...smallInput, width: 48 }} />
-        </div>
-      </td>
-      <td>
-        <select value={teamBId} onChange={(e) => setTeamBId(e.target.value)} style={selectStyle} aria-label="Team B">
-          <option value="">—</option>
-          {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
-        </select>
-      </td>
-      <td style={{ width: 70 }}>
-        <input type="text" value={time} placeholder="15:00" aria-label="Tijd"
-          onChange={(e) => setTime(e.target.value)}
-          style={{ ...smallInput, width: 64 }} />
-      </td>
-      <td style={{ width: 60 }}>
-        <input type="number" value={track} placeholder="1" min="1" aria-label="Baan"
-          onChange={(e) => setTrack(e.target.value)}
-          style={{ ...smallInput, width: 52 }} />
-      </td>
-      <td style={{ width: 110 }}>
-        {error && <span style={{ color: "var(--err-fg)", fontSize: "0.7rem", display: "block" }}>{error}</span>}
+    <li
+      className={`grid grid-cols-[1fr_auto] items-center gap-x-3 gap-y-2 border-t border-rule px-5 py-3 first:border-t-0 sm:grid-cols-[92px_minmax(0,1fr)_auto_minmax(0,1fr)_112px] ${
+        isComplete && !isDirty ? "bg-[color-mix(in_srgb,var(--ok-bg)_45%,transparent)]" : ""
+      }`}
+      aria-label={label}
+    >
+      {/* Tijd en baan */}
+      <div className="flex items-center gap-2 text-[13px] text-ink-2 sm:flex-col sm:items-start sm:gap-0">
+        <span className="font-mono font-semibold text-ink">{time || "—"}</span>
+        <span>{phaseLabel ? `${phaseLabel} · ` : ""}baan {track || "?"}</span>
+      </div>
+
+      {/* Status (op gsm rechtsboven) */}
+      <div className="flex items-center justify-end gap-1.5 sm:col-start-5 sm:row-start-1">
         {isDirty || saving ? (
-          <button type="button" className="btn-sm btn-sm--primary" onClick={save} disabled={saving}>
-            {saving ? "…" : "Opslaan"}
-          </button>
-        ) : isComplete ? (
-          <span className="inline-flex items-center gap-1 whitespace-nowrap text-[13px] font-semibold text-[var(--ok-fg)]">✓ Gespeeld</span>
+          <>
+            <button type="button" className="btn-sm btn-sm--ghost" onClick={reset} disabled={saving} aria-label="Wijzigingen ongedaan maken" title="Ongedaan maken">
+              ↺
+            </button>
+            <button type="button" className="btn-sm btn-sm--primary" onClick={save} disabled={saving}>
+              {saving ? "…" : "Opslaan"}
+            </button>
+          </>
         ) : (
-          <span className="text-[13px] text-ink-2">Open</span>
+          <>
+            {isComplete
+              ? <span className="whitespace-nowrap text-[13px] font-semibold text-[var(--ok-fg)]">✓ Gespeeld</span>
+              : <span className="text-[13px] text-ink-2">Open</span>}
+            <button
+              type="button"
+              className="tb-btn tb-btn--ghost tb-btn--icon"
+              style={{ border: "none", width: 30, height: 30, background: editing ? "var(--row-hover)" : "transparent" }}
+              onClick={() => setEditing((e) => !e)}
+              aria-expanded={editing}
+              aria-label={`Teams, tijd en baan aanpassen voor ${label}`}
+              title="Teams, tijd of baan aanpassen"
+            >
+              <Pencil size={14} />
+            </button>
+          </>
         )}
-      </td>
-    </tr>
+      </div>
+
+      {/* Team A – score – Team B */}
+      <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:col-span-3 sm:col-start-2 sm:row-start-1">
+        <span className={`truncate text-right text-sm ${aWins ? "font-semibold text-ink" : bWins ? "text-ink-2" : "font-medium text-ink"}`} title={nameOf(teamAId)}>
+          {nameOf(teamAId)}
+        </span>
+        <span className="flex items-center gap-1.5">
+          <input type="number" inputMode="numeric" value={scoreA} min="0" max="99" onChange={(e) => setScoreA(e.target.value)}
+            className={scoreInput} aria-label={`Score ${nameOf(teamAId)}`} />
+          <span className="text-ink-2" aria-hidden>–</span>
+          <input type="number" inputMode="numeric" value={scoreB} min="0" max="99" onChange={(e) => setScoreB(e.target.value)}
+            className={scoreInput} aria-label={`Score ${nameOf(teamBId)}`} />
+        </span>
+        <span className={`truncate text-sm ${bWins ? "font-semibold text-ink" : aWins ? "text-ink-2" : "font-medium text-ink"}`} title={nameOf(teamBId)}>
+          {nameOf(teamBId)}
+        </span>
+      </div>
+
+      {error && <p className="col-span-full text-xs text-[var(--err-fg)]" role="alert">{error}</p>}
+
+      {/* Aanpassen: teams, tijd, baan */}
+      {editing && (
+        <div className="col-span-full grid grid-cols-2 gap-3 rounded-xl bg-paper p-3 sm:grid-cols-[1fr_1fr_100px_90px]">
+          <div className="form-field">
+            <label htmlFor={`m${match.id}-a`}>Team A</label>
+            <select id={`m${match.id}-a`} value={teamAId} onChange={(e) => setTeamAId(e.target.value)}>
+              <option value="">—</option>
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor={`m${match.id}-b`}>Team B</label>
+            <select id={`m${match.id}-b`} value={teamBId} onChange={(e) => setTeamBId(e.target.value)}>
+              <option value="">—</option>
+              {teams.map((t) => <option key={t.id} value={t.id}>{t.name}</option>)}
+            </select>
+          </div>
+          <div className="form-field">
+            <label htmlFor={`m${match.id}-t`}>Tijd</label>
+            <input id={`m${match.id}-t`} type="text" value={time} placeholder="15:00" onChange={(e) => setTime(e.target.value)} />
+          </div>
+          <div className="form-field">
+            <label htmlFor={`m${match.id}-baan`}>Baan</label>
+            <input id={`m${match.id}-baan`} type="number" min="1" value={track} onChange={(e) => setTrack(e.target.value)} />
+          </div>
+        </div>
+      )}
+    </li>
   );
 }
 
@@ -176,7 +223,8 @@ function DelayControl({ tournamentId }: Readonly<{ tournamentId: number }>) {
 
 // ── Stand ─────────────────────────────────────────────────────────────────────
 
-function StandingsTable({ teams }: Readonly<{ teams: TournamentTeam[] }>) {
+/** `showAbsent`: enkel zodra er ingecheckt wordt, anders staat iedereen op "Afwezig". */
+function StandingsTable({ teams, showAbsent }: Readonly<{ teams: TournamentTeam[]; showAbsent: boolean }>) {
   const sorted = [...teams].sort((a, b) => {
     if (b.points !== a.points)       return b.points - a.points;
     if (b.goalsFor !== a.goalsFor)   return b.goalsFor - a.goalsFor;
@@ -204,7 +252,7 @@ function StandingsTable({ teams }: Readonly<{ teams: TournamentTeam[] }>) {
               </td>
               <td>
                 <strong>{t.name}</strong>
-                {t.isPresent === false && <span className="badge badge--gray ml-2">Afwezig</span>}
+                {showAbsent && t.isPresent === false && <span className="badge badge--gray ml-2">Afwezig</span>}
               </td>
               <td className="mono text-right">{t.played}</td>
               <td className="mono text-right">{t.won}</td>
@@ -237,34 +285,18 @@ function MatchTable({
   withPhase?: boolean;
 }>) {
   return (
-    <div className="overflow-x-auto">
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th style={{ width: 4, padding: 0 }} aria-hidden="true" />
-            {withPhase && <th>Fase</th>}
-            <th>Team A</th>
-            <th style={{ textAlign: "center" }}>Score</th>
-            <th>Team B</th>
-            <th>Tijd</th>
-            <th>Baan</th>
-            <th><span className="sr-only">Status</span></th>
-          </tr>
-        </thead>
-        <tbody>
-          {matches.map((m) => (
-            <MatchRow
-              key={m.id}
-              tournamentId={tournament.id}
-              match={m}
-              teams={tournament.teams}
-              onSaved={onSaved}
-              phaseLabel={withPhase ? PHASE_LABELS[m.phase] : undefined}
-            />
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <ul aria-label="Wedstrijden">
+      {matches.map((m) => (
+        <MatchRow
+          key={m.id}
+          tournamentId={tournament.id}
+          match={m}
+          teams={tournament.teams}
+          onSaved={onSaved}
+          phaseLabel={withPhase ? PHASE_LABELS[m.phase] : undefined}
+        />
+      ))}
+    </ul>
   );
 }
 
@@ -308,6 +340,7 @@ export function ScoresView({
   }
 
   const allGroup = tournament.matches.filter((m) => m.phase === "GROUP_STAGE");
+  const checkInStarted = tournament.teams.some((t) => t.isPresent);
 
   return (
     <div className="flex flex-col gap-5">
@@ -351,7 +384,7 @@ export function ScoresView({
               description={`${played} van ${pouleMatches.length} gespeeld${tracks.length ? ` · baan ${tracks.join(", ")}` : ""}`}
               flush
             >
-              {pouleTeams.length > 0 && <StandingsTable teams={pouleTeams} />}
+              {pouleTeams.length > 0 && <StandingsTable teams={pouleTeams} showAbsent={checkInStarted} />}
               {shown.length > 0 && (
                 <div className="border-t border-rule">
                   <MatchTable tournament={tournament} matches={shown} onSaved={handleMatchSaved} />

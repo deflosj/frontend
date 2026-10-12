@@ -11,18 +11,6 @@ import { QrModal } from "@/components/ui/qr-modal";
 import { QrCode } from "lucide-react";
 import { Notice, Panel } from "@/components/admin/ui";
 
-const fieldInput: React.CSSProperties = {
-  width: "100%",
-  padding: "0.6rem 0.875rem",
-  border: "1px solid var(--border)",
-  borderRadius: "10px",
-  background: "var(--bg)",
-  color: "var(--text)",
-  fontSize: "0.9rem",
-  fontFamily: "inherit",
-  outline: "none",
-};
-
 /** Plaatshouders tijdelijk verborgen — zet op true om ze terug te tonen. */
 const SHOW_PLACEHOLDERS = false;
 
@@ -39,9 +27,29 @@ function nextPlaceholderNumber(teams: TournamentTeam[]): number {
 interface Props {
   tournament: ActiveTournament;
   onUpdate: (t: ActiveTournament) => void;
+  /** Zonder kaart eromheen, voor in het zijpaneel. */
+  bare?: boolean;
 }
 
-export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
+/** Kaart op de pagina, of kale inhoud met dezelfde intro in het zijpaneel. */
+function Shell({ bare, description, actions, children }: Readonly<{
+  bare?: boolean; description: React.ReactNode; actions: React.ReactNode; children: React.ReactNode;
+}>) {
+  if (!bare) {
+    return <Panel id="register" title="Team inschrijven" description={description} actions={actions}>{children}</Panel>;
+  }
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3 rounded-xl bg-paper px-4 py-3">
+        <p className="text-[13px] text-ink-2">{description}</p>
+        <div>{actions}</div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+export function RegisterTeamForm({ tournament, onUpdate, bare = false }: Readonly<Props>) {
   const nameRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
@@ -151,9 +159,8 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
   return (
     <>
       {/* ── Aanmeldformulier ────────────────────────────────── */}
-      <Panel
-        id="register"
-        title="Inschrijftafel"
+      <Shell
+        bare={bare}
         description={<>{tournament.teams.length} ingeschreven · {paidCount} betaald ({cashCount} cash, {payconiqCount} Payconiq). Enter schrijft in en zet de cursor terug op de teamnaam.</>}
         actions={
           <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setShowQr(true)}>
@@ -174,38 +181,38 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
         <form onSubmit={handleSubmit}>
           {error && <Notice tone="err" className="mb-3">{error}</Notice>}
 
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div className={bare ? "register-stack grid grid-cols-1 gap-4" : "flex flex-wrap items-end gap-3"}>
             <div className="form-field" style={{ flex: "2 1 220px", minWidth: 0 }}>
               <label htmlFor="a-name">Teamnaam</label>
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <input
                 id="a-name" ref={nameRef} type="text" required autoFocus
-                autoComplete="off" disabled={saving} style={fieldInput}
+                autoComplete="off" disabled={saving}
                 value={name} onChange={(e) => { setName(e.target.value); setError(""); }}
               />
             </div>
             <div className="form-field" style={{ flex: "2 1 200px", minWidth: 0 }}>
               <label htmlFor="a-captain">Kapitein</label>
               <input
-                id="a-captain" type="text" autoComplete="off" disabled={saving} style={fieldInput}
+                id="a-captain" type="text" autoComplete="off" disabled={saving}
                 value={captain} onChange={(e) => setCaptain(e.target.value)}
               />
             </div>
             <div className="form-field" style={{ flex: "2 1 200px", minWidth: 0 }}>
               <label htmlFor="a-email">E-mail kapitein</label>
               <input
-                id="a-email" type="email" autoComplete="off" disabled={saving} style={fieldInput}
+                id="a-email" type="email" autoComplete="off" disabled={saving}
                 value={email} onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <div className="form-field" style={{ flex: "0 0 auto", justifyContent: "flex-end" }}>
+            <div className="form-field" style={{ flex: "0 0 auto", justifyContent: "start" }}>
               <label htmlFor="a-payment">Betaling</label>
               <PaymentSelect id="a-payment" value={payment} onChange={setPayment} disabled={saving} />
             </div>
             <button
               type="submit" className="btn-sm btn-sm--primary"
               disabled={saving || !name.trim()}
-              style={{ flex: "0 0 auto", padding: "0.6rem 1.1rem" }}
+              style={bare ? { height: 44, width: "100%" } : { height: 40 }}
             >
               {saving ? "Bezig…" : "Inschrijven ⏎"}
             </button>
@@ -233,7 +240,7 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
                   <label htmlFor={`a-sp${i + 1}`}>Speler {i + 1}</label>
                   <input
                     id={`a-sp${i + 1}`} type="text" autoComplete="off" disabled={saving}
-                    style={fieldInput} value={value}
+                    value={value}
                     onChange={(e) =>
                       setPlayers((prev) => prev.map((p, j) => (j === i ? e.target.value : p)))
                     }
@@ -260,7 +267,7 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
             </div>
           )}
         </form>
-      </Panel>
+      </Shell>
 
       {/* ── Plaatshouders ───────────────────────────────────── */}
       {SHOW_PLACEHOLDERS && (
@@ -273,7 +280,7 @@ export function RegisterTeamForm({ tournament, onUpdate }: Readonly<Props>) {
             <label htmlFor="a-bulk">Aantal</label>
             <input
               id="a-bulk" type="number" min={1} max={32} disabled={bulkBusy}
-              style={fieldInput} value={bulkCount}
+              value={bulkCount}
               onChange={(e) => setBulkCount(e.target.value)}
             />
           </div>
