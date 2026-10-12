@@ -30,6 +30,8 @@ export interface BracketCommon {
   isFollowed?: (id: number | null | undefined) => boolean;
   onPick?: (id: number) => void;
   projected?: boolean;
+  /** Tv-scherm: geen tijden, banen of "voorlopig" — enkel de rondes en de ploegen. */
+  minimal?: boolean;
 }
 
 interface Round {
@@ -65,12 +67,12 @@ function KoCard({
   dashed = false,
   mirrored = false,
 }: Readonly<{ m: TournamentMatch | undefined; pos: string; size: number; common: BracketCommon; big?: boolean; dashed?: boolean; mirrored?: boolean }>) {
-  const { nameOf, teamId = null, isFollowed = () => false, onPick, projected = false } = common;
+  const { nameOf, teamId = null, isFollowed = () => false, onPick, projected = false, minimal = false } = common;
   const [fa, fb] = feederLabels(pos, size);
   const w = winnerOf(m);
   const mine = !!teamId && (m?.teamAId === teamId || m?.teamBId === teamId);
-  const time = m?.scheduledAt ? fmtTime(m.scheduledAt) : "";
-  const baan = m?.track ? `Baan ${m.track}` : "";
+  const time = !minimal && m?.scheduledAt ? fmtTime(m.scheduledAt) : "";
+  const baan = !minimal && m?.track ? `Baan ${m.track}` : "";
   const [tl, tr] = mirrored ? [baan, time] : [time, baan];
   const hot = mine || big;
   const tab = `absolute -top-[0.72em] inline-flex h-[1.45em] items-center rounded-full border bg-surface px-[0.55em] text-[0.8em] font-bold tabular-nums ${
@@ -105,7 +107,7 @@ function KoCard({
 
   return (
     <div
-      className={`relative z-[2] flex h-[4.6em] w-full items-center rounded-[0.75em] border bg-surface px-[0.7em] pt-[0.4em] transition-opacity duration-300 ${
+      className={`relative z-[2] flex w-full items-center rounded-[0.75em] border bg-surface px-[0.7em] transition-opacity duration-300 ${minimal ? "h-[3.7em]" : "h-[4.6em] pt-[0.4em]"} ${
         mine ? "border-pink bg-pink-soft" : big ? "border-pink shadow-[0_1.2em_2.6em_-1.6em_rgba(255,93,146,.75)]" : "border-rule"
       } ${!big && !mine && (dashed || projected || !m || m.scoreA === null) ? "border-dashed" : ""} ${teamId && !mine ? "opacity-35" : ""}`}
     >
@@ -168,7 +170,7 @@ function FinalBlock({
 // ── Laptop / tv: langs twee kanten ────────────────────────────────────────────
 
 export function MirroredBracket({ rowEm = 5.9, ...common }: Readonly<BracketCommon & { rowEm?: number }>) {
-  const { matches, teamId = null, projected = false } = common;
+  const { matches, teamId = null, projected = false, minimal = false } = common;
   const byPos = new Map(matches.filter((m) => m.bracketPos).map((m) => [m.bracketPos!, m]));
   const rounds = useRounds(matches);
   const L = rounds.length;
@@ -215,13 +217,13 @@ export function MirroredBracket({ rowEm = 5.9, ...common }: Readonly<BracketComm
       {rounds.map((r, ci) => (
         <div key={`hl-${r.phase}`} className="flex flex-col gap-[0.1em] pb-[1.1em]" style={{ gridColumn: ci + 1, gridRow: 1 }}>
           <span className="text-[1.05em] font-semibold">{r.label}</span>
-          <span className="text-[0.85em] text-ink-2">{roundTime(matches, r.phase, projected)}</span>
+          {!minimal && <span className="text-[0.85em] text-ink-2">{roundTime(matches, r.phase, projected)}</span>}
         </div>
       ))}
       {rounds.map((r, ci) => (
         <div key={`hr-${r.phase}`} className="flex flex-col items-end gap-[0.1em] pb-[1.1em] text-right" style={{ gridColumn: cols - ci, gridRow: 1 }}>
           <span className="text-[1.05em] font-semibold">{r.label}</span>
-          <span className="text-[0.85em] text-ink-2">{roundTime(matches, r.phase, projected)}</span>
+          {!minimal && <span className="text-[0.85em] text-ink-2">{roundTime(matches, r.phase, projected)}</span>}
         </div>
       ))}
       {cells}

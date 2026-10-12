@@ -113,7 +113,7 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
   const title =
     slide.kind === "courts" ? `Op de banen${pageNote(slide)}`
     : slide.kind === "poules" ? `Standen${pageNote(slide)}`
-    : hasKO ? "Finales" : "Finales: als het nu stopt";
+    : "Finales";
 
   return (
     <div style={LIGHT_THEME} className="fixed inset-0 flex flex-col overflow-hidden bg-paper text-ink [font-size:clamp(13px,1.1vw,27px)]">
@@ -178,9 +178,8 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
           </div>
         )}
         {slide.kind === "bracket" && (
-          <div className="flex h-full flex-col justify-center gap-[0.5em]">
-            {!hasKO && <p className="text-[1em] text-ink-2">Voorlopig: zo zou de knock-out eruitzien als de poules nu stoppen.</p>}
-            <MirroredBracket matches={ko} nameOf={nameOf} year={year} projected={!hasKO} rowEm={4.7} />
+          <div className="flex h-full flex-col justify-center">
+            <MirroredBracket matches={ko} nameOf={nameOf} year={year} projected={!hasKO} minimal rowEm={4.7} />
           </div>
         )}
       </main>
