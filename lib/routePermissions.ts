@@ -30,6 +30,7 @@ export const PAGE_PERMISSIONS: Array<{ prefix: string; roles: AdminRole[] }> = [
   { prefix: "/admin/sponsors",       roles: ["ADMIN", "SUPERADMIN"] },
   { prefix: "/admin/members",        roles: ["ADMIN", "SUPERADMIN"] },
   { prefix: "/admin/toernooi",       roles: ["ADMIN", "SUPERADMIN"] },
+  { prefix: "/admin/draaiboek",      roles: ["ADMIN", "SUPERADMIN"] },
 ];
 
 export function isPageAllowed(role: string, pathname: string): boolean {

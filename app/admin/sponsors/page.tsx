@@ -10,8 +10,10 @@ import { SponsorDrawer, type Sponsor } from "../../../components/admin/sponsors/
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
-const TIER_LABELS: Record<string, string> = { MAIN: "Hoofdsponsor", GOLD: "Goud", STANDARD: "Standaard" };
-const TIER_BADGE: Record<string, string> = { MAIN: "pink", GOLD: "yellow", STANDARD: "gray" };
+const TIER_LABELS: Record<string, string> = { T450_PLUS: "€450+", T450: "€450", T200: "€200" };
+const TIER_BADGE: Record<string, string> = { T450_PLUS: "pink", T450: "yellow", T200: "gray" };
+// Sorteren op bedrag, niet alfabetisch op enum-naam.
+const TIER_RANK: Record<string, number> = { T200: 1, T450: 2, T450_PLUS: 3 };
 
 // ── Cell components (module scope — required by S6478) ────────────────────────
 
@@ -69,9 +71,9 @@ function makeColumns(onEdit: (s: Sponsor) => void): ColumnDef<Sponsor>[] {
     },
     {
       key: "tier",
-      header: "Niveau",
+      header: "Categorie",
       sortable: true,
-      sortValue: (s) => s.tier,
+      sortValue: (s) => TIER_RANK[s.tier] ?? 0,
       cell: (s) => <TierBadge tier={s.tier} />,
     },
     {
@@ -154,14 +156,14 @@ export default function AdminSponsorsPage() {
             filters={[
               {
                 key: "tier",
-                label: "Niveau",
+                label: "Categorie",
                 value: filterTier,
                 defaultValue: "ALL",
                 options: [
-                  { value: "ALL",      label: "Alle niveaus"  },
-                  { value: "MAIN",     label: "Hoofdsponsor"  },
-                  { value: "GOLD",     label: "Goud"          },
-                  { value: "STANDARD", label: "Standaard"     },
+                  { value: "ALL",       label: "Alle categorieën" },
+                  { value: "T200",      label: "€200"             },
+                  { value: "T450",      label: "€450"             },
+                  { value: "T450_PLUS", label: "€450+"            },
                 ],
                 onChange: setFilterTier,
               },

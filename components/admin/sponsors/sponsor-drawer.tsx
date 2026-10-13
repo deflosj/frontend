@@ -10,7 +10,7 @@ export interface Sponsor {
   name: string;
   logoUrl: string | null;
   websiteUrl: string | null;
-  tier: "MAIN" | "GOLD" | "STANDARD";
+  tier: "T450_PLUS" | "T450" | "T200";
   isActive: boolean;
   sortOrder: number;
 }
@@ -19,7 +19,7 @@ interface Form {
   name: string;
   logoUrl: string;
   websiteUrl: string;
-  tier: "MAIN" | "GOLD" | "STANDARD";
+  tier: "T450_PLUS" | "T450" | "T200";
   isActive: boolean;
   sortOrder: string;
 }
@@ -42,7 +42,7 @@ export function SponsorDrawer({ editing, onSaved }: Readonly<Props>) {
           isActive: editing.isActive,
           sortOrder: String(editing.sortOrder),
         }
-      : { name: "", logoUrl: "", websiteUrl: "", tier: "STANDARD", isActive: true, sortOrder: "0" }
+      : { name: "", logoUrl: "", websiteUrl: "", tier: "T200", isActive: true, sortOrder: "0" }
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
@@ -91,11 +91,11 @@ export function SponsorDrawer({ editing, onSaved }: Readonly<Props>) {
           </div>
 
           <div className="form-field">
-            <label htmlFor="s-tier">Niveau</label>
+            <label htmlFor="s-tier">Categorie</label>
             <select id="s-tier" value={form.tier} onChange={(e) => setForm({ ...form, tier: e.target.value as Form["tier"] })} disabled={saving}>
-              <option value="MAIN">Hoofdsponsor</option>
-              <option value="GOLD">Goud</option>
-              <option value="STANDARD">Standaard</option>
+              <option value="T200">€200</option>
+              <option value="T450">€450</option>
+              <option value="T450_PLUS">€450+</option>
             </select>
           </div>
 

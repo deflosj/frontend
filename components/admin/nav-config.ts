@@ -2,7 +2,6 @@ import type { LucideIcon } from "lucide-react";
 import {
   Bike,
   CalendarDays,
-  ClipboardList,
   FileText,
   House,
   IdCard,
@@ -48,7 +47,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: "/admin/toernooi", label: "Petanquetoernooi", Icon: Trophy },
       { href: "/admin/inschrijvingen", label: "Dorpelingenkoers", Icon: Bike, count: "pendingRegistrations" },
       { href: "/admin/events", label: "Events", Icon: CalendarDays, inDevelopment: true },
-      { href: "/admin/helpers", label: "Helpers & shiften", Icon: Users },
+      { href: "/admin/helpers", label: "Helpers", Icon: Users },
     ],
   },
   {
@@ -56,8 +55,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/admin/news", label: "Nieuws", Icon: Newspaper },
       { href: "/admin/sponsors", label: "Sponsors", Icon: Star },
-      { href: "/admin/page-editor", label: "Pagina's", Icon: FileText, comingSoon: true },
-      { href: "/admin/form-editor", label: "Formulieren", Icon: ClipboardList, comingSoon: true },
+      { href: "/admin/draaiboek", label: "Draaiboek", Icon: FileText, comingSoon: true },
     ],
   },
   {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePageSize } from "@/hooks/use-page-size";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
@@ -9,24 +9,6 @@ import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
 import { EventDrawer, type CalEvent } from "@/components/admin/events/event-drawer";
 import { Button } from "@/components/ui/button";
-import { SHIFT_LABELS } from "@/constants/shifts";
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface ShiftBreakdown {
-  total: number;
-  assigned: number;
-}
-
-interface ShiftStats {
-  total: number;
-  assigned: number;
-  byShift?: {
-    SETUP: ShiftBreakdown;
-    DURING: ShiftBreakdown;
-    BREAKDOWN: ShiftBreakdown;
-  };
-}
 
 // ── Cell components ───────────────────────────────────────────────────────────
 
@@ -49,49 +31,6 @@ function PublishBadge({ isPublished }: Readonly<{ isPublished: boolean }>) {
     <span className="badge badge--yellow">Concept</span>
   );
 }
-function shiftPipClass(total: number, assigned: number): string {
-  if (total === 0) return "badge--gray";
-  if (assigned === total) return "badge--green";
-  if (assigned > 0) return "badge--yellow";
-  return "badge--red";
-}
-
-function ShiftPip({ label, total, assigned }: Readonly<{ label: string; total: number; assigned: number }>) {
-  const cls = shiftPipClass(total, assigned);
-  return (
-    <span className={`badge ${cls}`} style={{ fontSize: "0.65rem", padding: "0.15rem 0.4rem" }}>
-      {label} {assigned}/{total}
-    </span>
-  );
-}
-
-function ShiftsCell({ stats, loading }: Readonly<{ stats: ShiftStats | undefined; loading: boolean }>) {
-  if (loading) return <span className="badge badge--gray">…</span>;
-  if (!stats) return <span className="badge badge--gray">—</span>;
-  if (stats.total === 0) return <span className="badge badge--gray">Geen taken</span>;
-
-  if (stats.byShift) {
-    return (
-      <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
-        {(["SETUP", "DURING", "BREAKDOWN"] as const).map((s) => (
-          <ShiftPip
-            key={s}
-            label={SHIFT_LABELS[s]}
-            total={stats.byShift![s].total}
-            assigned={stats.byShift![s].assigned}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (stats.assigned === stats.total)
-    return <span className="badge badge--green">{stats.assigned}/{stats.total} ingevuld</span>;
-  if (stats.assigned > 0)
-    return <span className="badge badge--yellow">{stats.assigned}/{stats.total} ingevuld</span>;
-  return <span className="badge badge--red">0/{stats.total} ingevuld</span>;
-}
-
 function ActionsCell({ ev, onEdit }: Readonly<{ ev: CalEvent; onEdit: () => void }>) {
   return (
     <div className="row-actions">
@@ -101,10 +40,7 @@ function ActionsCell({ ev, onEdit }: Readonly<{ ev: CalEvent; onEdit: () => void
       >
         Bewerken
       </Button>
-      <Link href={`/admin/events/${ev.id}/helpers`} className="btn-sm btn-sm--ghost">
-        Shifts
-      </Link>
-      <Link href="/admin/helpers" className="btn-sm btn-sm--ghost">
+      <Link href={`/admin/helpers?event=${ev.id}`} className="btn-sm btn-sm--ghost">
         Helpers
       </Link>
     </div>
@@ -113,11 +49,7 @@ function ActionsCell({ ev, onEdit }: Readonly<{ ev: CalEvent; onEdit: () => void
 
 // ── Column factory ────────────────────────────────────────────────────────────
 
-function makeColumns(
-  onEdit: (ev: CalEvent) => void,
-  statsMap: Map<number, ShiftStats>,
-  statsLoading: boolean
-): ColumnDef<CalEvent>[] {
+function makeColumns(onEdit: (ev: CalEvent) => void): ColumnDef<CalEvent>[] {
   return [
     {
       key: "title",
@@ -144,11 +76,6 @@ function makeColumns(
       cell: (ev) => <PublishBadge isPublished={ev.isPublished} />,
     },
     {
-      key: "shifts",
-      header: "Shifts",
-      cell: (ev) => <ShiftsCell stats={statsMap.get(ev.id)} loading={statsLoading} />,
-    },
-    {
       key: "actions",
       header: "Acties",
       cell: (ev) => <ActionsCell ev={ev} onEdit={() => onEdit(ev)} />,
@@ -165,40 +92,18 @@ export default function AdminEventsPage() {
   const [fetchError, setFetchError] = useState("");
   const [search, setSearch] = useState("");
   const [filterStatus, setFilterStatus] = useState("ALL");
-  const [statsMap, setStatsMap] = useState<Map<number, ShiftStats>>(new Map());
-  const statsMapRef = useRef<Map<number, ShiftStats>>(new Map());
-  const [statsLoading, setStatsLoading] = useState(false);
   const [pageSize, savePageSize] = usePageSize("events");
-
-  const fetchShiftStats = useCallback(async (evs: CalEvent[]) => {
-    const toFetch = evs.filter((ev) => !statsMapRef.current.has(ev.id));
-    if (toFetch.length === 0) return;
-    setStatsLoading(true);
-    try {
-      const results = await Promise.all(
-        toFetch.map((ev) =>
-          apiFetch<ShiftStats>(`events/${ev.id}/portal/stats`).then((s) => [ev.id, s] as const)
-        )
-      );
-      const merged = new Map<number, ShiftStats>([...statsMapRef.current, ...results]);
-      statsMapRef.current = merged;
-      setStatsMap(merged);
-    } finally {
-      setStatsLoading(false);
-    }
-  }, []);
 
   const fetchEvents = useCallback(async () => {
     try {
       const evs = await apiFetch<CalEvent[]>("content/events/all");
       setEvents(evs);
-      fetchShiftStats(evs);
     } catch (err) {
       setFetchError(err instanceof Error ? err.message : "Laden mislukt.");
     } finally {
       setLoading(false);
     }
-  }, [fetchShiftStats]);
+  }, []);
 
   useEffect(() => { fetchEvents(); }, [fetchEvents]);
 
@@ -217,11 +122,7 @@ export default function AdminEventsPage() {
     });
   }, [events, search, filterStatus]);
 
-  const columns = makeColumns(
-    (ev) => openDrawer(<EventDrawer editing={ev} onSaved={handleSaved} />),
-    statsMap,
-    statsLoading
-  );
+  const columns = makeColumns((ev) => openDrawer(<EventDrawer editing={ev} onSaved={handleSaved} />));
 
   return (
     <>

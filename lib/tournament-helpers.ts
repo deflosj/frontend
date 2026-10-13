@@ -36,3 +36,21 @@ export function matchSideClass(isPlayed: boolean, isWinner: boolean): string {
   if (isPlayed) return "text-ink-2";
   return "text-ink-2";
 }
+
+const dayKey = (d: Date) => d.toLocaleDateString("sv-SE", { timeZone: "Europe/Brussels" });
+
+/**
+ * "Live" pas vanaf de eventdag zelf (dag van de eerste geplande match), niet
+ * zodra het toernooi actief staat. Zo staat alles al online in de aanloop,
+ * maar toont de site pas "Live" op de dag van het toernooi.
+ */
+export function isTournamentLive(t: Pick<ActiveTournament, "isActive" | "status" | "matches">, now = new Date()): boolean {
+  if (!t.isActive || t.status === "COMPLETED") return false;
+  if (t.status === "ONGOING") return true;
+  const first = t.matches
+    .map((m) => m.scheduledAt)
+    .filter((s): s is string => !!s)
+    .sort()[0];
+  if (!first) return false;
+  return dayKey(now) >= dayKey(new Date(first));
+}

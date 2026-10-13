@@ -51,7 +51,8 @@ interface Props {
   id: string;
   name: string;
   year: number;
-  isActive: boolean;
+  /** Enkel op de eventdag zelf (zie isTournamentLive). */
+  isLive: boolean;
 }
 
 /**
@@ -59,7 +60,7 @@ interface Props {
  * eigen merk (naam + jaar), eigen navigatie, en enkel onderin het
  * mobiele menu een weg terug naar de hoofdsite.
  */
-export function TournamentHeader({ id, name, year, isActive }: Readonly<Props>) {
+export function TournamentHeader({ id, name, year, isLive }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
 
@@ -67,7 +68,7 @@ export function TournamentHeader({ id, name, year, isActive }: Readonly<Props>) 
   // volgende pagina.
   useEffect(() => setOpen(false), [pathname]);
 
-  const liveBadge = isActive ? (
+  const liveBadge = isLive ? (
     <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full bg-pink/15 px-2.5 py-1 text-[0.6rem] font-bold uppercase tracking-widest text-pink">
       <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-pink" />
       {"Live"}

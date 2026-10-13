@@ -18,8 +18,6 @@ interface ContactMessage {
   status: "UNREAD" | "READ" | "ARCHIVED";
   createdAt: string;
 }
-interface CalEvent { id: number; title: string; startsAt: string }
-interface ShiftStats { total: number; assigned: number }
 
 type Tone = "pink" | "warn" | "neutral";
 interface Todo { key: string; tone: Tone; Icon: LucideIcon; title: string; sub: string; action: string; href: string }
@@ -160,7 +158,6 @@ export default function AdminDashboardPage() {
   const [tournament, setTournament] = useState<ActiveTournament | null>(null);
   const [registrations, setRegistrations] = useState<Registration[]>([]);
   const [messages, setMessages] = useState<ContactMessage[]>([]);
-  const [nextEvent, setNextEvent] = useState<{ ev: CalEvent; stats: ShiftStats } | null>(null);
   const [name, setName] = useState("");
 
   useEffect(() => {
@@ -171,20 +168,9 @@ export default function AdminDashboardPage() {
       const pick = list.find((t) => t.isActive) ?? list.find((t) => t.status !== "COMPLETED");
       if (pick) setTournament(await apiFetch<ActiveTournament>(`tournaments/${pick.id}`));
     }
-    async function loadEvent() {
-      const evs = await apiFetch<CalEvent[]>("content/events/all");
-      const upcoming = evs
-        .filter((e) => new Date(e.startsAt).getTime() > Date.now())
-        .sort((a, b) => a.startsAt.localeCompare(b.startsAt))[0];
-      if (upcoming) {
-        const stats = await apiFetch<ShiftStats>(`events/${upcoming.id}/portal/stats`);
-        setNextEvent({ ev: upcoming, stats });
-      }
-    }
 
     Promise.allSettled([
       loadTournament(),
-      loadEvent(),
       apiFetch<Registration[]>("registrations").then(setRegistrations),
       apiFetch<ContactMessage[]>("contact/messages").then(setMessages),
     ]).finally(() => setLoading(false));
@@ -219,15 +205,6 @@ export default function AdminDashboardPage() {
       sub: `Laatste: ${unread[0].subject ? `“${unread[0].subject}”` : `van ${unread[0].name}`}`,
     });
   }
-  if (nextEvent && nextEvent.stats.total > nextEvent.stats.assigned) {
-    const open = nextEvent.stats.total - nextEvent.stats.assigned;
-    todos.push({
-      key: "shifts", tone: "neutral", Icon: Users, href: "/admin/helpers", action: "Invullen",
-      title: `${open} ${open === 1 ? "helperplaats" : "helperplaatsen"} nog open`,
-      sub: `${nextEvent.ev.title} · ${fmtDate(nextEvent.ev.startsAt)} · ${nextEvent.stats.assigned} van ${nextEvent.stats.total} ingevuld`,
-    });
-  }
-
   const today = new Date().toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
 
   return (

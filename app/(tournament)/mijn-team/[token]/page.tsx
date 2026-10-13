@@ -4,6 +4,7 @@ import { use, useEffect, useState } from "react";
 
 import { API_BASE } from "@/lib/api";
 import type { TeamPortalData } from "@/lib/tournament-types";
+import { isTournamentLive } from "@/lib/tournament-helpers";
 import { MatchBlock, PageHead, SectionHead } from "../../toernooi/[id]/_shared";
 import { TournamentHeader } from "../../toernooi/[id]/tournament-header";
 
@@ -116,7 +117,7 @@ export default function TeamPortalPage({
         id={String(tournament.id)}
         name={tournament.name}
         year={tournament.year}
-        isActive={tournament.isActive}
+        isLive={isTournamentLive({ isActive: tournament.isActive, matches })}
       />
 
       <div className="mx-auto flex max-w-5xl flex-col gap-8 px-5 py-8 sm:px-8 sm:py-10">

@@ -1,5 +1,3 @@
-import { Task } from "@/types/shifts";
-
 export function fmtTime(iso: string | null): string {
   if (!iso) return "";
   return new Date(iso).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
@@ -53,16 +51,6 @@ export function getEventDays(startsAt: string, endsAt: string | null): Date[] {
     cur.setDate(cur.getDate() + 1);
   }
   return days;
-}
-
-export function taskMatchesDay(task: Task, day: Date): boolean {
-  if (!task.startAt) return true; // timeless tasks show on every day
-  const taskDay = new Date(task.startAt);
-  return (
-    taskDay.getFullYear() === day.getFullYear() &&
-    taskDay.getMonth() === day.getMonth() &&
-    taskDay.getDate() === day.getDate()
-  );
 }
 
 export function fmtDayTab(date: Date): string {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 
-import { getTournament } from "@/lib/tournament-helpers";
+import { getTournament, isTournamentLive } from "@/lib/tournament-helpers";
 import { TournamentHeader } from "./tournament-header";
 import { BackLink } from "@/components/ui/back-link";
 
@@ -45,7 +45,7 @@ export default async function TournamentDetailLayout({
         id={id}
         name={tournament.name}
         year={tournament.year}
-        isActive={tournament.isActive}
+        isLive={isTournamentLive(tournament)}
       />
 
       <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">{children}</div>
