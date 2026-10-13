@@ -1,5 +1,6 @@
 "use client";
 
+import { Check, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
@@ -7,7 +8,6 @@ import type { TournamentListItem } from "@/lib/tournament-types";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar, type ColumnDisplay } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
-import { IconCheck, IconEdit, IconTrash } from "@/components/ui/icons";
 import { CreateDrawer } from "../../../components/admin/toernooi/create-drawer";
 import { EditDrawer } from "../../../components/admin/toernooi/edit-drawer";
 import { DeleteConfirm } from "../../../components/admin/toernooi/delete-confirm";
@@ -78,7 +78,7 @@ function ActionCell({
           onClick={onActivate}
           style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}
         >
-          <IconCheck />
+          <Check size={13} strokeWidth={1.75} aria-hidden />
           {activating === t.id ? "…" : "Activeren"}
         </button>
       )}
@@ -88,7 +88,7 @@ function ActionCell({
         onClick={onEdit}
         style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}
       >
-        <IconEdit /> Bewerken
+        <Pencil size={13} strokeWidth={1.75} aria-hidden /> Bewerken
       </button>
       <button
         type="button"
@@ -96,7 +96,7 @@ function ActionCell({
         onClick={onDelete}
         style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}
       >
-        <IconTrash /> Verwijderen
+        <Trash2 size={13} strokeWidth={1.75} aria-hidden /> Verwijderen
       </button>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
+import { ArrowDown, ArrowUp } from "lucide-react";
 import { useMemo, useState } from "react";
-import { IconArrowUp, IconArrowDown } from "../ui/icons";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -46,7 +46,7 @@ function SortIcon({ active, dir }: Readonly<{ active: boolean; dir: SortDir }>) 
       </svg>
     );
   }
-  return dir === "asc" ? <IconArrowUp /> : <IconArrowDown />
+  return dir === "asc" ? <ArrowUp size={9} strokeWidth={1.75} aria-hidden /> : <ArrowDown size={9} strokeWidth={1.75} aria-hidden />
 }
 
 // ── DataTable ─────────────────────────────────────────────────────────────────

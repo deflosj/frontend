@@ -6,6 +6,7 @@ import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
 import { MessageDetailDrawer, type ContactMessage } from "../../../components/admin/messages/message-detail-drawer";
+import { Notice } from "@/components/admin/ui";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -19,7 +20,7 @@ function NameCell({ name }: Readonly<{ name: string }>) {
 }
 
 function SubjectCell({ subject }: Readonly<{ subject: string | null }>) {
-  return <>{subject ?? <span style={{ color: "var(--ink-2)" }}>—</span>}</>;
+  return <>{subject ?? <span className="text-ink-2">—</span>}</>;
 }
 
 function StatusBadge({ status }: Readonly<{ status: string }>) {
@@ -186,15 +187,13 @@ export default function AdminMessagesPage() {
         <p>
           Contactberichten van bezoekers
           {unread > 0 && (
-            <span style={{ marginLeft: "0.5rem" }}>
-              <span className="badge badge--pink">{unread} ongelezen</span>
-            </span>
+            <span className="badge badge--pink ml-2">{unread} ongelezen</span>
           )}
         </p>
         {fetchError && (
-          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "var(--err-bg)", color: "var(--err-fg)", fontSize: "0.875rem", fontWeight: 500 }}>
+          <Notice tone="err" className="mt-4">
             Kon berichten niet laden: <strong>{fetchError}</strong>
-          </div>
+          </Notice>
         )}
       </div>
 

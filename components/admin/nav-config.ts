@@ -46,7 +46,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: "/admin/toernooi", label: "Petanquetoernooi", Icon: Trophy },
       { href: "/admin/inschrijvingen", label: "Dorpelingenkoers", Icon: Bike, count: "pendingRegistrations" },
-      { href: "/admin/events", label: "Events", Icon: CalendarDays, inDevelopment: true },
+      { href: "/admin/events", label: "Events", Icon: CalendarDays },
       { href: "/admin/helpers", label: "Helpers", Icon: Users },
     ],
   },

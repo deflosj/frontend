@@ -1,14 +1,7 @@
 "use client";
 
+import { ChevronDown, Columns3, Ellipsis, Plus, Search, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
-import {
-  IconSearch,
-  IconChevronDown,
-  IconPlus,
-  IconColumns,
-  IconX,
-  IconDotsH,
-} from "@/components/ui/icons";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -128,7 +121,7 @@ export function TableToolbar({
         {onSearch !== undefined && (
           <div className="tb-search">
             <span className="tb-search__icon">
-              <IconSearch />
+              <Search size={14} strokeWidth={1.75} aria-hidden />
             </span>
             <input
               type="search"
@@ -144,7 +137,7 @@ export function TableToolbar({
                 onClick={() => onSearch("")}
                 aria-label="Zoekopdracht wissen"
               >
-                <IconX />
+                <X size={14} strokeWidth={1.75} aria-hidden />
               </button>
             )}
           </div>
@@ -168,7 +161,7 @@ export function TableToolbar({
 
         {hasActiveFilters && (
           <button type="button" className="tb-btn tb-btn--ghost" onClick={resetAll}>
-            <IconX /> Wis filters
+            <X size={14} strokeWidth={1.75} aria-hidden /> Wis filters
           </button>
         )}
 
@@ -193,7 +186,7 @@ export function TableToolbar({
                 onClick={toggle}
                 aria-expanded={open}
               >
-                <IconColumns /> Kolommen <IconChevronDown />
+                <Columns3 size={14} strokeWidth={1.75} aria-hidden /> Kolommen <ChevronDown size={11} strokeWidth={1.75} aria-hidden />
               </button>
             )}
           >
@@ -217,7 +210,7 @@ export function TableToolbar({
 
         {onAdd && (
           <button type="button" className="tb-btn tb-btn--primary" onClick={onAdd}>
-            <IconPlus /> {addLabel}
+            <Plus size={14} strokeWidth={1.75} aria-hidden /> {addLabel}
           </button>
         )}
 
@@ -232,7 +225,7 @@ export function TableToolbar({
                 aria-expanded={open}
                 aria-label="Meer opties"
               >
-                <IconDotsH />
+                <Ellipsis size={15} strokeWidth={1.75} aria-hidden />
               </button>
             )}
           >

@@ -1,16 +1,12 @@
 "use client";
 
+import { Menu, User, X } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import { siteConfig } from "@/lib/site-config";
-import {
-  IconUser,
-  IconHamburger,
-  IconClose,
-} from "@/components/ui/icons";
 import { ThemeDropdown } from "./theme-dropdown";
 
 // ── Header ────────────────────────────────────────────────────────────────────
@@ -84,7 +80,7 @@ export function SiteHeader() {
               aria-label="Inloggen"
               className="flex h-9 w-9 items-center justify-center rounded-full text-ink-2 transition-colors duration-150 hover:bg-ink/5 hover:text-ink"
             >
-              <IconUser />
+              <User size={16} strokeWidth={1.75} aria-hidden />
             </Link>
           </div>
           {/* Hamburger */}
@@ -95,7 +91,7 @@ export function SiteHeader() {
             aria-expanded={open}
             className="flex h-9 w-9 items-center justify-center rounded-full text-ink-2 transition-colors duration-150 hover:bg-ink/5 hover:text-ink sm:hidden"
           >
-            {open ? <IconClose /> : <IconHamburger />}
+            {open ? <X size={16} strokeWidth={1.75} aria-hidden /> : <Menu size={16} strokeWidth={1.75} aria-hidden />}
           </button>
         </div>
       </div>
@@ -127,7 +123,7 @@ export function SiteHeader() {
               onClick={() => setOpen(false)}
               className="mt-0.5 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-ink-2 transition-colors duration-150 hover:bg-ink/5 hover:text-ink"
             >
-              <IconUser />
+              <User size={16} strokeWidth={1.75} aria-hidden />
               Inloggen
             </Link>
             {/* Mobile theme row */}

@@ -9,6 +9,7 @@ import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
 import { EventDrawer, type CalEvent } from "@/components/admin/events/event-drawer";
 import { Button } from "@/components/ui/button";
+import { Notice } from "@/components/admin/ui";
 
 // ── Cell components ───────────────────────────────────────────────────────────
 
@@ -130,9 +131,9 @@ export default function AdminEventsPage() {
         <h1>Events</h1>
         <p>Beheer evenementen voor de website</p>
         {fetchError && (
-          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "var(--err-bg)", color: "var(--err-fg)", fontSize: "0.875rem", fontWeight: 500 }}>
+          <Notice tone="err" className="mt-4">
             Kon events niet laden: <strong>{fetchError}</strong>
-          </div>
+          </Notice>
         )}
       </div>
 

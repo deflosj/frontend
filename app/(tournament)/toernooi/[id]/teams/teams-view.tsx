@@ -1,9 +1,9 @@
 "use client";
 
+import { Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
-import { IconSearch } from "@/components/ui/icons/IconSearch";
 import { compareStanding, isPlayed, matchStatus, pouleLetter, pouleTracks, useNow } from "@/lib/tournament-live";
 import type { TournamentMatch, TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
 import { rosterOf } from "@/lib/team-roster";
@@ -137,7 +137,7 @@ export function TeamsView({ teams, poules, matches, tournamentId }: Readonly<Pro
 
       <section aria-label="Zoeken en filteren" className="flex flex-col gap-3">
         <div className="flex h-12 items-center gap-2.5 rounded-xl border border-rule bg-surface px-4 focus-within:border-ink-2 md:h-11">
-          <span className="shrink-0 text-ink-2"><IconSearch /></span>
+          <span className="shrink-0 text-ink-2"><Search size={14} strokeWidth={1.75} aria-hidden /></span>
           <label htmlFor="team-zoek" className="sr-only">Zoek op ploeg of speler</label>
           <input
             id="team-zoek"

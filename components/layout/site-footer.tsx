@@ -1,8 +1,8 @@
+import { IconFacebook, IconInstagram } from "@/components/ui/brand-icons";
 import Link from "next/link";
 import Image from "next/image";
 
 import { siteConfig } from "@/lib/site-config";
-import { IconFacebook, IconInstagram } from "@/components/ui/icons";
 
 export function SiteFooter() {
   const year = new Date().getFullYear();

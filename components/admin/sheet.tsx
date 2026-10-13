@@ -1,7 +1,7 @@
 "use client";
 
+import { X } from "lucide-react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { IconClose } from "@/components/ui/icons";
 
 // ── Sheet (right-side drawer using Radix Dialog) ──────────────────────────────
 
@@ -44,7 +44,7 @@ export function SheetContent({
             )}
           </div>
           <Dialog.Close className="admin-drawer__close" aria-label="Sluiten">
-            <IconClose />
+            <X size={16} strokeWidth={1.75} aria-hidden />
           </Dialog.Close>
         </div>
         <div className="admin-sheet__body">{children}</div>

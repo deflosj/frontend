@@ -1,9 +1,9 @@
 "use client";
 
+import { Save } from "lucide-react";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament } from "@/lib/tournament-types";
-import { IconSave } from "@/components/ui/icons";
 import { slotMinutes as slotMinutesOf } from "@/lib/tournament-live";
 import { InfoButton } from "@/components/admin/info-button";
 import { Notice, NumberField, Panel, Subhead } from "@/components/admin/ui";
@@ -366,7 +366,7 @@ export function PlanningPanel({
           <div className="flex flex-wrap items-center gap-3 border-t border-rule pt-4">
             <button type="button" className="btn-sm btn-sm--primary" onClick={saveFormat}
               disabled={savingFormat || !formatDirty || advNum < 1}>
-              <IconSave /> {savingFormat ? "Opslaan…" : "Instellingen opslaan"}
+              <Save size={13} strokeWidth={1.75} aria-hidden /> {savingFormat ? "Opslaan…" : "Instellingen opslaan"}
             </button>
             {formatNote && <span className="text-[13px] text-ink-2">{formatNote}</span>}
             {!formatDirty && !formatNote && <span className="text-[13px] text-ink-2">Geen wijzigingen.</span>}

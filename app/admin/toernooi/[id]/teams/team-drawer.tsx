@@ -1,9 +1,9 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
-import { IconX } from "@/components/ui/icons";
 import { PaymentSelect, paymentBody, paymentValue } from "../payment-select";
 import { escapeTo, useDialogModal } from "../shared";
 
@@ -95,7 +95,7 @@ export function TeamDrawer({
       style={{ width: "min(520px, 100vw)" }} aria-label={isEdit ? "Team bewerken" : "Team toevoegen"}>
       <div className="admin-drawer__header">
         <h2>{isEdit ? "Team bewerken" : "Team toevoegen"}</h2>
-        <button type="button" className="admin-drawer__close" onClick={onClose} aria-label="Sluiten"><IconX /></button>
+        <button type="button" className="admin-drawer__close" onClick={onClose} aria-label="Sluiten"><X size={14} strokeWidth={1.75} aria-hidden /></button>
       </div>
 
       <form className="admin-form" onSubmit={handleSubmit}>

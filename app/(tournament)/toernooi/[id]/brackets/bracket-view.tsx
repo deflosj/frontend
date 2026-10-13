@@ -1,11 +1,11 @@
 "use client";
 
+import { Trophy } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { KO_ROUNDS, bracketSize, feederLabels, isKnockout, knockoutScheduleFor, posNumber, projectedKnockout, useAutoRefresh } from "@/lib/tournament-live";
 import type { Phase, TournamentMatch, TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
 import { fmtTime } from "@/utils/DateHelpers";
-import { IconTrophy } from "@/components/ui/icons/IconTrophy";
 import { PageHead } from "../_shared";
 import { IconArrow, Segmented, TeamSearch, useAnimKey, usePersisted } from "../_filters";
 import { FollowStar, StarMark, useFollowed } from "../_follow";
@@ -184,7 +184,7 @@ export function BracketView({ matches: allMatches, teams, poules, advancingPerPo
         <PageHead title="Knock-out" subtitle={`${size} teams · ${rounds.map((r) => r.short).join(" → ")}`} />
         {champId ? (
           <div className="t-pop flex items-center gap-3 rounded-full bg-pink-soft py-2 pl-2 pr-4" style={{ animationDelay: "300ms" }}>
-            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pink text-[#16161a]"><IconTrophy /></span>
+            <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pink text-[#16161a]"><Trophy size={15} strokeWidth={1.75} aria-hidden /></span>
             <span className="flex flex-col leading-tight">
               <span className="text-[0.7rem] font-bold text-pink-ink">Winnaar {year}</span>
               <span className="text-[0.95rem] font-extrabold">{nameOf.get(champId)}</span>

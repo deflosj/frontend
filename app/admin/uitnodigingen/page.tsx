@@ -1,9 +1,9 @@
 "use client";
 
+import { Plus, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { MembersTabs } from "@/components/admin/members-tabs";
-import { IconPlus, IconTrash } from "@/components/ui/icons";
 import { QrModal } from "@/components/ui/qr-modal";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -131,7 +131,7 @@ function CreateForm({ onCreated }: CreateFormProps) {
         disabled={loading}
         className="flex items-center gap-1.5 rounded-lg bg-pink px-3.5 py-2 text-sm font-semibold text-white hover:bg-pink/90 focus:outline-none focus:ring-2 focus:ring-pink/40 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
-        <IconPlus />
+        <Plus size={14} strokeWidth={1.75} aria-hidden />
         {loading ? "Aanmaken…" : "Code aanmaken"}
       </button>
 
@@ -256,7 +256,7 @@ export default function AdminUitnodigingenPage() {
                         className="text-red-400 hover:text-red-600 transition-colors"
                         title="Verwijderen"
                       >
-                        <IconTrash />
+                        <Trash2 size={13} strokeWidth={1.75} aria-hidden />
                       </button>
                     </td>
                   </tr>

@@ -1,12 +1,12 @@
 "use client";
 
+import { Plus } from "lucide-react";
 import { useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 import { PaymentSelect, paymentBody } from "../payment-select";
 import type { ActiveTournament, TournamentTeam } from "@/lib/tournament-types";
 import { TeamLinkActions, portalUrl } from "../team-link";
-import { IconPlus } from "@/components/ui/icons";
 import { QrModal } from "@/components/ui/qr-modal";
 import { QrCode } from "lucide-react";
 import { Notice, Panel } from "@/components/admin/ui";
@@ -289,7 +289,7 @@ export function RegisterTeamForm({ tournament, onUpdate, bare = false }: Readonl
             onClick={addPlaceholders}
             style={{ display: "flex", alignItems: "center", gap: "0.3rem", padding: "0.6rem 1rem" }}
           >
-            <IconPlus /> {bulkBusy ? "Bezig…" : "Plaatshouders toevoegen"}
+            <Plus size={14} strokeWidth={1.75} aria-hidden /> {bulkBusy ? "Bezig…" : "Plaatshouders toevoegen"}
           </button>
           <p style={{ margin: 0, flex: "1 1 240px", fontSize: "0.8rem", color: "var(--ink-2)" }}>
             Maakt lege teams (<span className="mono">Team {nextPlaceholderNumber(tournament.teams)}</span>,

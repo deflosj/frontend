@@ -9,6 +9,7 @@ import { TableToolbar } from "@/components/admin/table-toolbar";
 import { useDrawer } from "@/components/admin/drawer-provider";
 import type { CalEvent } from "@/components/admin/events/event-drawer";
 import { HelperDrawer, type Helper } from "@/components/admin/helpers/helper-drawer";
+import { Notice } from "@/components/admin/ui";
 
 // ── Cell components ───────────────────────────────────────────────────────────
 
@@ -16,7 +17,7 @@ function NameCell({ helper }: Readonly<{ helper: Helper }>) {
   return (
     <div>
       <strong>{helper.name}</strong>
-      {helper.note && <div style={{ fontSize: "0.75rem", color: "var(--ink-2)" }}>{helper.note}</div>}
+      {helper.note && <div className="text-xs text-ink-2">{helper.note}</div>}
     </div>
   );
 }
@@ -24,9 +25,9 @@ function NameCell({ helper }: Readonly<{ helper: Helper }>) {
 function ContactCell({ helper }: Readonly<{ helper: Helper }>) {
   if (!helper.email && !helper.phone) return <>—</>;
   return (
-    <div style={{ display: "grid", gap: "0.1rem", fontSize: "0.8rem" }}>
-      {helper.email && <a href={`mailto:${helper.email}`} style={{ color: "var(--accent-strong)" }}>{helper.email}</a>}
-      {helper.phone && <a href={`tel:${helper.phone}`} style={{ color: "var(--ink-2)" }}>{helper.phone}</a>}
+    <div className="grid gap-0.5 text-[13px]">
+      {helper.email && <a href={`mailto:${helper.email}`} className="text-[var(--accent-strong)] hover:underline">{helper.email}</a>}
+      {helper.phone && <a href={`tel:${helper.phone}`} className="text-ink-2 hover:underline">{helper.phone}</a>}
     </div>
   );
 }
@@ -34,7 +35,7 @@ function ContactCell({ helper }: Readonly<{ helper: Helper }>) {
 function EventsCell({ events }: Readonly<{ events: Helper["events"] }>) {
   if (events.length === 0) return <span className="badge badge--gray">Geen event</span>;
   return (
-    <div style={{ display: "flex", gap: "0.3rem", flexWrap: "wrap" }}>
+    <div className="flex flex-wrap gap-1">
       {events.map((ev) => (
         <span key={ev.id} className="badge badge--pink">
           {ev.title} {new Date(ev.startsAt).getFullYear()}
@@ -144,9 +145,9 @@ function HelpersPageInner() {
         <h1>Helpers</h1>
         <p>Wie heeft bij welk event geholpen</p>
         {fetchError && (
-          <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "var(--err-bg)", color: "var(--err-fg)", fontSize: "0.875rem", fontWeight: 500 }}>
+          <Notice tone="err" className="mt-4">
             Kon helpers niet laden: <strong>{fetchError}</strong>
-          </div>
+          </Notice>
         )}
       </div>
 

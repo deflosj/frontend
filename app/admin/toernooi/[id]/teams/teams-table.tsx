@@ -1,9 +1,9 @@
 "use client";
 
+import { Pencil, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament, TournamentTeam } from "@/lib/tournament-types";
-import { IconEdit, IconTrash } from "@/components/ui/icons";
 import { PaymentSelect, paymentBody, paymentValue } from "../payment-select";
 import { escapeTo, useDialogModal } from "../shared";
 import { Search } from "lucide-react";
@@ -140,11 +140,11 @@ export function TeamsTable({
                     <div className="flex shrink-0 gap-1">
                       <button type="button" className="tb-btn tb-btn--ghost tb-btn--icon" style={{ width: 40, height: 40 }}
                         onClick={() => setEditTeam(team)} aria-label={`${team.name} bewerken`}>
-                        <IconEdit />
+                        <Pencil size={13} strokeWidth={1.75} aria-hidden />
                       </button>
                       <button type="button" className="tb-btn tb-btn--ghost tb-btn--icon" style={{ width: 40, height: 40, color: "var(--err-fg)" }}
                         onClick={() => setDeleteTeam(team)} aria-label={`${team.name} verwijderen`}>
-                        <IconTrash />
+                        <Trash2 size={13} strokeWidth={1.75} aria-hidden />
                       </button>
                     </div>
                   </div>
@@ -213,12 +213,12 @@ export function TeamsTable({
                     <div className="row-actions" style={{ justifyContent: "flex-end" }}>
                       <button type="button" className="tb-btn tb-btn--ghost tb-btn--icon"
                         onClick={() => setEditTeam(team)} aria-label={`${team.name} bewerken`} title="Bewerken">
-                        <IconEdit />
+                        <Pencil size={13} strokeWidth={1.75} aria-hidden />
                       </button>
                       <button type="button" className="tb-btn tb-btn--ghost tb-btn--icon"
                         onClick={() => setDeleteTeam(team)} aria-label={`${team.name} verwijderen`} title="Verwijderen"
                         style={{ color: "var(--err-fg)" }}>
-                        <IconTrash />
+                        <Trash2 size={13} strokeWidth={1.75} aria-hidden />
                       </button>
                     </div>
                   </td>

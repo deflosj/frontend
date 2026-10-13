@@ -21,38 +21,27 @@ const STATUS_BADGE: Record<string, string> = { UNREAD: "pink", READ: "green", AR
 function MessageDetail({ message }: Readonly<{ message: ContactMessage }>) {
   return (
     <div>
-      <dl style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "0.5rem 1rem", fontSize: "0.875rem", marginBottom: "1.5rem" }}>
-        <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>Van</dt>
-        <dd style={{ margin: 0 }}>{message.name}</dd>
-        <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>E-mail</dt>
-        <dd style={{ margin: 0 }}>
-          <a href={`mailto:${message.email}`} style={{ color: "var(--accent)" }}>{message.email}</a>
+      <dl className="mb-6 grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+        <dt className="font-medium text-ink-2">Van</dt>
+        <dd>{message.name}</dd>
+        <dt className="font-medium text-ink-2">E-mail</dt>
+        <dd>
+          <a href={`mailto:${message.email}`} className="text-[var(--accent)] hover:underline">{message.email}</a>
         </dd>
         {message.subject && (
           <>
-            <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>Onderwerp</dt>
-            <dd style={{ margin: 0 }}>{message.subject}</dd>
+            <dt className="font-medium text-ink-2">Onderwerp</dt>
+            <dd>{message.subject}</dd>
           </>
         )}
-        <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>Datum</dt>
-        <dd style={{ margin: 0 }}>{new Date(message.createdAt).toLocaleString("nl-BE")}</dd>
-        <dt style={{ color: "var(--ink-2)", fontWeight: 500 }}>Status</dt>
-        <dd style={{ margin: 0 }}>
+        <dt className="font-medium text-ink-2">Datum</dt>
+        <dd>{new Date(message.createdAt).toLocaleString("nl-BE")}</dd>
+        <dt className="font-medium text-ink-2">Status</dt>
+        <dd>
           <span className={`badge badge--${STATUS_BADGE[message.status]}`}>{STATUS_LABELS[message.status]}</span>
         </dd>
       </dl>
-      <div
-        style={{
-          padding: "1rem",
-          borderRadius: "10px",
-          background: "var(--bg-alt)",
-          border: "1px solid var(--border)",
-          fontSize: "0.875rem",
-          color: "var(--text-2)",
-          whiteSpace: "pre-wrap",
-          lineHeight: 1.7,
-        }}
-      >
+      <div className="whitespace-pre-wrap rounded-[10px] border border-rule bg-surface p-4 text-sm leading-relaxed text-ink-2">
         {message.body}
       </div>
     </div>

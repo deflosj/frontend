@@ -1,9 +1,9 @@
 "use client";
 
+import { Save } from "lucide-react";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament } from "@/lib/tournament-types";
-import { IconSave } from "@/components/ui/icons";
 import { Notice, Panel } from "@/components/admin/ui";
 
 // ── Default rules text ────────────────────────────────────────────────────────
@@ -107,7 +107,7 @@ export function ReglementEditor({
         <>
           {saved && <span className="text-[13px] font-medium text-[var(--ok-fg)]">✓ Opgeslagen</span>}
           <button type="button" className="btn-sm btn-sm--primary" onClick={save} disabled={saving}>
-            <IconSave /> {saving ? "Opslaan…" : "Opslaan"}
+            <Save size={13} strokeWidth={1.75} aria-hidden /> {saving ? "Opslaan…" : "Opslaan"}
           </button>
         </>
       }

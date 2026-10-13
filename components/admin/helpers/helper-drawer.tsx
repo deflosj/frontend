@@ -123,19 +123,19 @@ export function HelperDrawer({ editing, events, defaultEventId, onSaved }: Reado
           </div>
 
           <div className="form-field">
-            <span id="h-events-label" style={{ fontSize: "0.8rem", fontWeight: 500 }}>Geholpen bij</span>
+            <span id="h-events-label" className="text-[13px] font-medium">Geholpen bij</span>
             {sortedEvents.length === 0 ? (
-              <p style={{ margin: 0, fontSize: "0.85rem", color: "var(--ink-2)" }}>
+              <p className="text-[13px] text-ink-2">
                 Nog geen events. Maak eerst een event aan bij Events.
               </p>
             ) : (
               <div
                 role="group"
                 aria-labelledby="h-events-label"
-                style={{ display: "grid", gap: "0.35rem", maxHeight: "16rem", overflowY: "auto", padding: "0.5rem 0.65rem", border: "1px solid var(--border)", borderRadius: "10px" }}
+                className="grid max-h-64 gap-1.5 overflow-y-auto rounded-[10px] border border-rule px-3 py-2"
               >
                 {sortedEvents.map((ev) => (
-                  <label key={ev.id} className="form-checkbox" style={{ margin: 0 }}>
+                  <label key={ev.id} className="form-checkbox !m-0">
                     <input type="checkbox" checked={form.eventIds.includes(ev.id)} onChange={() => toggleEvent(ev.id)} disabled={saving} />
                     {" "}{eventLabel(ev)}
                   </label>
@@ -167,7 +167,7 @@ export function HelperDrawer({ editing, events, defaultEventId, onSaved }: Reado
               Annuleren
             </button>
             {editing && (
-              <button type="button" className="btn-sm btn-sm--ghost" style={{ marginLeft: "auto", color: "var(--err-fg)" }} onClick={handleDelete} disabled={saving}>
+              <button type="button" className="btn-sm btn-sm--ghost ml-auto text-[var(--err-fg)]" onClick={handleDelete} disabled={saving}>
                 {confirmDelete ? "Zeker verwijderen?" : "Verwijderen"}
               </button>
             )}

@@ -1,8 +1,8 @@
 "use client";
 
+import { Trophy } from "lucide-react";
 import { useState } from "react";
 
-import { IconTrophy } from "@/components/ui/icons/IconTrophy";
 import { KO_ROUNDS, feederLabels, posNumber } from "@/lib/tournament-live";
 import type { TournamentMatch } from "@/lib/tournament-types";
 import { fmtTime } from "@/utils/DateHelpers";
@@ -141,7 +141,7 @@ function FinalBlock({
       {lines === "both" && <span aria-hidden="true" className={`${line} left-full`} />}
       <div className="absolute inset-x-0 bottom-[calc(50%+3.3em)] flex flex-col items-center gap-[0.5em]">
         <span className={`flex h-[3.4em] w-[3.4em] items-center justify-center rounded-full ${champ ? "bg-pink text-[#16161a] shadow-[0_0_0_0.55em_var(--pink-soft)]" : "bg-pink-soft text-pink-ink"}`}>
-          <IconTrophy />
+          <Trophy size={15} strokeWidth={1.75} aria-hidden />
         </span>
         <span className="text-[0.78em] font-bold uppercase tracking-[0.12em] text-pink-ink">Finale</span>
       </div>

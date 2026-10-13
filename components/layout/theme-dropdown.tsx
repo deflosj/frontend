@@ -1,13 +1,13 @@
 'use client';
 
+import { Check, Monitor, Moon, Sun, type LucideIcon } from "lucide-react";
 import { Theme, useTheme } from "@/hooks/use-theme";
 import { useState, useRef, useEffect } from "react";
-import { IconSun, IconMoon, IconMonitor, IconCheck } from "../ui/icons";
 
-const THEME_OPTIONS: { key: Theme; label: string; Icon: () => React.ReactElement }[] = [
-  { key: "light",  label: "Licht",   Icon: IconSun     },
-  { key: "dark",   label: "Donker",  Icon: IconMoon    },
-  { key: "system", label: "Systeem", Icon: IconMonitor },
+const THEME_OPTIONS: { key: Theme; label: string; Icon: LucideIcon }[] = [
+  { key: "light",  label: "Licht",   Icon: Sun     },
+  { key: "dark",   label: "Donker",  Icon: Moon    },
+  { key: "system", label: "Systeem", Icon: Monitor },
 ];
 
 export function ThemeDropdown({ upward = false }: Readonly<{ upward?: boolean }>) {
@@ -38,7 +38,7 @@ export function ThemeDropdown({ upward = false }: Readonly<{ upward?: boolean }>
     );
   }
 
-  const ActiveIcon = isDark ? IconMoon : IconSun;
+  const ActiveIcon = isDark ? Moon : Sun;
 
   return (
     <div ref={ref} className="relative">
@@ -51,7 +51,7 @@ export function ThemeDropdown({ upward = false }: Readonly<{ upward?: boolean }>
           open ? "bg-ink/8 text-ink" : "text-ink-2 hover:bg-ink/5 hover:text-ink"
         }`}
       >
-        <ActiveIcon />
+        <ActiveIcon size={16} strokeWidth={1.75} aria-hidden />
       </button>
 
       {open && (
@@ -67,9 +67,9 @@ export function ThemeDropdown({ upward = false }: Readonly<{ upward?: boolean }>
                   active ? "text-pink" : "text-ink-2 hover:text-ink"
                 }`}
               >
-                <Icon />
+                <Icon size={16} strokeWidth={1.75} aria-hidden />
                 <span className="flex-1 text-left">{label}</span>
-                {active && <IconCheck />}
+                {active && <Check size={13} strokeWidth={1.75} aria-hidden />}
               </button>
             );
           })}

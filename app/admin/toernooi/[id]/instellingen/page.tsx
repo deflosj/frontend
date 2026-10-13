@@ -1,10 +1,10 @@
 "use client";
 
+import { Save } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament } from "@/lib/tournament-types";
-import { IconSave } from "@/components/ui/icons";
 import { useTournament } from "../tournament-context";
 import { ReglementEditor } from "./reglement-editor";
 import { Notice, Panel } from "@/components/admin/ui";
@@ -58,7 +58,7 @@ function BasicsForm() {
         </div>
         <div className="flex items-center gap-3">
           <button type="submit" className="btn-sm btn-sm--primary" disabled={saving}>
-            <IconSave /> {saving ? "Opslaan…" : "Opslaan"}
+            <Save size={13} strokeWidth={1.75} aria-hidden /> {saving ? "Opslaan…" : "Opslaan"}
           </button>
           {saved && <span className="text-[13px] text-ink-2">✓ Opgeslagen</span>}
         </div>

@@ -1,9 +1,10 @@
+import { Mail, MapPin } from "lucide-react";
+import { IconFacebook, IconInstagram } from "@/components/ui/brand-icons";
 import type { Metadata } from "next";
 import Link from "next/link";
 
 import { ContactForm } from "@/components/contact-form";
 import { siteConfig } from "@/lib/site-config";
-import { IconFacebook, IconInstagram, IconMail, IconPin } from "@/components/ui/icons";
 
 export const metadata: Metadata = {
   title: "Contact",
@@ -16,14 +17,14 @@ const contactDetails = [
     value: siteConfig.email,
     href: `mailto:${siteConfig.email}`,
     description: "We antwoorden binnen de 2 werkdagen.",
-    Icon: IconMail,
+    Icon: Mail,
   },
   {
     label: "Locatie",
     value: siteConfig.location,
     href: "https://maps.google.com/?q=Rotselaar",
     description: "Alle evenementen vinden plaats in Rotselaar.",
-    Icon: IconPin,
+    Icon: MapPin,
   },
 ];
 
@@ -66,7 +67,7 @@ export default function ContactPage() {
                 className="group flex items-start gap-4 rounded-2xl border border-rule bg-surface px-5 py-4 transition-colors duration-200 hover:border-pink/25 hover:bg-pink-soft/20"
               >
                 <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-rule bg-paper text-ink-2 transition-colors duration-200 group-hover:border-pink/25 group-hover:bg-pink-soft group-hover:text-pink">
-                  <Icon />
+                  <Icon size={18} strokeWidth={1.75} aria-hidden />
                 </span>
                 <div>
                   <p className="mb-0.5 text-[0.625rem] font-semibold uppercase tracking-widest text-ink-2">

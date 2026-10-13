@@ -65,13 +65,6 @@
 
 /* ── Stat cards ──────────────────────────────────────────── */
 
-.admin-stats {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
-
 .admin-stat {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -279,15 +272,6 @@ select.tb-select {
 
 /* ── Drawer ──────────────────────────────────────────────── */
 
-.admin-drawer-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.35);
-  z-index: 40;
-  display: flex;
-  justify-content: flex-end;
-}
-
 .admin-drawer {
   width: min(480px, 100%);
   background: var(--surface);
@@ -334,89 +318,6 @@ select.tb-select {
   justify-content: flex-end;
   gap: 0.75rem;
   margin-top: 1.5rem;
-}
-
-/* ── Login page ──────────────────────────────────────────── */
-
-.admin-login {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg);
-  padding: 1.5rem;
-}
-
-.admin-login__card {
-  width: min(420px, 100%);
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-xl);
-  padding: 2.5rem;
-  box-shadow: var(--shadow);
-}
-
-.admin-login__logo {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin-bottom: 2rem;
-}
-
-.admin-login__mark {
-  display: block;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: var(--accent);
-  position: relative;
-  flex-shrink: 0;
-}
-
-.admin-login__mark::after {
-  content: '';
-  position: absolute;
-  inset: 8px;
-  border-radius: 4px;
-  background: var(--surface);
-}
-
-.admin-login__logo strong {
-  display: block;
-  font-size: 1.1rem;
-  font-weight: 600;
-  color: var(--text);
-}
-
-.admin-login__logo small {
-  display: block;
-  font-size: 0.63rem;
-  color: var(--color-ink-2);
-  font-family: var(--font-geist-mono), monospace;
-  letter-spacing: 0.1em;
-}
-
-.admin-login__title {
-  margin: 0 0 0.4rem;
-  font-size: 1.4rem;
-  font-weight: 500;
-  letter-spacing: -0.025em;
-}
-
-.admin-login__sub {
-  margin: 0 0 1.75rem;
-  font-size: 0.9rem;
-  color: var(--color-ink-2);
-}
-
-.admin-login__form {
-  display: grid;
-  gap: 1rem;
-}
-
-.admin-login__submit {
-  width: 100%;
-  margin-top: 0.25rem;
 }
 
 /* ── Buttons ─────────────────────────────────────────────── */
@@ -474,12 +375,6 @@ select.tb-select {
 .btn-sm:disabled {
   opacity: 0.45;
   cursor: not-allowed;
-}
-
-/* ── Sections ────────────────────────────────────────────── */
-
-.admin-section {
-  margin-top: 2rem;
 }
 
 /* ── Row actions ─────────────────────────────────────────── */
@@ -594,45 +489,6 @@ select.tb-select {
 
 .admin-step-bar__segment[data-active="true"] {
   background: var(--accent);
-}
-
-/* ── Step labels ─────────────────────────────────────────── */
-
-.admin-step-labels {
-  display: flex;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
-  flex-wrap: wrap;
-}
-
-.admin-step-labels__item {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.75rem;
-  font-weight: 500;
-  color: var(--color-ink-2);
-}
-
-.admin-step-labels__item[data-active="true"] {
-  color: var(--accent);
-}
-
-.admin-step-labels__item[data-done="true"] {
-  color: var(--text-2);
-}
-
-.admin-step-labels__num {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.35rem;
-  height: 1.35rem;
-  border-radius: 50%;
-  font-size: 0.65rem;
-  font-weight: 700;
-  border: 1.5px solid currentColor;
-  line-height: 1;
 }
 
 /* ── Preset chips (tournament structure step) ────────────── */
@@ -1077,13 +933,6 @@ dialog::backdrop {
 
 /* ── Responsive ──────────────────────────────────────────── */
 
-@media (max-width: 900px) {
-  .admin-stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
-}
-
 @media (max-width: 480px) {
   .admin-table-header {
     flex-wrap: wrap;
@@ -1127,7 +976,6 @@ dialog::backdrop {
 }
 .info-dialog__body p { margin: 0; }
 .info-dialog__body strong { color: var(--text); }
-.title-row { display: flex; align-items: center; gap: 0.35rem; }
 
 /* ── Checkbox (huisstijl) ────────────────────────────────── */
 :where(.admin-shell, .admin-sheet, .admin-drawer, .admin-confirm) input[type="checkbox"] {

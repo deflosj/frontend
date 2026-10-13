@@ -1,6 +1,6 @@
 "use client";
 
-import { IconX } from "@/components/ui/icons";
+import { X } from "lucide-react";
 import type { ActiveTournament } from "@/lib/tournament-types";
 import { escapeTo, useDialogModal } from "../shared";
 import { RegisterTeamForm } from "./register-form";
@@ -20,7 +20,7 @@ export function RegisterDrawer({
     <dialog ref={dialogRef} onCancel={escapeTo(onClose)} className="admin-drawer" aria-label="Team inschrijven">
       <div className="admin-drawer__header">
         <h2>Team inschrijven</h2>
-        <button type="button" className="admin-drawer__close" onClick={onClose} aria-label="Sluiten"><IconX /></button>
+        <button type="button" className="admin-drawer__close" onClick={onClose} aria-label="Sluiten"><X size={14} strokeWidth={1.75} aria-hidden /></button>
       </div>
       <RegisterTeamForm tournament={tournament} onUpdate={onUpdate} bare />
     </dialog>
