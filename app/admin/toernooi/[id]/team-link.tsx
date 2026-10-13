@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Check, Link2, Mail } from "lucide-react";
 
 import { apiFetch } from "@/lib/api";
 import type { TournamentTeam } from "@/lib/tournament-types";
@@ -22,7 +23,7 @@ export function TeamLinkActions({
   const [state, setState] = useState<"idle" | "copied" | "sending" | "sent" | "failed">("idle");
 
   if (!team.token) {
-    return <span style={{ color: "var(--ink-2)", fontSize: "0.8rem" }}>—</span>;
+    return <span className="text-[13px] text-ink-2">—</span>;
   }
 
   async function copy() {
@@ -49,25 +50,27 @@ export function TeamLinkActions({
     }
   }
 
+  const copyLabel = state === "copied" ? "Link gekopieerd" : "Teamlink kopiëren";
+  let mailLabel = team.email ? `Teamlink mailen naar ${team.email}` : "Geen e-mailadres bekend";
+  if (state === "sending") mailLabel = "Bezig met versturen…";
+  if (state === "sent") mailLabel = "Teamlink verstuurd";
+
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "0.35rem", flexWrap: "wrap" }}>
-      <button type="button" className="btn-sm btn-sm--ghost" onClick={copy}>
-        {state === "copied" ? "✓ Gekopieerd" : "Kopieer link"}
+    <div className="flex items-center gap-1.5">
+      <button type="button" className="tb-btn tb-btn--ghost tb-btn--icon" onClick={copy} aria-label={copyLabel} title={copyLabel}>
+        {state === "copied" ? <Check size={15} className="text-[var(--ok-fg)]" /> : <Link2 size={15} />}
       </button>
       <button
         type="button"
-        className="btn-sm btn-sm--ghost"
+        className="tb-btn tb-btn--ghost tb-btn--icon"
         onClick={sendMail}
         disabled={!team.email || state === "sending"}
-        title={team.email ?? "Geen e-mailadres bekend"}
+        aria-label={mailLabel}
+        title={mailLabel}
       >
-        {state === "sending" ? "Bezig…" : state === "sent" ? "✓ Verstuurd" : "Mail"}
+        {state === "sent" ? <Check size={15} className="text-[var(--ok-fg)]" /> : <Mail size={15} />}
       </button>
-      {state === "failed" && (
-        <span style={{ color: "var(--accent-error, crimson)", fontSize: "0.75rem" }}>
-          Mislukt
-        </span>
-      )}
+      {state === "failed" && <span className="text-xs text-[var(--err-fg)]" role="alert">Mislukt</span>}
     </div>
   );
 }

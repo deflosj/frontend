@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { MembersTabs } from "@/components/admin/members-tabs";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
 import { TableToolbar } from "@/components/admin/table-toolbar";
 import { usePageSize } from "@/hooks/use-page-size";
@@ -145,10 +146,11 @@ export default function AdminMembersPage() {
 
   return (
     <>
-      <div className="admin-page-header">
-        <h1>Leden</h1>
-        <p>Overzicht van alle gebruikersaccounts</p>
+      <div className="admin-page-header" style={{ marginBottom: "1.25rem" }}>
+        <h1>Leden &amp; toegang</h1>
+        <p>Gebruikersaccounts en uitnodigingen voor nieuwe accounts</p>
       </div>
+      <MembersTabs />
 
       <DataTable
         toolbar={

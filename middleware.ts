@@ -1,7 +1,7 @@
 import { jwtVerify } from "jose";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
-import { ADMIN_ROLES, isPageAllowed } from "./lib/routePermissions";
+import { ADMIN_ROLES, homeForRole, isPageAllowed } from "./lib/routePermissions";
 
 async function getRoleFromToken(token: string): Promise<string | null> {
   const secret = process.env.JWT_SECRET;
@@ -30,7 +30,11 @@ export async function middleware(req: NextRequest) {
   // Enforce per-page restrictions
   const { pathname } = req.nextUrl;
   if (!isPageAllowed(role, pathname)) {
-    return NextResponse.redirect(new URL("/admin", req.url));
+    // Naar de eigen startpagina (scheidsrechter: eventdag), nooit naar een
+    // pagina die zelf ook geweigerd wordt — anders loopt dit in een cirkel.
+    const home = homeForRole(role);
+    if (pathname === home) return NextResponse.redirect(new URL("/login", req.url));
+    return NextResponse.redirect(new URL(home, req.url));
   }
 
   return NextResponse.next();

@@ -40,7 +40,6 @@ export interface TournamentTeam {
   speler4: string;
   /** Eén regel van de ploeg zelf, getoond op de teamkaart. */
   motto?: string | null;
-  logoUrl: string | null;
   isPresent: boolean;
   /** Inschrijvingsgeld betaald aan de balie. Optioneel: de backend kent
    *  dit veld pas zodra de Prisma-migratie erdoor is. */

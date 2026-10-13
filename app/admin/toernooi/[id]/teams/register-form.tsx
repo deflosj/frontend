@@ -3,23 +3,13 @@
 import { useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
-import { PaymentSelect, paymentBody, paymentValue } from "./payment-select";
+import { PaymentSelect, paymentBody } from "../payment-select";
 import type { ActiveTournament, TournamentTeam } from "@/lib/tournament-types";
-import { TeamLinkActions, portalUrl } from "./team-link";
-import { IconPlus, IconTrash } from "@/components/ui/icons";
+import { TeamLinkActions, portalUrl } from "../team-link";
+import { IconPlus } from "@/components/ui/icons";
 import { QrModal } from "@/components/ui/qr-modal";
-
-const fieldInput: React.CSSProperties = {
-  width: "100%",
-  padding: "0.6rem 0.875rem",
-  border: "1px solid var(--border)",
-  borderRadius: "10px",
-  background: "var(--bg)",
-  color: "var(--text)",
-  fontSize: "0.9rem",
-  fontFamily: "inherit",
-  outline: "none",
-};
+import { QrCode } from "lucide-react";
+import { Notice, Panel } from "@/components/admin/ui";
 
 /** Plaatshouders tijdelijk verborgen — zet op true om ze terug te tonen. */
 const SHOW_PLACEHOLDERS = false;
@@ -37,9 +27,29 @@ function nextPlaceholderNumber(teams: TournamentTeam[]): number {
 interface Props {
   tournament: ActiveTournament;
   onUpdate: (t: ActiveTournament) => void;
+  /** Zonder kaart eromheen, voor in het zijpaneel. */
+  bare?: boolean;
 }
 
-export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
+/** Kaart op de pagina, of kale inhoud met dezelfde intro in het zijpaneel. */
+function Shell({ bare, description, actions, children }: Readonly<{
+  bare?: boolean; description: React.ReactNode; actions: React.ReactNode; children: React.ReactNode;
+}>) {
+  if (!bare) {
+    return <Panel id="register" title="Team inschrijven" description={description} actions={actions}>{children}</Panel>;
+  }
+  return (
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-col gap-3 rounded-xl bg-paper px-4 py-3">
+        <p className="text-[13px] text-ink-2">{description}</p>
+        <div>{actions}</div>
+      </div>
+      {children}
+    </div>
+  );
+}
+
+export function RegisterTeamForm({ tournament, onUpdate, bare = false }: Readonly<Props>) {
   const nameRef = useRef<HTMLInputElement>(null);
 
   const [name, setName] = useState("");
@@ -55,18 +65,10 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
   const [error, setError] = useState("");
   const [justAdded, setJustAdded] = useState<TournamentTeam | null>(null);
 
-  const [deadline, setDeadline] = useState(
-    tournament.teamEditDeadline ? tournament.teamEditDeadline.slice(0, 16) : ""
-  );
-  const [deadlineBusy, setDeadlineBusy] = useState(false);
-  const [deadlineSaved, setDeadlineSaved] = useState(false);
-
   const [bulkCount, setBulkCount] = useState("4");
   const [bulkBusy, setBulkBusy] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
-  // Hoogste id eerst = laatst aangemaakt bovenaan.
-  const sorted = [...tournament.teams].sort((a, b) => b.id - a.id);
   const paidCount = tournament.teams.filter((t) => t.isPaid).length;
   const cashCount = tournament.teams.filter((t) => t.paymentMethod === "CASH").length;
   const payconiqCount = tournament.teams.filter((t) => t.paymentMethod === "PAYCONIQ").length;
@@ -154,64 +156,18 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
     }
   }
 
-  async function saveDeadline() {
-    setDeadlineBusy(true);
-    setDeadlineSaved(false);
-    try {
-      const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
-        method: "PATCH",
-        body: JSON.stringify({
-          teamEditDeadline: deadline ? new Date(deadline).toISOString() : null,
-        }),
-      });
-      onUpdate({ ...tournament, teamEditDeadline: updated.teamEditDeadline ?? null });
-      setDeadlineSaved(true);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Deadline opslaan mislukt.");
-    } finally {
-      setDeadlineBusy(false);
-    }
-  }
-
-  async function updatePayment(team: TournamentTeam, value: string) {
-    try {
-      const updated = await apiFetch<TournamentTeam>(
-        `tournaments/${tournament.id}/teams/${team.id}`,
-        { method: "PATCH", body: JSON.stringify(paymentBody(value)) }
-      );
-      onUpdate({
-        ...tournament,
-        teams: tournament.teams.map((t) => (t.id === updated.id ? updated : t)),
-      });
-    } catch {
-      /* stil — de balie mag hier niet op vastlopen */
-    }
-  }
-
-  async function removeTeam(team: TournamentTeam) {
-    if (!globalThis.confirm(`Ploeg "${team.name}" verwijderen?`)) return;
-    try {
-      await apiFetch(`tournaments/${tournament.id}/teams/${team.id}`, { method: "DELETE" });
-      onUpdate({ ...tournament, teams: tournament.teams.filter((t) => t.id !== team.id) });
-    } catch (e) {
-      globalThis.alert(`Verwijderen mislukt: ${e instanceof Error ? e.message : "onbekende fout"}`);
-    }
-  }
-
   return (
     <>
       {/* ── Aanmeldformulier ────────────────────────────────── */}
-      <div className="admin-table-wrapper" style={{ marginBottom: "1.5rem" }}>
-        <div className="admin-table-header">
-          <h2>Aanmelding</h2>
-          <span style={{ fontSize: "0.8rem", color: "var(--ink-2)" }}>
-            {tournament.teams.length} aangemeld · {paidCount} betaald ({cashCount} cash, {payconiqCount} Payconiq)
-            {" · "}
-            <button type="button" onClick={() => setShowQr(true)} style={{ color: "var(--pink, #e6007e)", fontWeight: 600 }}>
-              QR zelf-inschrijving
-            </button>
-          </span>
-        </div>
+      <Shell
+        bare={bare}
+        description={<>{tournament.teams.length} ingeschreven · {paidCount} betaald ({cashCount} cash, {payconiqCount} Payconiq). Enter schrijft in en zet de cursor terug op de teamnaam.</>}
+        actions={
+          <button type="button" className="btn-sm btn-sm--ghost" onClick={() => setShowQr(true)}>
+            <QrCode size={16} strokeWidth={1.75} /> QR zelf-inschrijving
+          </button>
+        }
+      >
         {showQr && (
           <QrModal
             title="Scan & schrijf je team in"
@@ -222,43 +178,43 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
           />
         )}
 
-        <form onSubmit={handleSubmit} style={{ padding: "1.25rem" }}>
-          {error && <div className="form-error" style={{ marginBottom: "0.75rem" }}>{error}</div>}
+        <form onSubmit={handleSubmit}>
+          {error && <Notice tone="err" className="mb-3">{error}</Notice>}
 
-          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", alignItems: "flex-end" }}>
+          <div className={bare ? "register-stack grid grid-cols-1 gap-4" : "flex flex-wrap items-end gap-3"}>
             <div className="form-field" style={{ flex: "2 1 220px", minWidth: 0 }}>
               <label htmlFor="a-name">Teamnaam</label>
               {/* eslint-disable-next-line jsx-a11y/no-autofocus */}
               <input
                 id="a-name" ref={nameRef} type="text" required autoFocus
-                autoComplete="off" disabled={saving} style={fieldInput}
+                autoComplete="off" disabled={saving}
                 value={name} onChange={(e) => { setName(e.target.value); setError(""); }}
               />
             </div>
             <div className="form-field" style={{ flex: "2 1 200px", minWidth: 0 }}>
               <label htmlFor="a-captain">Kapitein</label>
               <input
-                id="a-captain" type="text" autoComplete="off" disabled={saving} style={fieldInput}
+                id="a-captain" type="text" autoComplete="off" disabled={saving}
                 value={captain} onChange={(e) => setCaptain(e.target.value)}
               />
             </div>
             <div className="form-field" style={{ flex: "2 1 200px", minWidth: 0 }}>
               <label htmlFor="a-email">E-mail kapitein</label>
               <input
-                id="a-email" type="email" autoComplete="off" disabled={saving} style={fieldInput}
+                id="a-email" type="email" autoComplete="off" disabled={saving}
                 value={email} onChange={(e) => setEmail(e.target.value)}
               />
             </div>
-            <div className="form-field" style={{ flex: "0 0 auto", justifyContent: "flex-end" }}>
+            <div className="form-field" style={{ flex: "0 0 auto", justifyContent: "start" }}>
               <label htmlFor="a-payment">Betaling</label>
               <PaymentSelect id="a-payment" value={payment} onChange={setPayment} disabled={saving} />
             </div>
             <button
               type="submit" className="btn-sm btn-sm--primary"
               disabled={saving || !name.trim()}
-              style={{ flex: "0 0 auto", padding: "0.6rem 1.1rem" }}
+              style={bare ? { height: 44, width: "100%" } : { height: 40 }}
             >
-              {saving ? "Bezig…" : "Aanmelden ⏎"}
+              {saving ? "Bezig…" : "Inschrijven ⏎"}
             </button>
           </div>
 
@@ -284,7 +240,7 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
                   <label htmlFor={`a-sp${i + 1}`}>Speler {i + 1}</label>
                   <input
                     id={`a-sp${i + 1}`} type="text" autoComplete="off" disabled={saving}
-                    style={fieldInput} value={value}
+                    value={value}
                     onChange={(e) =>
                       setPlayers((prev) => prev.map((p, j) => (j === i ? e.target.value : p)))
                     }
@@ -295,11 +251,7 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
           )}
 
           {justAdded && !error && (
-            <div style={{
-              marginTop: "0.9rem", padding: "0.75rem 0.9rem", borderRadius: "10px",
-              background: "var(--bg-alt)", border: "1px solid var(--border)",
-              display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap",
-            }}>
+            <div className="mt-4 flex flex-wrap items-center gap-3 rounded-xl bg-[var(--ok-bg)] px-3.5 py-3">
               <span style={{ fontSize: "0.8rem", color: "var(--ink-2)" }}>
                 ✓ <strong>{justAdded.name}</strong> aangemeld.
                 {justAdded.token ? " Geef deze link mee:" : " Typ de volgende teamnaam."}
@@ -315,37 +267,7 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
             </div>
           )}
         </form>
-      </div>
-
-      {/* ── Deadline voor zelf aanpassen ────────────────────── */}
-      <div className="admin-table-wrapper" style={{ marginBottom: "1.5rem" }}>
-        <div className="admin-table-header">
-          <h2>Teams mogen zichzelf aanpassen tot</h2>
-        </div>
-        <div style={{ padding: "1.25rem", display: "flex", gap: "0.75rem", alignItems: "flex-end", flexWrap: "wrap" }}>
-          <div className="form-field" style={{ flex: "0 0 240px" }}>
-            <label htmlFor="a-deadline">Deadline</label>
-            <input
-              id="a-deadline" type="datetime-local" disabled={deadlineBusy} style={fieldInput}
-              value={deadline}
-              onChange={(e) => { setDeadline(e.target.value); setDeadlineSaved(false); }}
-            />
-          </div>
-          <button
-            type="button" className="btn-sm btn-sm--primary" disabled={deadlineBusy}
-            onClick={saveDeadline} style={{ padding: "0.6rem 1rem" }}
-          >
-            {deadlineBusy ? "Opslaan…" : "Opslaan"}
-          </button>
-          {deadlineSaved && (
-            <span style={{ fontSize: "0.8rem", color: "var(--ink-2)" }}>✓ Bewaard</span>
-          )}
-          <p style={{ margin: 0, flex: "1 1 240px", fontSize: "0.8rem", color: "var(--ink-2)" }}>
-            Na dit moment kunnen teams hun naam, spelers en logo niet meer wijzigen via hun
-            eigen link. Leeg laten = geen deadline.
-          </p>
-        </div>
-      </div>
+      </Shell>
 
       {/* ── Plaatshouders ───────────────────────────────────── */}
       {SHOW_PLACEHOLDERS && (
@@ -358,7 +280,7 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
             <label htmlFor="a-bulk">Aantal</label>
             <input
               id="a-bulk" type="number" min={1} max={32} disabled={bulkBusy}
-              style={fieldInput} value={bulkCount}
+              value={bulkCount}
               onChange={(e) => setBulkCount(e.target.value)}
             />
           </div>
@@ -377,56 +299,6 @@ export function AanmeldingTab({ tournament, onUpdate }: Readonly<Props>) {
       </div>
       )}
 
-      {/* ── Aangemelde teams ────────────────────────────────── */}
-      <div className="admin-table-wrapper">
-        <div className="admin-table-header">
-          <h2>Aangemeld ({tournament.teams.length})</h2>
-        </div>
-
-        {sorted.length === 0 ? (
-          <p className="admin-empty">Nog niemand aangemeld.</p>
-        ) : (
-          <table className="admin-table">
-            <thead>
-              <tr>
-                <th>Team</th><th>Kapitein</th><th>Betaald</th><th>Teamlink</th><th>Acties</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sorted.map((team) => (
-                <tr key={team.id}>
-                  <td><strong>{team.name}</strong></td>
-                  <td>
-                    {team.captainName || <span style={{ color: "var(--ink-2)" }}>—</span>}
-                    {team.phone && (
-                      <div style={{ fontSize: "0.75rem" }}>
-                        <a href={`tel:${team.phone}`} style={{ color: "var(--ink-2)" }}>{team.phone}</a>
-                      </div>
-                    )}
-                  </td>
-                  <td>
-                    <PaymentSelect value={paymentValue(team)} onChange={(v) => updatePayment(team, v)} />
-                  </td>
-                  <td>
-                    <TeamLinkActions tournamentId={tournament.id} team={team} />
-                  </td>
-                  <td>
-                    <div className="row-actions">
-                      <button
-                        type="button" className="btn-sm btn-sm--danger"
-                        onClick={() => removeTeam(team)}
-                        style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}
-                      >
-                        <IconTrash /> Verwijderen
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
     </>
   );
 }

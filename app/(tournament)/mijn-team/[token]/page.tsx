@@ -1,37 +1,11 @@
 "use client";
 
-import { use, useEffect, useRef, useState } from "react";
+import { use, useEffect, useState } from "react";
 
 import { API_BASE } from "@/lib/api";
 import type { TeamPortalData } from "@/lib/tournament-types";
 import { MatchBlock, PageHead, SectionHead } from "../../toernooi/[id]/_shared";
 import { TournamentHeader } from "../../toernooi/[id]/tournament-header";
-
-/** Teamlogo tijdelijk uit — zet op true om de upload terug te tonen. */
-const SHOW_LOGO = false;
-
-const MAX_LOGO_BYTES = 2 * 1024 * 1024;
-/** Waar het logo naartoe verkleind wordt voor het vertrekt. Een clubembleem
- *  van 256px is ruim genoeg en houdt de databank licht. */
-const LOGO_EDGE = 256;
-
-/** Schaalt de gekozen afbeelding terug en levert een webp data-URI op. */
-async function shrinkToDataUrl(file: File): Promise<string> {
-  const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, LOGO_EDGE / Math.max(bitmap.width, bitmap.height));
-  const width = Math.max(1, Math.round(bitmap.width * scale));
-  const height = Math.max(1, Math.round(bitmap.height * scale));
-
-  const canvas = document.createElement("canvas");
-  canvas.width = width;
-  canvas.height = height;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Deze browser kan de afbeelding niet verkleinen.");
-  ctx.drawImage(bitmap, 0, 0, width, height);
-  bitmap.close?.();
-
-  return canvas.toDataURL("image/webp", 0.85);
-}
 
 function formatDeadline(iso: string): string {
   return new Date(iso).toLocaleString("nl-BE", {
@@ -58,10 +32,6 @@ export default function TeamPortalPage({
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState("");
   const [saved, setSaved] = useState(false);
-
-  const [logoBusy, setLogoBusy] = useState(false);
-  const [logoError, setLogoError] = useState("");
-  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     // Bewust géén apiFetch: die stuurt de admin-bearer mee en gooit je bij een
@@ -114,45 +84,6 @@ export default function TeamPortalPage({
       setSaveError(err instanceof Error ? err.message : "Opslaan mislukt.");
     } finally {
       setSaving(false);
-    }
-  }
-
-  async function handleLogo(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file || !data) return;
-    setLogoError("");
-
-    if (!file.type.startsWith("image/")) {
-      setLogoError("Kies een afbeelding.");
-      return;
-    }
-    if (file.size > MAX_LOGO_BYTES) {
-      setLogoError("Die afbeelding is groter dan 2 MB.");
-      return;
-    }
-
-    setLogoBusy(true);
-    try {
-      const dataUrl = await shrinkToDataUrl(file);
-      const res = await fetch(
-        `${API_BASE}tournaments/teams/portal/${encodeURIComponent(token)}/logo`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ dataUrl }),
-        }
-      );
-      if (!res.ok) {
-        const body = (await res.json().catch(() => ({}))) as { message?: string };
-        throw new Error(body.message ?? "Uploaden mislukt.");
-      }
-      const { logoUrl } = (await res.json()) as { logoUrl: string };
-      setData({ ...data, team: { ...data.team, logoUrl } });
-    } catch (err) {
-      setLogoError(err instanceof Error ? err.message : "Uploaden mislukt.");
-    } finally {
-      setLogoBusy(false);
-      if (fileRef.current) fileRef.current.value = "";
     }
   }
 
@@ -298,45 +229,6 @@ export default function TeamPortalPage({
             </div>
           )}
         </form>
-
-        {/* ── Logo ──────────────────────────────────────────── */}
-        {SHOW_LOGO && (
-        <div className="rounded-2xl border border-rule bg-surface px-6 py-6">
-          <SectionHead title="Teamlogo" />
-          <div className="flex flex-wrap items-center gap-5">
-            <div className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-rule bg-paper">
-              {team.logoUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={team.logoUrl} alt="" className="h-full w-full object-cover" />
-              ) : (
-                <span className="text-[0.6rem] font-semibold uppercase tracking-widest text-ink/35">
-                  Geen
-                </span>
-              )}
-            </div>
-            <div className="min-w-0 flex-1">
-              {locked ? (
-                <p className="text-sm text-ink-2">Aanpassen is gesloten.</p>
-              ) : (
-                <>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    disabled={logoBusy}
-                    onChange={handleLogo}
-                    className="block w-full text-sm text-ink-2 file:mr-3 file:cursor-pointer file:rounded-full file:border-0 file:bg-pink-soft file:px-4 file:py-2 file:text-sm file:font-semibold file:text-pink-ink"
-                  />
-                  <p className="mt-2 text-xs text-ink-2">
-                    {logoBusy ? "Bezig met uploaden…" : "Vierkant werkt het best. Max 2 MB."}
-                  </p>
-                </>
-              )}
-              {logoError && <p className="mt-2 text-xs text-red-600">{logoError}</p>}
-            </div>
-          </div>
-        </div>
-        )}
 
         {/* ── Wedstrijden ───────────────────────────────────── */}
         {matches.length > 0 && (

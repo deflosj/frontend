@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
+import { MembersTabs } from "@/components/admin/members-tabs";
 import { IconPlus, IconTrash } from "@/components/ui/icons";
 import { QrModal } from "@/components/ui/qr-modal";
 
@@ -183,15 +184,16 @@ export default function AdminUitnodigingenPage() {
 
   return (
     <>
-      <div className="admin-page-header">
-        <h1>Uitnodigingen</h1>
-        <p>Beheer uitnodigingscodes voor nieuwe accounts. Deel de link met de ontvanger.</p>
+      <div className="admin-page-header" style={{ marginBottom: "1.25rem" }}>
+        <h1>Leden &amp; toegang</h1>
+        <p>Maak een uitnodigingscode en deel de link met de ontvanger.</p>
         {fetchError && (
           <div style={{ marginTop: "1rem", padding: "0.65rem 1rem", borderRadius: "10px", background: "var(--err-bg)", color: "var(--err-fg)", fontSize: "0.875rem", fontWeight: 500 }}>
             Kon uitnodigingen niet laden: <strong>{fetchError}</strong>
           </div>
         )}
       </div>
+      <MembersTabs />
 
       <div className="space-y-6">
         <CreateForm onCreated={handleCreated} />
