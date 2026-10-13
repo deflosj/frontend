@@ -1,3 +1,4 @@
+import { playerCount } from "@/lib/team-roster";
 import type { ActiveTournament, TournamentTeam } from "@/lib/tournament-types";
 
 /** De vijf fases van een toernooi, zoals de admin ze toont. */
@@ -12,7 +13,7 @@ export function tournamentPhase(t: ActiveTournament): number {
   return 0;
 }
 
-/** Alle vier spelers ingevuld. */
+/** Alle vier spelers echt ingevuld (placeholders als "K1" of "S3" tellen niet). */
 export function isTeamComplete(team: Pick<TournamentTeam, "speler1" | "speler2" | "speler3" | "speler4">): boolean {
-  return [team.speler1, team.speler2, team.speler3, team.speler4].every((s) => s?.trim());
+  return playerCount(team) === 4;
 }

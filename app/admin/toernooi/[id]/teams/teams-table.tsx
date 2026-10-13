@@ -1,6 +1,7 @@
 "use client";
 
-import { Pencil, Trash2 } from "lucide-react";
+import { Mail, Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament, TournamentTeam } from "@/lib/tournament-types";
@@ -8,6 +9,7 @@ import { PaymentSelect, paymentBody, paymentValue } from "../payment-select";
 import { escapeTo, useDialogModal } from "../shared";
 import { Search } from "lucide-react";
 import { isTeamComplete } from "@/lib/tournament-phase";
+import { playerCount } from "@/lib/team-roster";
 import { TeamLinkActions } from "../team-link";
 import { TeamDrawer } from "./team-drawer";
 
@@ -41,6 +43,9 @@ export function TeamsTable({
 
   const groupPoules = tournament.poules.filter((p) => p.phase === "GROUP_STAGE");
   const pouleMap    = new Map(groupPoules.map((p) => [p.id, p.name]));
+
+  const incomplete = tournament.teams.filter(FILTERS.incomplete.test);
+  const noMail = incomplete.filter((t) => !t.email?.trim()).length;
 
   const q = query.trim().toLowerCase();
   const visible = tournament.teams.filter((t) =>
@@ -110,6 +115,18 @@ export function TeamsTable({
         </div>
       </div>
 
+      {filter === "incomplete" && incomplete.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-rule bg-paper px-4 py-3">
+          <p className="text-sm text-ink-2">
+            <strong className="text-ink">{incomplete.length} ploeg{incomplete.length === 1 ? "" : "en"}</strong> met lege spelers of
+            placeholders zoals K1 of S2.{noMail > 0 && <> {noMail} {noMail === 1 ? "heeft" : "hebben"} geen e-mailadres.</>}
+          </p>
+          <Link href={`/admin/toernooi/${tournament.id}/communicatie?naar=onvolledig`} className="btn-sm btn-sm--primary">
+            <Mail size={15} strokeWidth={2} aria-hidden /> Mail deze ploegen
+          </Link>
+        </div>
+      )}
+
       <div className="admin-table-wrapper" style={{ overflowX: "auto" }}>
         {tournament.teams.length === 0 ? (
           <p className="admin-empty">Nog geen teams. Klik op &quot;Team inschrijven&quot; om te beginnen.</p>
@@ -120,7 +137,7 @@ export function TeamsTable({
           {/* Gsm: één kaart per team, knoppen binnen duimbereik */}
           <ul className="md:hidden" aria-label="Teams">
             {visible.map((team) => {
-              const n = [team.speler1, team.speler2, team.speler3, team.speler4].filter((s) => s?.trim()).length;
+              const n = playerCount(team);
               return (
                 <li key={team.id} className="flex flex-col gap-3 border-t border-rule px-4 py-4 first:border-t-0">
                   <div className="flex items-start justify-between gap-3">
@@ -177,7 +194,7 @@ export function TeamsTable({
                     <strong>{team.name}</strong>
                     {!isTeamComplete(team) && (
                       <span className="block text-xs" style={{ color: "var(--warn-fg)" }}>
-                        {[team.speler1, team.speler2, team.speler3, team.speler4].filter((s) => s?.trim()).length}/4 spelers
+                        {playerCount(team)}/4 spelers
                       </span>
                     )}
                   </td>

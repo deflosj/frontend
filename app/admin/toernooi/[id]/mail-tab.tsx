@@ -1,12 +1,13 @@
 "use client";
 
 import { Notice, Panel } from "@/components/admin/ui";
+import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament } from "@/lib/tournament-types";
 
-type Audience = "all" | "paid" | "unpaid" | "present" | "absent";
+type Audience = "all" | "incomplete";
 
 interface MailResult {
   recipients: { teamId: number; name: string; email: string }[];
@@ -22,15 +23,20 @@ const FIELDS: { key: string; label: string }[] = [
   { key: "poule", label: "Poule" },
   { key: "eerste_match", label: "Eerste match" },
   { key: "portaallink", label: "Portaallink" },
+  { key: "ontbrekend", label: "Aantal ontbrekende spelers" },
 ];
 
 const AUDIENCES: { key: Audience; label: string }[] = [
   { key: "all", label: "Alle ploegen" },
-  { key: "unpaid", label: "Nog niet betaald" },
-  { key: "paid", label: "Betaald" },
-  { key: "absent", label: "Nog niet aanwezig" },
-  { key: "present", label: "Aanwezig" },
+  { key: "incomplete", label: "Onvolledige ploegen" },
 ];
+
+const INCOMPLETE_TEMPLATE =
+  "Dag {kapitein},\n\n" +
+  "In {ploeg} ontbreken nog {ontbrekend}. Vul de namen van al jullie spelers aan via jullie portaal:\n" +
+  "{portaallink}\n\n" +
+  "Zo staan jullie juist op het scorebord en in het schema.\n\n" +
+  "Tot dan!";
 
 const DRAFT_KEY = (id: number) => `deflosj:admin-mail:${id}`;
 
@@ -38,7 +44,9 @@ const DRAFT_KEY = (id: number) => `deflosj:admin-mail:${id}`;
 export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament }>) {
   const [subject, setSubject] = useState("");
   const [body, setBody] = useState("");
-  const [audience, setAudience] = useState<Audience>("all");
+  const searchParams = useSearchParams();
+  const fromIncomplete = searchParams.get("naar") === "onvolledig";
+  const [audience, setAudience] = useState<Audience>(fromIncomplete ? "incomplete" : "all");
   const [pouleId, setPouleId] = useState("");
   const [preview, setPreview] = useState<MailResult | null>(null);
   const [previewError, setPreviewError] = useState("");
@@ -51,6 +59,12 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
 
   // Concept bewaren in deze browser: een half geschreven mail ga je niet kwijt.
   useEffect(() => {
+    // Via "Mail deze ploegen" bij de onvolledige teams: meteen het juiste bericht.
+    if (fromIncomplete) {
+      setSubject(`${tournament.name}: vul jullie spelers aan`);
+      setBody(INCOMPLETE_TEMPLATE);
+      return;
+    }
     try {
       const raw = localStorage.getItem(DRAFT_KEY(tournament.id));
       if (raw) {
@@ -70,7 +84,7 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
       "Spelers aanpassen kan via jullie portaal: {portaallink}\n\n" +
       "Tot dan!"
     );
-  }, [tournament.id, tournament.name]);
+  }, [tournament.id, tournament.name, fromIncomplete]);
   useEffect(() => {
     try { localStorage.setItem(DRAFT_KEY(tournament.id), JSON.stringify({ subject, body })); } catch { /* geen opslag */ }
   }, [tournament.id, subject, body]);
