@@ -91,7 +91,7 @@ function DeadlineForm() {
   return (
     <Card
       title="Teams mogen zichzelf aanpassen tot"
-      note="Na dit moment kunnen teams hun naam, spelers en logo niet meer wijzigen via hun eigen link. Leeg laten = geen deadline."
+      note="Na dit moment kunnen teams hun naam en spelers niet meer wijzigen via hun eigen link. Leeg laten = geen deadline."
     >
       {error && <Notice tone="err" className="mb-3">{error}</Notice>}
       <div className="flex flex-wrap items-end gap-3">
