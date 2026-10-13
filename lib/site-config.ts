@@ -15,6 +15,6 @@ export const siteConfig = {
   ],
   socials: {
     facebook: "https://www.facebook.com/profile.php?id=100092918104882",
-    instagram: "https://www.instagram.com/deflosj_rotselaar/",
+    instagram: "https://www.instagram.com/deflosj/",
   },
 } as const;
