@@ -85,6 +85,7 @@ export default function RegisterPageClient() {
     try {
       const res = await fetch(`${API_BASE}auth/register`, {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, username, password, inviteCode: inviteCode.trim().toUpperCase() }),
       });
@@ -94,8 +95,8 @@ export default function RegisterPageClient() {
         throw new Error(body.message ?? `HTTP ${res.status}`);
       }
 
-      const data = (await res.json()) as { token: string };
-      setToken(data.token);
+      const data = (await res.json()) as { accessToken: string; csrfToken: string };
+      setToken(data.accessToken, data.csrfToken);
       globalThis.location.replace("/admin");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Registratie mislukt");

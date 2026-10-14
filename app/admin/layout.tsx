@@ -239,8 +239,8 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
     : t.exact ? pathname === t.href : pathname.startsWith(t.href);
   const tabActive = tabs.some(tabIsActive);
 
-  function handleLogout() {
-    AuthService.logout();
+  async function handleLogout() {
+    await AuthService.logout();
     router.push("/login");
   }
 

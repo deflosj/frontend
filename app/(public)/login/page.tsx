@@ -23,7 +23,7 @@ export default function AdminLoginPage() {
     try {
       const user = await AuthService.login(identifier, password);
       if (!(ADMIN_ROLES as string[]).includes(user.role)) {
-        AuthService.logout();
+        void AuthService.logout();
         setError("Uw account heeft geen beheerderstoegang.");
         return;
       }

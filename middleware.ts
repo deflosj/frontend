@@ -7,7 +7,12 @@ async function getRoleFromToken(token: string): Promise<string | null> {
   const secret = process.env.JWT_SECRET;
   if (!secret) return null;
   try {
-    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret));
+    // Handtekening moet kloppen, maar een verlopen access token laten we door:
+    // de pagina ververst hem zelf via de refresh cookie (max. 30 dagen). Echte
+    // autorisatie gebeurt sowieso op de backend.
+    const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), {
+      clockTolerance: "30d",
+    });
     const role = payload["role"];
     return typeof role === "string" ? role : null;
   } catch {
