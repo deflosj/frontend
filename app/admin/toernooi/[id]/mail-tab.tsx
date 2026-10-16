@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { apiFetch } from "@/lib/api";
+import { MailStatusCard, remainingToday, useMailStatus } from "@/components/admin/mail-status";
 import type { ActiveTournament } from "@/lib/tournament-types";
 
 type Audience = "all" | "incomplete";
@@ -54,6 +55,7 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
   const [result, setResult] = useState<MailResult | null>(null);
   const [sendError, setSendError] = useState("");
   const bodyRef = useRef<HTMLTextAreaElement>(null);
+  const mailStatus = useMailStatus();
 
   const groupPoules = tournament.poules.filter((p) => p.phase === "GROUP_STAGE");
 
@@ -130,6 +132,7 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
     try {
       const res = await apiFetch<MailResult>(`tournaments/${tournament.id}/mail`, { method: "POST", body: JSON.stringify(payload(true)) });
       setResult(res);
+      mailStatus.reload();
       if (res.failed.length === 0) {
         try { localStorage.removeItem(DRAFT_KEY(tournament.id)); } catch { /* */ }
       }
@@ -141,8 +144,12 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
   }
 
   const n = preview?.recipients.length ?? 0;
+  const left = remainingToday(mailStatus.status);
+  const overQuota = left !== null && n > left;
 
   return (
+    <div className="flex flex-col gap-6">
+    <MailStatusCard status={mailStatus.status} error={mailStatus.error} />
     <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)]">
       <Panel id="compose" title="Mail naar de teams" description="Elke ploeg krijgt een eigen mail, met de velden per ploeg ingevuld.">
         <div className="flex flex-col gap-4">
@@ -189,6 +196,12 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
             </button>
             <span className="text-xs text-ink-2">Concept wordt bewaard in deze browser.</span>
           </div>
+          {overQuota && (
+            <Notice tone="warn">
+              Je kan vandaag nog {left} mail{left === 1 ? "" : "s"} versturen, maar deze verzending gaat naar {n} ploegen.
+              De rest mislukt; verstuur ze morgen opnieuw of beperk de ontvangers (bv. per poule).
+            </Notice>
+          )}
           {sendError && <Notice tone="err">{sendError}</Notice>}
 
           {result && (
@@ -229,6 +242,7 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
           {preview?.preview?.text ?? body}
         </pre>
       </Panel>
+    </div>
     </div>
   );
 }
