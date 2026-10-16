@@ -122,7 +122,7 @@ function KoCard({
   );
 }
 
-/** Finale in het midden: beker en label erboven, winnaar en kleine finale eronder.
+/** Finale in het midden: beker, winnaar en label erboven, kleine finale eronder.
  *  De finalekaart zelf staat exact in het midden, zodat de lijnen er recht op uitkomen. */
 function FinalBlock({
   common,
@@ -143,20 +143,25 @@ function FinalBlock({
         <span className={`flex h-[3.4em] w-[3.4em] items-center justify-center rounded-full ${champ ? "bg-pink text-[#16161a] shadow-[0_0_0_0.55em_var(--pink-soft)]" : "bg-pink-soft text-pink-ink"}`}>
           <Trophy size={15} strokeWidth={1.75} aria-hidden />
         </span>
-        <span className="text-[0.78em] font-bold uppercase tracking-[0.12em] text-pink-ink">Finale</span>
+        {champ && (
+          <div className="t-pop mt-[0.4em] flex flex-col items-center gap-[0.15em] text-center">
+            <span className="text-[0.72em] font-bold uppercase tracking-[0.14em] text-pink-ink">
+              Winnaar{common.year ? ` ${common.year}` : ""}
+            </span>
+            <span className="whitespace-nowrap text-[1.45em] font-bold leading-tight tracking-[-0.01em] text-ink">
+              {common.nameOf.get(champ)}
+            </span>
+          </div>
+        )}
+        <span className={`text-[0.78em] font-bold uppercase tracking-[0.12em] text-pink-ink ${champ ? "mt-[0.9em]" : ""}`}>Finale</span>
       </div>
       <div className="w-full">
         <KoCard m={final} pos="F1" size={size} common={common} big />
       </div>
       <div className="absolute inset-x-0 top-[calc(50%+3.1em)] flex flex-col items-center gap-[0.6em]">
-        {champ && (
-          <span className="t-pop rounded-full bg-pink px-[1em] py-[0.35em] text-[0.9em] font-bold text-[#16161a]">
-            Winnaar{common.year ? ` ${common.year}` : ""} · {common.nameOf.get(champ)}
-          </span>
-        )}
         {cf && (
           <>
-            <span className="mt-[0.4em] text-[0.72em] font-bold uppercase tracking-[0.12em] text-ink-2">Kleine finale</span>
+            <span className="mt-[0.9em] text-[0.72em] font-bold uppercase tracking-[0.12em] text-ink-2">Kleine finale</span>
             <div className="mt-[0.5em] w-full">
               <KoCard m={cf} pos="CF1" size={size} common={common} dashed={cf.scoreA === null} />
             </div>
