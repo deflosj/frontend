@@ -16,8 +16,9 @@ interface MailResult {
   preview: { to: string; name: string; subject: string; text: string } | null;
   sent: number;
   failed: { name: string; email: string; error: string }[];
-  test?: { to: string; basedOn: string };
 }
+
+interface TestResult { to: string; basedOn: string; sent: number; error: string | null }
 
 const TEST_TO_KEY = "deflosj:admin-mail:test-to";
 
@@ -142,14 +143,16 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
     setTesting(true); setTestResult(null);
     try { localStorage.setItem(TEST_TO_KEY, testTo.trim()); } catch { /* */ }
     try {
-      const res = await apiFetch<MailResult>(`tournaments/${tournament.id}/mail`, {
+      // Apart endpoint: kan nooit naar de ploegen gaan. Bewust zonder "send".
+      const { subject: subj, body: txt, audience: aud, pouleId: pid } = payload(false);
+      const res = await apiFetch<TestResult>(`tournaments/${tournament.id}/mail/test`, {
         method: "POST",
-        body: JSON.stringify({ ...payload(true), testTo: testTo.trim() }),
+        body: JSON.stringify({ subject: subj, body: txt, audience: aud, pouleId: pid, testTo: testTo.trim() }),
       });
       mailStatus.reload();
-      setTestResult(res.failed.length
-        ? { tone: "err", text: `Testmail mislukt: ${res.failed[0].error}` }
-        : { tone: "ok", text: `Testmail verstuurd naar ${res.test?.to ?? testTo}, ingevuld zoals voor ${res.test?.basedOn ?? "de eerste ploeg"}. Check ook je spam.` });
+      setTestResult(res.error
+        ? { tone: "err", text: `Testmail mislukt: ${res.error}` }
+        : { tone: "ok", text: `Testmail verstuurd naar ${res.to}, ingevuld zoals voor ${res.basedOn}. Check ook je spam.` });
     } catch (e) {
       setTestResult({ tone: "err", text: e instanceof Error ? e.message : "Testmail versturen mislukt." });
     } finally {
