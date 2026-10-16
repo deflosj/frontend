@@ -4,7 +4,7 @@ import { Notice, Panel } from "@/components/admin/ui";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { apiFetch } from "@/lib/api";
+import { apiFetch, getTokenPayload } from "@/lib/api";
 import { MailStatusCard, remainingToday, useMailStatus } from "@/components/admin/mail-status";
 import type { ActiveTournament } from "@/lib/tournament-types";
 
@@ -16,7 +16,10 @@ interface MailResult {
   preview: { to: string; name: string; subject: string; text: string } | null;
   sent: number;
   failed: { name: string; email: string; error: string }[];
+  test?: { to: string; basedOn: string };
 }
+
+const TEST_TO_KEY = "deflosj:admin-mail:test-to";
 
 const FIELDS: { key: string; label: string }[] = [
   { key: "kapitein", label: "Kapitein" },
@@ -56,6 +59,16 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
   const [sendError, setSendError] = useState("");
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const mailStatus = useMailStatus();
+  const [testTo, setTestTo] = useState("");
+  const [testing, setTesting] = useState(false);
+  const [testResult, setTestResult] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+
+  // Testadres: wat je vorige keer gebruikte, anders het adres waarmee je inlogt.
+  useEffect(() => {
+    let saved = "";
+    try { saved = localStorage.getItem(TEST_TO_KEY) ?? ""; } catch { /* */ }
+    setTestTo(saved || getTokenPayload()?.email || "");
+  }, []);
 
   const groupPoules = tournament.poules.filter((p) => p.phase === "GROUP_STAGE");
 
@@ -124,6 +137,26 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
     });
   }
 
+  async function sendTest() {
+    if (!testTo.trim()) return;
+    setTesting(true); setTestResult(null);
+    try { localStorage.setItem(TEST_TO_KEY, testTo.trim()); } catch { /* */ }
+    try {
+      const res = await apiFetch<MailResult>(`tournaments/${tournament.id}/mail`, {
+        method: "POST",
+        body: JSON.stringify({ ...payload(true), testTo: testTo.trim() }),
+      });
+      mailStatus.reload();
+      setTestResult(res.failed.length
+        ? { tone: "err", text: `Testmail mislukt: ${res.failed[0].error}` }
+        : { tone: "ok", text: `Testmail verstuurd naar ${res.test?.to ?? testTo}, ingevuld zoals voor ${res.test?.basedOn ?? "de eerste ploeg"}. Check ook je spam.` });
+    } catch (e) {
+      setTestResult({ tone: "err", text: e instanceof Error ? e.message : "Testmail versturen mislukt." });
+    } finally {
+      setTesting(false);
+    }
+  }
+
   async function send() {
     const n = preview?.recipients.length ?? 0;
     if (!n) return;
@@ -187,6 +220,22 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
             </div>
             <textarea id="m-body" ref={bodyRef} rows={12} value={body} onChange={(e) => setBody(e.target.value)}
               style={{ resize: "vertical", lineHeight: 1.6 }} />
+          </div>
+
+          <div className="form-field flex flex-col gap-2 rounded-xl border border-dashed border-rule p-3">
+            <label htmlFor="m-test" className="text-[13px] font-medium text-ink">Eerst testen?</label>
+            <div className="flex flex-wrap items-center gap-2">
+              <input id="m-test" type="email" value={testTo} onChange={(e) => setTestTo(e.target.value)}
+                placeholder="jouw@email.be" className="min-w-[14rem] flex-1" />
+              <button type="button" className="btn-sm btn-sm--ghost" onClick={sendTest}
+                disabled={testing || sending || n === 0 || !testTo.trim() || !subject.trim() || !body.trim()}>
+                {testing ? "Versturen…" : "Stuur testmail"}
+              </button>
+            </div>
+            <span className="text-xs text-ink-2">
+              Je krijgt één mail met &quot;[TEST]&quot; in het onderwerp, ingevuld zoals voor de eerste ploeg. Geen enkele ploeg krijgt iets.
+            </span>
+            {testResult && <Notice tone={testResult.tone}>{testResult.text}</Notice>}
           </div>
 
           <div className="flex flex-wrap items-center gap-3">

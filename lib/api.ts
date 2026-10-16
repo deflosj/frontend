@@ -90,7 +90,7 @@ function redirectToLogin(): void {
   }
 }
 
-export function getTokenPayload(): { role?: string; username?: string } | null {
+export function getTokenPayload(): { role?: string; username?: string; email?: string } | null {
   const token = getToken();
   if (!token) return null;
   try {
@@ -98,6 +98,7 @@ export function getTokenPayload(): { role?: string; username?: string } | null {
     return JSON.parse(atob(part.replaceAll("-", "+").replaceAll("_", "/"))) as {
       role?: string;
       username?: string;
+      email?: string;
     };
   } catch {
     return null;
