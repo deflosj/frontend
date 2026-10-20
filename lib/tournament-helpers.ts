@@ -11,9 +11,16 @@ export async function getTournament(id: string): Promise<ActiveTournament | null
   }
 }
 
+/** Stand binnen een poule: de plaats die de backend volgens het reglement
+ *  berekent (onderling resultaat, bal gooien, forfaits). */
 export function sortStandings(teams: TournamentTeam[]): TournamentTeam[] {
   return [...teams].sort(
-    (a, b) => b.points - a.points || b.saldo - a.saldo || b.goalsFor - a.goalsFor
+    (a, b) =>
+      (a.pouleRank && b.pouleRank ? a.pouleRank - b.pouleRank : 0) ||
+      b.points - a.points ||
+      b.saldo - a.saldo ||
+      b.goalsFor - a.goalsFor ||
+      a.goalsAgainst - b.goalsAgainst
   );
 }
 

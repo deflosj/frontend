@@ -61,6 +61,19 @@ export interface TournamentTeam {
   goalsAgainst: number;
   saldo: number;
   points: number;
+  /** Forfaits in de poules (reglement art. 6: twee = uit het toernooi). */
+  forfeits?: number;
+  /** Plaats in de eigen poule volgens het reglement (backend). 0 = onbekend. */
+  pouleRank?: number;
+  /** Teams waarmee dit team na alle criteria nog gelijk staat: bal gooien. */
+  tieWith?: number[];
+  /** Het bal gooien voor die gelijke stand is ingegeven. */
+  tieResolved?: boolean;
+  /** Twee forfaits: uit het toernooi. */
+  eliminated?: boolean;
+  /** Uitslag van het bal gooien (lager = beter). */
+  pouleTiebreak?: number | null;
+  rankingTiebreak?: number | null;
 }
 
 export interface TournamentPoule {
@@ -82,6 +95,10 @@ export interface TournamentMatch {
   scheduledAt: string | null;
   track: number | null;
   bracketPos: string | null;
+  /** Ploeg die forfait gaf (verliest 0–5). */
+  forfeitTeamId?: number | null;
+  /** Automatisch forfait na twee eerdere forfaits. */
+  forfeitAuto?: boolean;
 }
 
 export type TournamentStatus = "UPCOMING" | "ONGOING" | "COMPLETED";

@@ -5,6 +5,7 @@ import { useState } from "react";
 
 import { KO_ROUNDS, feederLabels, posNumber } from "@/lib/tournament-live";
 import type { TournamentMatch } from "@/lib/tournament-types";
+import { ForfeitTag } from "../_shared";
 import { fmtTime } from "@/utils/DateHelpers";
 
 /**
@@ -32,6 +33,8 @@ export interface BracketCommon {
   projected?: boolean;
   /** Tv-scherm: geen "voorlopig" en geen tijdvak per ronde; uur en baan per wedstrijd blijven. */
   minimal?: boolean;
+  /** Eerste-rondematchen met een gewisselde tegenstander (bracketPos → uitleg). */
+  swapped?: Map<string, string>;
 }
 
 interface Round {
@@ -67,8 +70,9 @@ function KoCard({
   dashed = false,
   mirrored = false,
 }: Readonly<{ m: TournamentMatch | undefined; pos: string; size: number; common: BracketCommon; big?: boolean; dashed?: boolean; mirrored?: boolean }>) {
-  const { nameOf, teamId = null, isFollowed = () => false, onPick, projected = false, minimal = false } = common;
+  const { nameOf, teamId = null, isFollowed = () => false, onPick, projected = false, minimal = false, swapped } = common;
   const [fa, fb] = feederLabels(pos, size);
+  const swapNote = swapped?.get(pos);
   const w = winnerOf(m);
   const mine = !!teamId && (m?.teamAId === teamId || m?.teamBId === teamId);
   const time = m?.scheduledAt ? fmtTime(m.scheduledAt) : "";
@@ -100,6 +104,7 @@ function KoCard({
         <span className={`min-w-0 flex-1 truncate ${cls} ${id && onPick ? "group-hover:underline group-hover:underline-offset-2" : ""}`}>
           {id ? nameOf.get(id) ?? "?" : fallback.replace(/^Winnaar /, "W. ").replace(/^Verliezer /, "V. ")}
         </span>
+        {id && m?.forfeitTeamId === id && <ForfeitTag className="text-[0.75em]" />}
         <span className={`min-w-[1em] text-right tabular-nums ${lost ? "text-ink-2" : "font-bold"}`}>{score ?? ""}</span>
       </button>
     );
@@ -113,6 +118,14 @@ function KoCard({
     >
       {tl && <span className={`${tab} left-[0.6em]`}>{tl}</span>}
       {tr && <span className={`${tab} right-[0.6em]`}>{tr}</span>}
+      {swapNote && (
+        <span
+          title={swapNote}
+          className="absolute -top-[0.72em] left-1/2 inline-flex h-[1.45em] w-[1.45em] -translate-x-1/2 items-center justify-center rounded-full bg-ink text-[0.8em] font-bold text-paper"
+        >
+          <span aria-hidden>⇄</span><span className="sr-only">Gewisseld: {swapNote}</span>
+        </span>
+      )}
       <div className="flex min-w-0 flex-1 flex-col gap-[0.12em]">
         {row(m?.teamAId ?? null, fa, m?.scoreA)}
         <span aria-hidden="true" className="h-px bg-rule" />

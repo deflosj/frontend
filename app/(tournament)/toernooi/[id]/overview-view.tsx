@@ -5,7 +5,7 @@ import { useMemo, useState } from "react";
 
 import {
   KO_SHORT,
-  compareStanding,
+  comparePouleRank,
   isKnockout,
   isPlayed,
   matchStatus,
@@ -134,7 +134,7 @@ export function OverviewView({ tournament }: Readonly<{ tournament: ActiveTourna
     if (!team) return null;
     const poule = poules.find((p) => p.id === team.pouleId);
     const letter = poule ? pouleLetter(poule) : "?";
-    const place = teams.filter((x) => x.pouleId === team.pouleId).sort(compareStanding).findIndex((x) => x.id === team.id) + 1;
+    const place = teams.filter((x) => x.pouleId === team.pouleId).sort(comparePouleRank).findIndex((x) => x.id === team.id) + 1;
     const mine = sorted.filter((m) => m.teamAId === team.id || m.teamBId === team.id);
     const opp = (m: TournamentMatch) => nameOf.get((m.teamAId === team.id ? m.teamBId : m.teamAId) ?? 0) ?? "nog te bepalen";
     const where = (m: TournamentMatch) => `${m.track !== null ? ` op baan ${m.track}` : ""} tegen ${opp(m)}`;

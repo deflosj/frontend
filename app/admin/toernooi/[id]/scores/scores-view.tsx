@@ -5,9 +5,11 @@ import { apiFetch } from "@/lib/api";
 import type { ActiveTournament, TournamentMatch, TournamentTeam } from "@/lib/tournament-types";
 import { PHASE_LABELS, PHASE_ORDER } from "@/lib/tournament-types";
 import Link from "next/link";
-import { Clock, Pencil } from "lucide-react";
+import { Clock, Flag, Pencil } from "lucide-react";
 import { Notice, Panel } from "@/components/admin/ui";
+import { comparePouleRank, tiebreaksNeeded } from "@/lib/tournament-live";
 import { smallInput } from "../shared";
+import { useTournament } from "../tournament-context";
 
 // ── Match row (inline editing) ────────────────────────────────────────────────
 
@@ -25,12 +27,15 @@ function MatchRow({
   match,
   teams,
   onSaved,
+  onChanged,
   phaseLabel,
 }: Readonly<{
   tournamentId: number;
   match: TournamentMatch;
   teams: TournamentTeam[];
   onSaved: (m: TournamentMatch) => void;
+  /** Na een forfait: andere matchen (automatische forfaits, knock-out) en de stand veranderen mee. */
+  onChanged: () => Promise<void> | void;
   /** Alleen gezet in het knockoutblok. */
   phaseLabel?: string;
 }>) {
@@ -74,8 +79,43 @@ function MatchRow({
       );
       onSaved(updated);
       setEditing(false);
+      void onChanged(); // stand en knock-out worden serverside bijgewerkt
     } catch (err) {
       setError(err instanceof Error ? err.message : "Opslaan mislukt");
+    } finally { setSaving(false); }
+  }
+
+  const forfeitName = match.forfeitTeamId ? teams.find((t) => t.id === match.forfeitTeamId)?.name ?? "?" : null;
+
+  async function forfeit(teamId: number | null) {
+    if (teamId === null) return;
+    const other = String(teamId) === teamAId ? teamBId : teamAId;
+    const extra = match.phase === "GROUP_STAGE" ? " Na twee forfaits ligt een ploeg uit het toernooi." : " Ze liggen uit het toernooi.";
+    if (!globalThis.confirm(`Forfait voor ${nameOf(String(teamId))}? ${nameOf(other)} wint 5–0.${extra}`)) return;
+    setSaving(true); setError("");
+    try {
+      const updated = await apiFetch<TournamentMatch>(`tournaments/${tournamentId}/matches/${match.id}/forfeit`, {
+        method: "POST", body: JSON.stringify({ teamId }),
+      });
+      onSaved(updated);
+      setScoreA(toStr(updated.scoreA)); setScoreB(toStr(updated.scoreB));
+      setEditing(false);
+      await onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Forfait opslaan mislukt");
+    } finally { setSaving(false); }
+  }
+
+  async function undoForfeit() {
+    if (!globalThis.confirm("Forfait ongedaan maken? De wedstrijd staat dan weer open.")) return;
+    setSaving(true); setError("");
+    try {
+      const updated = await apiFetch<TournamentMatch>(`tournaments/${tournamentId}/matches/${match.id}/forfeit`, { method: "DELETE" });
+      onSaved(updated);
+      setScoreA(""); setScoreB("");
+      await onChanged();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Ongedaan maken mislukt");
     } finally { setSaving(false); }
   }
 
@@ -115,7 +155,11 @@ function MatchRow({
           </>
         ) : (
           <>
-            {isComplete
+            {forfeitName
+              ? <span className="badge badge--gray whitespace-nowrap" title={match.forfeitAuto ? "Automatisch: twee eerdere forfaits" : undefined}>
+                  Forfait{match.forfeitAuto ? " (auto)" : ""}
+                </span>
+              : isComplete
               ? <span className="whitespace-nowrap text-[13px] font-semibold text-[var(--ok-fg)]">✓ Gespeeld</span>
               : <span className="text-[13px] text-ink-2">Open</span>}
             <button
@@ -152,6 +196,16 @@ function MatchRow({
 
       {error && <p className="col-span-full text-xs text-[var(--err-fg)]" role="alert">{error}</p>}
 
+      {forfeitName && (
+        <p className="col-span-full -mt-1 text-xs text-ink-2">
+          {match.forfeitAuto
+            ? <>Automatisch forfait voor <strong className="text-ink">{forfeitName}</strong>: twee forfaits, uit het toernooi.</>
+            : <>Forfait voor <strong className="text-ink">{forfeitName}</strong> (0–5).{" "}
+                <button type="button" className="font-semibold text-ink underline" onClick={undoForfeit} disabled={saving}>Ongedaan maken</button>
+              </>}
+        </p>
+      )}
+
       {/* Aanpassen: teams, tijd, baan */}
       {editing && (
         <div className="col-span-full grid grid-cols-2 gap-3 rounded-xl bg-paper p-3 sm:grid-cols-[1fr_1fr_100px_90px]">
@@ -177,6 +231,17 @@ function MatchRow({
             <label htmlFor={`m${match.id}-baan`}>Baan</label>
             <input id={`m${match.id}-baan`} type="number" min="1" value={track} onChange={(e) => setTrack(e.target.value)} />
           </div>
+          {match.teamAId !== null && match.teamBId !== null && (
+            <div className="col-span-full flex flex-wrap items-center gap-2 border-t border-rule pt-3">
+              <span className="inline-flex items-center gap-1.5 text-[13px] font-medium text-ink-2"><Flag size={14} aria-hidden /> Forfait (0–5)</span>
+              {[match.teamAId, match.teamBId].map((id) => (
+                <button key={id} type="button" className="btn-sm btn-sm--danger" disabled={saving || match.forfeitTeamId === id}
+                  onClick={() => forfeit(id)}>
+                  {nameOf(String(id))}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </li>
@@ -189,19 +254,24 @@ function DelayControl({ tournamentId }: Readonly<{ tournamentId: number }>) {
   const [minutes, setMinutes] = useState("");
   const [applying, setApplying] = useState(false);
   const [done, setDone] = useState(false);
+  const [error, setError] = useState("");
+  const { reload } = useTournament();
 
   async function apply() {
     const min = Number.parseInt(minutes, 10);
     if (Number.isNaN(min) || min === 0) return;
-    setApplying(true);
+    setApplying(true); setError("");
     try {
-      await apiFetch(`tournaments/${tournamentId}/delay`, {
+      await apiFetch(`tournaments/${tournamentId}/apply-delay`, {
         method: "POST", body: JSON.stringify({ minutes: min }),
       });
       setDone(true);
       setMinutes("");
       setTimeout(() => setDone(false), 3000);
-    } catch { /* ignore */ } finally { setApplying(false); }
+      await reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Verschuiven mislukt");
+    } finally { setApplying(false); }
   }
 
   return (
@@ -217,6 +287,7 @@ function DelayControl({ tournamentId }: Readonly<{ tournamentId: number }>) {
         {applying ? "Bezig…" : "Komende matchen verschuiven"}
       </button>
       {done && <span className="pr-2 text-[13px] font-medium text-[var(--ok-fg)]">✓ Toegepast</span>}
+      {error && <span className="pr-2 text-[13px] font-medium text-[var(--err-fg)]" role="alert">{error}</span>}
     </div>
   );
 }
@@ -225,12 +296,8 @@ function DelayControl({ tournamentId }: Readonly<{ tournamentId: number }>) {
 
 /** `showAbsent`: enkel zodra er ingecheckt wordt, anders staat iedereen op "Afwezig". */
 function StandingsTable({ teams, showAbsent }: Readonly<{ teams: TournamentTeam[]; showAbsent: boolean }>) {
-  const sorted = [...teams].sort((a, b) => {
-    if (b.points !== a.points)       return b.points - a.points;
-    if (b.goalsFor !== a.goalsFor)   return b.goalsFor - a.goalsFor;
-    if (a.goalsAgainst !== b.goalsAgainst) return a.goalsAgainst - b.goalsAgainst;
-    return b.won - a.won;
-  });
+  // Zelfde volgorde als de site: de backend rekent volgens het reglement.
+  const sorted = [...teams].sort(comparePouleRank);
 
   return (
     <div className="overflow-x-auto">
@@ -253,6 +320,9 @@ function StandingsTable({ teams, showAbsent }: Readonly<{ teams: TournamentTeam[
               <td>
                 <strong>{t.name}</strong>
                 {showAbsent && t.isPresent === false && <span className="badge badge--gray ml-2">Afwezig</span>}
+                {t.eliminated
+                  ? <span className="badge badge--gray ml-2">Uit het toernooi</span>
+                  : (t.forfeits ?? 0) > 0 && <span className="badge badge--gray ml-2">{t.forfeits} forfait</span>}
               </td>
               <td className="mono text-right">{t.played}</td>
               <td className="mono text-right hidden sm:table-cell">{t.won}</td>
@@ -272,16 +342,123 @@ function StandingsTable({ teams, showAbsent }: Readonly<{ teams: TournamentTeam[
   );
 }
 
+// ── Bal gooien (reglement art. 9.5) ──────────────────────────────────────────
+
+/** Kiest de volgorde voor een gelijke stand: tik de ploegen aan in de volgorde
+ *  waarin hun bal bij het cochonnet lag. Bij twee ploegen volstaat één tik. */
+export function TiePicker({
+  tournamentId, kind, teams, resolved, onDone, context, className = "mx-5 my-3",
+}: Readonly<{
+  tournamentId: number;
+  kind: "poule" | "ranking";
+  teams: TournamentTeam[];
+  resolved: boolean;
+  onDone: () => Promise<void> | void;
+  context: string;
+  className?: string;
+}>) {
+  const [order, setOrder] = useState<number[]>([]);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const names = teams.map((t) => t.name).join(teams.length === 2 ? " en " : ", ");
+
+  async function save(ids: number[], clear = false) {
+    setSaving(true); setError("");
+    try {
+      await apiFetch(`tournaments/${tournamentId}/tiebreak`, {
+        method: "PUT", body: JSON.stringify({ kind, teamIds: ids, clear }),
+      });
+      setOrder([]);
+      await onDone();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Opslaan mislukt");
+    } finally { setSaving(false); }
+  }
+
+  function pick(id: number) {
+    const next = [...order, id];
+    // De laatste ploeg ligt dan vast.
+    if (next.length === teams.length - 1) {
+      const last = teams.find((t) => !next.includes(t.id));
+      if (last) next.push(last.id);
+    }
+    if (next.length === teams.length) void save(next);
+    else setOrder(next);
+  }
+
+  if (resolved) {
+    return (
+      <Notice tone="ok" className={className}>
+        {context}: {names} stonden volledig gelijk, het bal gooien is ingegeven.{" "}
+        <button type="button" className="font-semibold underline" disabled={saving}
+          onClick={() => save(teams.map((t) => t.id), true)}>Opnieuw</button>
+      </Notice>
+    );
+  }
+
+  return (
+    <Notice tone="warn" className={className}>
+      <strong>{context}: bal gooien.</strong> {names} staan gelijk op punten, {kind === "poule" ? "onderling, " : ""}saldo, gescoord en tegen.
+      Eén speler per ploeg gooit één bal; wie het dichtst bij het cochonnet ligt, gaat voor.
+      <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="text-xs">{order.length === 0 ? (teams.length === 2 ? "Wie won?" : "Tik de winnaar aan:") : `Dan plaats ${order.length + 1}:`}</span>
+        {teams.filter((t) => !order.includes(t.id)).map((t) => (
+          <button key={t.id} type="button" className="btn-sm btn-sm--ghost" disabled={saving} onClick={() => pick(t.id)}>
+            {t.name}
+          </button>
+        ))}
+        {order.length > 0 && <button type="button" className="text-xs underline" onClick={() => setOrder([])}>Herbegin</button>}
+      </div>
+      {error && <p className="mt-1 text-xs text-[var(--err-fg)]">{error}</p>}
+    </Notice>
+  );
+}
+
+/** Gelijke standen binnen één poule, pas zodra de poule uitgespeeld is. */
+function PouleTies({ tournamentId, teams, onDone }: Readonly<{ tournamentId: number; teams: TournamentTeam[]; onDone: () => Promise<void> | void }>) {
+  const seen = new Set<number>();
+  const groups: TournamentTeam[][] = [];
+  for (const t of [...teams].sort(comparePouleRank)) {
+    if (seen.has(t.id) || !t.tieWith?.length) continue;
+    const group = [t, ...teams.filter((x) => t.tieWith!.includes(x.id))];
+    group.forEach((g) => seen.add(g.id));
+    groups.push(group);
+  }
+  return (
+    <>
+      {groups.map((g) => (
+        <TiePicker key={g.map((t) => t.id).join("-")} tournamentId={tournamentId} kind="poule" teams={g}
+          resolved={g.every((t) => t.tieResolved)} onDone={onDone} context="Gelijke stand in de poule" />
+      ))}
+    </>
+  );
+}
+
+/** Gelijke standen tussen poules (winnaars, tweedes, beste n-des): bepaalt de bracket. */
+function CrossPouleTie({ tournament, onDone }: Readonly<{ tournament: ActiveTournament; onDone: () => Promise<void> | void }>) {
+  const ties = tiebreaksNeeded(tournament).filter((t) => t.kind === "ranking");
+  if (ties.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-1 rounded-2xl border border-rule bg-surface py-1">
+      {ties.map((t) => (
+        <TiePicker key={t.key} tournamentId={tournament.id} kind="ranking" teams={t.teams} resolved={t.resolved}
+          onDone={onDone} context={`${t.label} (plaats in de bracket)`} />
+      ))}
+    </div>
+  );
+}
+
 // ── Wedstrijdtabel ────────────────────────────────────────────────────────────
 
 const isPlayed = (m: TournamentMatch) => m.scoreA !== null && m.scoreB !== null;
 
 function MatchTable({
-  tournament, matches, onSaved, withPhase = false,
+  tournament, matches, onSaved, onChanged, withPhase = false,
 }: Readonly<{
   tournament: ActiveTournament;
   matches: TournamentMatch[];
   onSaved: (m: TournamentMatch) => void;
+  onChanged: () => Promise<void> | void;
   withPhase?: boolean;
 }>) {
   return (
@@ -293,6 +470,7 @@ function MatchTable({
           match={m}
           teams={tournament.teams}
           onSaved={onSaved}
+          onChanged={onChanged}
           phaseLabel={withPhase ? PHASE_LABELS[m.phase] : undefined}
         />
       ))}
@@ -313,6 +491,7 @@ export function ScoresView({
 }>) {
   const [focus, setFocus] = useState<string>("all");
   const [onlyOpen, setOnlyOpen] = useState(false);
+  const { reload } = useTournament();
 
   function handleMatchSaved(updated: TournamentMatch) {
     onUpdate({
@@ -367,6 +546,10 @@ export function ScoresView({
         <DelayControl tournamentId={tournament.id} />
       </div>
 
+      {allGroup.length > 0 && allGroup.every(isPlayed) && (
+        <CrossPouleTie tournament={tournament} onDone={reload} />
+      )}
+
       {focus !== KO && groupPoules
         .filter((p) => focus === "all" || String(p.id) === focus)
         .map((poule) => {
@@ -385,9 +568,12 @@ export function ScoresView({
               flush
             >
               {pouleTeams.length > 0 && <StandingsTable teams={pouleTeams} showAbsent={checkInStarted} />}
+              {played === pouleMatches.length && pouleMatches.length > 0 && (
+                <PouleTies tournamentId={tournament.id} teams={pouleTeams} onDone={reload} />
+              )}
               {shown.length > 0 && (
                 <div className="border-t border-rule">
-                  <MatchTable tournament={tournament} matches={shown} onSaved={handleMatchSaved} />
+                  <MatchTable tournament={tournament} matches={shown} onSaved={handleMatchSaved} onChanged={reload} />
                 </div>
               )}
             </Panel>
@@ -401,7 +587,7 @@ export function ScoresView({
           description={`${koMatches.filter(isPlayed).length} van ${koMatches.length} gespeeld · winnaars schuiven automatisch door`}
           flush
         >
-          <MatchTable tournament={tournament} matches={filterOpen(koMatches)} onSaved={handleMatchSaved} withPhase />
+          <MatchTable tournament={tournament} matches={filterOpen(koMatches)} onSaved={handleMatchSaved} onChanged={reload} withPhase />
         </Panel>
       )}
 

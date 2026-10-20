@@ -67,8 +67,22 @@ export function useAutoRefresh(active: boolean, intervalMs = 60_000) {
 
 // ── Poules & ranking ──────────────────────────────────────────────────────────
 
+const tb = (v: number | null | undefined) => v ?? Number.POSITIVE_INFINITY;
+
+/** Over poules heen (reglement art. 9, criteria 2–5): punten, saldo, meeste
+ *  gescoord, minste tegen, bal gooien. */
 export const compareStanding = (a: TournamentTeam, b: TournamentTeam) =>
-  b.points - a.points || b.saldo - a.saldo || b.goalsFor - a.goalsFor || a.name.localeCompare(b.name);
+  b.points - a.points ||
+  b.saldo - a.saldo ||
+  b.goalsFor - a.goalsFor ||
+  a.goalsAgainst - b.goalsAgainst ||
+  tb(a.rankingTiebreak) - tb(b.rankingTiebreak) ||
+  a.name.localeCompare(b.name);
+
+/** Binnen de poule: de plaats die de backend volgens het reglement berekent
+ *  (inclusief onderling resultaat en bal gooien). */
+export const comparePouleRank = (a: TournamentTeam, b: TournamentTeam) =>
+  a.pouleRank && b.pouleRank ? a.pouleRank - b.pouleRank : compareStanding(a, b);
 
 export const pouleLetter = (p: Pick<TournamentPoule, "name">) => p.name.replace(/^poule\s+/i, "");
 
@@ -76,7 +90,7 @@ export const pouleLetter = (p: Pick<TournamentPoule, "name">) => p.name.replace(
 export function pouleTables(poules: TournamentPoule[], teams: TournamentTeam[]) {
   return poules
     .filter((p) => p.phase === "GROUP_STAGE")
-    .map((p) => ({ poule: p, rows: teams.filter((t) => t.pouleId === p.id).sort(compareStanding) }));
+    .map((p) => ({ poule: p, rows: teams.filter((t) => t.pouleId === p.id).sort(comparePouleRank) }));
 }
 
 /** Meest gebruikte baan per poule (baan 1 = poule A en B, …). */
@@ -112,10 +126,12 @@ export function rankTeams(
   advancingPerPoule: number,
   bestNths: number
 ): RankedTeam[] {
-  const maxPlace = Math.max(0, ...tables.map((t) => t.rows.length));
+  // Twee forfaits = uit het toernooi: wie eronder staat, schuift op.
+  const active = tables.map((t) => t.rows.filter((r) => !r.eliminated));
+  const maxPlace = Math.max(0, ...active.map((rows) => rows.length));
   const out: RankedTeam[] = [];
   for (let place = 1; place <= maxPlace; place++) {
-    const group = tables.map((t) => t.rows[place - 1]).filter(Boolean).sort(compareStanding);
+    const group = active.map((rows) => rows[place - 1]).filter(Boolean).sort(compareStanding);
     group.forEach((team, i) => {
       let kind: RankedTeam["kind"] = "out";
       if (place <= advancingPerPoule) kind = place === 1 ? "first" : "second";
@@ -127,6 +143,13 @@ export function rankTeams(
         : "Uitgeschakeld";
       const short = kind === "out" ? "Eruit" : kind === "nth" ? `Beste ${place}de` : "Door";
       out.push({ team, seed: 0, place, qualifies: kind !== "out", kind, label, short });
+    });
+  }
+  for (const t of tables) {
+    t.rows.forEach((team, i) => {
+      if (team.eliminated) {
+        out.push({ team, seed: 0, place: i + 1, qualifies: false, kind: "out", label: "Uit het toernooi (twee forfaits)", short: "Eruit" });
+      }
     });
   }
   out.forEach((r, i) => (r.seed = i + 1));
@@ -238,6 +261,131 @@ export function projectFirstRound(ranking: RankedTeam[]): ProjectedPair[] {
   if (q.length < 2) return [];
   const pairs = firstRoundPairs(q.map((r) => ({ pouleId: r.team.pouleId })));
   return pairs.map(([sa, sb], i) => ({ n: i + 1, a: q[sa - 1] ?? null, b: q[sb - 1] ?? null }));
+}
+
+/** Prefix van de eerste ronde voor een bracket van `size` plaatsen. */
+const firstRoundPrefix = (size: number) =>
+  size >= 32 ? "R32-" : size === 16 ? "R16-" : size === 8 ? "QF" : size === 4 ? "SF" : "F";
+
+/**
+ * Eerste-rondematchen waar een tegenstander gewisseld is, zodat twee ploegen
+ * uit dezelfde poule elkaar niet meteen treffen. Sleutel = bracketPos,
+ * waarde = uitleg in gewone taal. Bij een echte (gegenereerde) knock-out
+ * wordt enkel aangeduid als de match nog dezelfde ploegen heeft.
+ */
+export function swappedFirstRound(ranking: RankedTeam[], matches: TournamentMatch[]): Map<string, string> {
+  const out = new Map<string, string>();
+  const q = ranking.filter((r) => r.qualifies);
+  if (q.length < 2) return out;
+  const size = nextPowerOfTwo(q.length);
+  const order = bracketOrder(size);
+  const prefix = firstRoundPrefix(size);
+  const actual = firstRoundPairs(q.map((r) => ({ pouleId: r.team.pouleId })));
+  actual.forEach(([a, b], i) => {
+    const na = order[2 * i];
+    const nb = order[2 * i + 1];
+    if (a === na && b === nb) return;
+    const pos = prefix === "F" ? "F1" : `${prefix}${i + 1}`;
+    const ta = q[a - 1]?.team;
+    const tb = q[b - 1]?.team;
+    const real = matches.find((m) => m.bracketPos === pos);
+    if (real && real.teamAId !== null && (real.teamAId !== ta?.id || real.teamBId !== (tb?.id ?? null))) return;
+    const nominal = q[nb - 1]?.team;
+    out.set(
+      pos,
+      ta && nominal && nominal.pouleId === ta.pouleId
+        ? `Gewisseld: ${ta.name} zou anders tegen ${nominal.name} spelen, een ploeg uit dezelfde poule.`
+        : "Gewisseld met een andere match, zodat ploegen uit dezelfde poule elkaar niet meteen treffen."
+    );
+  });
+  return out;
+}
+
+// ── Bal gooien (reglement art. 9.5) ──────────────────────────────────────────
+
+export interface PendingTie {
+  key: string;
+  kind: "poule" | "ranking";
+  /** "Poule L" of "Beste 3des". */
+  label: string;
+  pouleId: number | null;
+  teams: TournamentTeam[];
+  resolved: boolean;
+}
+
+/**
+ * Gelijke standen die met bal gooien beslist moeten worden: per uitgespeelde
+ * poule, en tussen poules (winnaars, tweedes, beste n-des) zodra alle poules
+ * gedaan zijn — dat bepaalt de plaats in de bracket.
+ */
+export function tiebreaksNeeded(t: {
+  poules: TournamentPoule[];
+  teams: TournamentTeam[];
+  matches: TournamentMatch[];
+  teamsAdvancingPerPoule?: number | null;
+  bestNthsAdvancing?: number | null;
+}): PendingTie[] {
+  const out: PendingTie[] = [];
+  const groupPoules = t.poules.filter((p) => p.phase === "GROUP_STAGE");
+  const group = t.matches.filter((m) => m.phase === "GROUP_STAGE");
+  const done = (ms: TournamentMatch[]) => ms.length > 0 && ms.every(isPlayed);
+
+  for (const p of groupPoules) {
+    if (!done(group.filter((m) => m.pouleId === p.id))) continue;
+    const rows = t.teams.filter((x) => x.pouleId === p.id).sort(comparePouleRank);
+    const seen = new Set<number>();
+    for (const row of rows) {
+      if (seen.has(row.id) || !row.tieWith?.length) continue;
+      const tied = [row, ...rows.filter((x) => row.tieWith!.includes(x.id))];
+      tied.forEach((x) => seen.add(x.id));
+      out.push({
+        key: `p${p.id}-${tied.map((x) => x.id).join("-")}`,
+        kind: "poule",
+        label: `Poule ${pouleLetter(p)}`,
+        pouleId: p.id,
+        teams: tied,
+        resolved: tied.every((x) => x.tieResolved),
+      });
+    }
+  }
+
+  // Tussen poules (zodra alle poules gedaan zijn): binnen de poulewinnaars,
+  // binnen de tweedes, … en bij de beste n-des. Bepaalt de plaats in de
+  // bracket, en bij de n-des ook wie doorgaat.
+  if (done(group)) {
+    const advancing = t.teamsAdvancingPerPoule ?? 2;
+    const bestNths = t.bestNthsAdvancing ?? 0;
+    const same = (a: TournamentTeam, b: TournamentTeam) =>
+      a.points === b.points && a.saldo === b.saldo && a.goalsFor === b.goalsFor && a.goalsAgainst === b.goalsAgainst;
+    const lastPlace = bestNths > 0 ? advancing + 1 : advancing;
+    for (let place = 1; place <= lastPlace; place++) {
+      const rows = groupPoules
+        .map((p) => t.teams.filter((x) => x.pouleId === p.id && !x.eliminated).sort(comparePouleRank)[place - 1])
+        .filter((x): x is TournamentTeam => !!x)
+        .sort(compareStanding);
+      // Bij de n-des tellen enkel wie doorgaat (en wie daarmee gelijk staat).
+      const qualifying = place <= advancing ? rows.length : bestNths;
+      let i = 0;
+      while (i < rows.length && i < qualifying) {
+        let j = i + 1;
+        while (j < rows.length && same(rows[i], rows[j])) j++;
+        if (j - i > 1) {
+          const tied = rows.slice(i, j);
+          const label = place === 1 ? "Poulewinnaars" : place === 2 && advancing >= 2 ? "Tweedes" : `Beste ${place}des`;
+          out.push({
+            key: `r${place}-${tied.map((x) => x.id).join("-")}`,
+            kind: "ranking",
+            label,
+            pouleId: null,
+            teams: tied,
+            resolved: tied.every((x) => x.rankingTiebreak != null) && new Set(tied.map((x) => x.rankingTiebreak)).size === tied.length,
+          });
+        }
+        i = j;
+      }
+    }
+  }
+  return out;
 }
 
 /** Waarom een team (voorlopig) wel of niet doorgaat, in gewone taal. */

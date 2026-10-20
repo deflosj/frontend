@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   KO_SHORT,
   bracketSize,
-  compareStanding,
+  comparePouleRank,
   feederLabels,
   isKnockout,
   matchStatus,
@@ -16,7 +16,7 @@ import {
 } from "@/lib/tournament-live";
 import type { TournamentMatch, TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
 import { fmtTime } from "@/utils/DateHelpers";
-import { PageHead } from "../_shared";
+import { ForfeitTag, PageHead } from "../_shared";
 import {
   Chip,
   Count,
@@ -154,7 +154,7 @@ export function MatchesView({ matches, teams, poules, isActive }: Readonly<Props
     if (!team) return null;
     const mine = rows.filter((r) => r.m.teamAId === team.id || r.m.teamBId === team.id);
     const nx = mine.find((r) => r.status !== "done");
-    const pouleRows = teams.filter((t) => t.pouleId === team.pouleId).sort(compareStanding);
+    const pouleRows = teams.filter((t) => t.pouleId === team.pouleId).sort(comparePouleRank);
     const place = pouleRows.findIndex((t) => t.id === team.id) + 1;
     const poule = team.pouleId ? pouleById.get(team.pouleId) : undefined;
     return {
@@ -471,6 +471,7 @@ function MatchCard({
           {followed.has(id) && <StarMark />}
           {name}
         </span>
+        {id !== null && m.forfeitTeamId === id && <ForfeitTag auto={m.forfeitAuto} />}
         <span className={`min-w-5 text-right text-base font-bold tabular-nums md:text-sm ${lose ? "font-medium text-ink-2" : ""}`}>{played ? score : ""}</span>
       </button>
     );

@@ -10,60 +10,93 @@ import { Notice, Panel } from "@/components/admin/ui";
 
 const DEFAULT_RULES = `── Fairplay en bandjes ──
 
-De wedstrijd heeft een puur recreatief karakter, dus we rekenen op fairplay van elk team. Bij onenigheid neemt de aangeduide scheidsrechter de definitieve beslissing. Basisregel: De Flosj heeft altijd gelijk!
-
-Elk team ontvangt vier spelersbandjes. Deze moeten tijdens het toernooi gedragen worden en zijn niet uitwisselbaar.
+- Het toernooi is puur recreatief: we rekenen op fairplay van elk team.
+- Bij onenigheid beslist de aangeduide scheidsrechter. Die beslissing is definitief.
+- Elk team krijgt vier spelersbandjes.
+- De bandjes draag je het hele toernooi en ze zijn niet uitwisselbaar.
+- Basisregel: De Flosj heeft altijd gelijk!
 
 ── Ploegen en opstelling ──
 
-Er wordt verplicht gespeeld in ploegen van vier spelers (uitzondering: eerste poulewedstrijd). Indien een team vanaf de tweede wedstrijd met minder dan vier spelers aantreedt, krijgt het andere team automatisch een forfaitoverwinning (5–0).
+- Je speelt verplicht met vier spelers per ploeg.
+- Uitzondering: de eerste poulewedstrijd mag je met twee of drie spelers spelen.
+- Vanaf de tweede wedstrijd minder dan vier spelers? Dan verlies je die wedstrijd met forfait.
+- Per mène spelen twee spelers van elk team.
+- Speler 1 en 2 vormen een duo, speler 3 en 4 het andere duo.
+- De duo's wisselen elke mène af: een speler speelt nooit twee mènes na elkaar.
+- Speler 1 en 2 blijven aan de ene kant van het terrein, speler 3 en 4 aan de andere kant.
+- In de eerste poulewedstrijd geldt de wisselregel niet.
 
-Per spelronde moet elk team afwisselend twee verschillende spelers opstellen. Met uitzondering van de eerste poulewedstrijd mag een speler nooit twee spelletjes na elkaar spelen. Speler 1 en 2 blijven aan de ene kant, speler 3 en 4 aan de andere kant van het terrein.
+── Poulefase en aanwezigheid ──
 
-── Poulefase ──
-
-Er wordt gespeeld in poules van 4 ploegen. De eerste twee ploegen in de stand gaan automatisch door naar de volgende ronde. Daarnaast stoten ook de acht beste derdes door naar de 1/16 finales.
-
-Elk team (of een afgevaardigde) moet 15 minuten voor de eerste wedstrijd aanwezig zijn. Niet tijdig aanwezig zijn resulteert in een forfait voor de volgende wedstrijd. Na twee forfaitnederlagen eindigt het toernooi voor het betrokken team.
+- 12 poules van 4 ploegen.
+- De eerste twee van elke poule gaan door naar de 1/16 finales.
+- De acht beste derdes gaan ook door naar de 1/16 finales.
+- Elk team (of een afgevaardigde) is ten laatste 15 minuten voor zijn eerste wedstrijd aanwezig.
+- Niet tijdig aanwezig? Dan verlies je die wedstrijd met forfait.
+- Na twee forfaitnederlagen is het toernooi voorbij voor dat team.
 
 ── Punten en rangschikking ──
 
 Winst: 2 punten | Gelijkspel: 1 punt | Verlies: 0 punten
 
-Bij gelijke stand na de poulefase gelden de volgende criteria in volgorde:
-1. Aantal gemaakte ballen
-2. Aantal ballen tegen
-3. Verschil: gemaakte ballen – ballen tegen
-4. Aantal gewonnen wedstrijden
-5. Aantal verloren wedstrijden
-6. Onderling resultaat
-7. Indien nog steeds gelijk: één speler van elk team gooit één bal; wie het dichtst bij het cochonnet ligt, gaat door.
+Gelijk in punten na de poulefase? Dan gelden deze criteria, in deze volgorde:
+1. Onderling resultaat (enkel bij twee teams uit dezelfde poule)
+2. Puntenverschil: gescoorde punten min punten tegen
+3. Meeste gescoorde punten
+4. Minste punten tegen
+5. Nog steeds gelijk: één speler per team gooit één bal; wie het dichtst bij het cochonnet ligt, gaat door.
+
+- Voor de acht beste derdes gelden de criteria 2 tot en met 5.
 
 ── Spelverloop ──
 
-Voor elke wedstrijd bepaalt een toss welke ploeg mag starten.
+- Voor elke wedstrijd bepaalt een toss welke ploeg start.
+- De winnaar van de toss tekent een werpcirkel en werpt het cochonnet uit.
+- Het cochonnet is geldig tussen 6 en 9 meter van de cirkel.
+- Daarna speelt dat team de eerste bal.
+- Het andere team werpt tot het de leiding overneemt, enzovoort, tot alle ballen gespeeld zijn.
+- Elke bal werp je vanuit de cirkel, met beide voeten in de cirkel en op de grond.
+- Per mène heeft elk team zes ballen: elk van de twee spelers werpt er drie.
+- Na elke mène scoort de ploeg met de dichtste bal één punt per bal die beter ligt dan de beste bal van de tegenstander.
+- De ploeg met de meeste punten wint. Er is geen puntenlimiet.
+- Gemeten wordt van de dichtste rand van het cochonnet tot de dichtste rand van de bal.
+- Twijfel over wie het dichtst ligt? De scheidsrechter meet op.
+- De winnaar van de mène start de volgende mène en tekent een nieuwe cirkel waar het cochonnet lag.
 
-Het team dat de toss wint, werpt het cochonnet uit (tussen de 6 m en 9 m om geldig te zijn) en speelt vervolgens de eerste bal. De ploeg met de bal het dichtst bij het cochonnet scoort één punt per beter geplaatste bal dan de beste bal van de tegenstander.
+── Buiten terrein ──
 
-De ploeg met de meeste punten wint. Er is geen puntenlimiet. Per werpbeurt krijgt elk team zes ballen.
+- Een bal die volledig over het koord (terreinrand) gaat, is buiten en telt niet meer mee.
+- Het cochonnet is uit het spel als het tijdens een mène volledig over het koord gaat. Dan hangt het af van de ballen die nog in de hand zijn:
+1. Beide ploegen hebben nog ballen → de mène is ongeldig, geen punten. De winnaar van de vorige mène (of de toss) start opnieuw.
+2. Eén ploeg heeft nog ballen, de andere niet → die ploeg krijgt evenveel punten als ze nog ballen heeft.
+3. Geen van beide ploegen heeft nog ballen → de mène is ongeldig, geen punten. De winnaar van de vorige mène (of de toss) start opnieuw.
 
-Ballen die volledig over het koord gaan, zijn buiten en tellen niet meer mee.
+Voorbeeld: het cochonnet gaat uit het spel. Ploeg A heeft geen ballen meer, ploeg B heeft er nog twee in de hand. Ploeg B krijgt 2 punten.
 
 ── Timing en forfait ──
 
-Poulewedstrijden duren 15 minuten en stoppen exact na 15 minuten. Er worden geen ballen meer gegooid zodra het eindsignaal klinkt. Wanneer de 20 minuten verstreken zijn, wordt de lopende mène nog uitgespeeld.
-
-Wanneer een team niet komt opdagen of met onvoldoende spelers verschijnt, verliest het met 0–5 (forfait).
+- Poulewedstrijden duren 15 minuten en stoppen exact na 15 minuten, ook als er nog ballen te werpen zijn.
+- Na het eindsignaal wordt er geen bal meer gegooid. De ballen worden geteld zoals ze liggen: dat is de eindstand.
+- Finalewedstrijden duren 20 minuten. Daarna wordt de lopende mène nog uitgespeeld.
+- Daarna nog gelijk? Dan volgt één beslissende extra mène.
+- Niet (tijdig) aanwezig, of vanaf de tweede wedstrijd minder dan vier spelers: je verliest die wedstrijd met 0–5 (forfait).
+- In de finalerondes betekent een forfait dat je uitgeschakeld bent.
 
 ── Beeldmateriaal ──
 
-Door deel te nemen aan dit toernooi geef je toestemming aan De Flosj om foto's te maken en deze te publiceren op sociale media.
+- Door deel te nemen geef je De Flosj toestemming om foto's te maken en die op sociale media te publiceren.
 
 ── Zuipbeker ──
 
-Bij aanvang van het toernooi wordt elk team gevraagd of het wil deelnemen aan de Zuipbeker. Voor elk deelnemend team wordt het aantal geconsumeerde alcoholische dranken bijgehouden aan de togen van De Flosj met streepjes op een lijst. Per bestelling kunnen maximaal vier streepjes worden genoteerd. Streepjes worden enkel gezet op vertoon van het spelersbandje. Een team kan enkel streepjes laten bijzetten voor het eigen team.
-
-Ook hier geldt: De Flosj heeft altijd gelijk!`;
+- Een aparte, ludieke competitie naast het toernooi.
+- Bij de start vragen we elk team of het meedoet. Enkel teams die dan bevestigen, doen mee.
+- Per deelnemend team houden we het aantal alcoholische dranken bij.
+- Dat gebeurt met streepjes op een lijst aan de togen van De Flosj (niet in Café De Zijbeuk).
+- Elke alcoholische consumptie is één streepje, met maximaal vier streepjes per bestelling.
+- Streepjes worden enkel gezet op vertoon van het spelersbandje.
+- Je laat enkel streepjes zetten voor je eigen team. Wie dat toch voor een ander team doet, riskeert forfaitscores in het petanquetoernooi.
+- Ook hier geldt: De Flosj heeft altijd gelijk!`;
 
 // ── Tab: Reglement ────────────────────────────────────────────────────────────
 
@@ -113,7 +146,21 @@ export function ReglementEditor({
       }
     >
       {error && <Notice tone="err" className="mb-3">{error}</Notice>}
-      <p className="mb-2 text-xs text-ink-2">Een regel als <span className="mono">── Titel ──</span> wordt een kop op de site.</p>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-xs text-ink-2">
+          <span className="mono">── Titel ──</span> wordt een kop, <span className="mono">- tekst</span> een opsommingspunt en <span className="mono">1. tekst</span> een genummerde lijst.
+        </p>
+        {text.trim() !== DEFAULT_RULES.trim() && (
+          <button type="button" className="btn-sm btn-sm--ghost"
+            onClick={() => {
+              if (globalThis.confirm("De tekst vervangen door het reglement 2026? Vergeet daarna niet op te slaan.")) {
+                setText(DEFAULT_RULES); setSaved(false);
+              }
+            }}>
+            Reglement 2026 invullen
+          </button>
+        )}
+      </div>
       <textarea
         value={text}
         onChange={(e) => { setText(e.target.value); setSaved(false); }}

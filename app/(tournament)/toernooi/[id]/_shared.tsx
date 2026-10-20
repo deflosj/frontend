@@ -32,6 +32,20 @@ export function PageHead({
   );
 }
 
+// ── Forfait ───────────────────────────────────────────────────────────────────
+
+/** Naast de ploeg die forfait gaf (reglement art. 20: verliest 0–5). */
+export function ForfeitTag({ auto = false, className = "" }: Readonly<{ auto?: boolean; className?: string }>) {
+  return (
+    <span
+      title={auto ? "Forfait: twee eerdere forfaits, uit het toernooi" : "Forfait: niet (tijdig) aanwezig of te weinig spelers, verliest 0–5"}
+      className={`inline-flex shrink-0 items-center rounded-full bg-ink px-[0.55em] py-[0.1em] text-[0.6875rem] font-bold leading-normal text-paper ${className}`}
+    >
+      forfait
+    </span>
+  );
+}
+
 // ── Tab strip ─────────────────────────────────────────────────────────────────
 
 export interface TabItem {
@@ -140,8 +154,9 @@ export function MatchBlock({
 
       {/* Teams + score */}
       <div className="flex items-center gap-3 px-3.5 py-3.5">
-        <span className={`min-w-0 flex-1 truncate text-right font-semibold ${textSize} ${classA}`}>
-          {nameA}
+        <span className={`flex min-w-0 flex-1 items-center justify-end gap-1.5 text-right font-semibold ${textSize} ${classA}`}>
+          {match.forfeitTeamId && match.forfeitTeamId === match.teamAId && <ForfeitTag auto={match.forfeitAuto} />}
+          <span className="truncate">{nameA}</span>
         </span>
 
         {isPlayed ? (
@@ -156,8 +171,9 @@ export function MatchBlock({
           </span>
         )}
 
-        <span className={`min-w-0 flex-1 truncate font-semibold ${textSize} ${classB}`}>
-          {nameB}
+        <span className={`flex min-w-0 flex-1 items-center gap-1.5 font-semibold ${textSize} ${classB}`}>
+          <span className="truncate">{nameB}</span>
+          {match.forfeitTeamId && match.forfeitTeamId === match.teamBId && <ForfeitTag auto={match.forfeitAuto} />}
         </span>
       </div>
     </div>

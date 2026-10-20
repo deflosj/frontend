@@ -1,14 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Minus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flag, Minus } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 import type { TournamentMatch } from "@/lib/tournament-types";
 import { PHASE_LABELS } from "@/lib/tournament-types";
 import { useTournament } from "../tournament-context";
 
-/** Petanque: een spel gaat tot 13. */
-const TARGET = 13;
+/** Reglement art. 10 en 12: op tijd gespeeld, geen puntenlimiet. Enkel een
+ *  bovengrens tegen een vinger die blijft tikken. */
+const MAX_SCORE = 99;
 
 export const isPlayed = (m: TournamentMatch) => m.scoreA !== null && m.scoreB !== null;
 
@@ -45,9 +46,10 @@ export function ScoreboardView({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [flash, setFlash] = useState("");
+  const [forfeitOpen, setForfeitOpen] = useState(false);
 
   // Nieuwe wedstrijd op het bord: tellers op 0.
-  useEffect(() => { setScore([0, 0]); setError(""); }, [current?.id]);
+  useEffect(() => { setScore([0, 0]); setError(""); setForfeitOpen(false); }, [current?.id]);
 
   if (tracks.length === 0) {
     return (
@@ -61,15 +63,36 @@ export function ScoreboardView({
   const idx = activeTrack !== null ? tracks.indexOf(activeTrack) : 0;
   const step = (d: number) => onTrackChange(tracks[(idx + d + tracks.length) % tracks.length]);
 
-  const finished = score[0] >= TARGET || score[1] >= TARGET;
   const isKo = current !== null && current.phase !== "GROUP_STAGE";
   const bump = (side: 0 | 1, d: number) => {
     setScore((s) => {
       const next: [number, number] = [...s];
-      next[side] = Math.max(0, Math.min(TARGET, next[side] + d));
+      next[side] = Math.max(0, Math.min(MAX_SCORE, next[side] + d));
       return next;
     });
   };
+
+  /** Reglement art. 20: wie niet (tijdig) komt of te weinig spelers heeft, verliest 0–5. */
+  async function forfeit(teamId: number | null) {
+    if (!current || teamId === null) return;
+    const other = teamId === current.teamAId ? current.teamBId : current.teamAId;
+    const extra = isKo ? " Ze liggen uit het toernooi." : " Na twee forfaits ligt een ploeg uit het toernooi.";
+    if (!globalThis.confirm(`Forfait voor ${name(teamId)}? ${name(other)} wint 5–0.${extra}`)) return;
+    setSaving(true); setError("");
+    try {
+      await apiFetch<TournamentMatch>(`tournaments/${tournament.id}/matches/${current.id}/forfeit`, {
+        method: "POST",
+        body: JSON.stringify({ teamId }),
+      });
+      setFlash(`Forfait voor ${name(teamId)} opgeslagen`);
+      setTimeout(() => setFlash(""), 3500);
+      await reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Forfait opslaan mislukt.");
+    } finally {
+      setSaving(false);
+    }
+  }
 
   async function save() {
     if (!current) return;
@@ -98,7 +121,7 @@ export function ScoreboardView({
         <button
           type="button"
           onClick={() => bump(i, 1)}
-          disabled={!current || saving || score[i] >= TARGET}
+          disabled={!current || saving || score[i] >= MAX_SCORE}
           aria-label={`Punt erbij voor ${name(teamId)}, nu ${score[i]}`}
           className={`flex min-h-[220px] flex-col items-center justify-between gap-2 rounded-2xl border px-3 pb-4 pt-5 text-center transition-colors active:scale-[0.98] disabled:cursor-default ${
             lead ? "border-pink bg-pink-soft text-pink-ink" : "border-rule bg-surface text-ink"
@@ -160,13 +183,44 @@ export function ScoreboardView({
             disabled={saving || (score[0] === 0 && score[1] === 0)}
             className="h-14 rounded-2xl bg-ink text-base font-semibold text-paper transition-opacity disabled:opacity-40"
           >
-            {saving ? "Opslaan…" : finished ? "Uitslag bevestigen" : `Uitslag ${score[0]}–${score[1]} opslaan`}
+            {saving ? "Opslaan…" : `Uitslag ${score[0]}–${score[1]} opslaan`}
           </button>
-          {!finished && (score[0] > 0 || score[1] > 0) && (
-            <p className="-mt-2 text-center text-xs text-ink-2">
-              Nog niemand aan {TARGET}. Sla enkel op als de wedstrijd echt gedaan is (bv. tijd om).
-            </p>
-          )}
+          <p className="-mt-2 text-center text-xs text-ink-2">
+            {isKo
+              ? "Na 20 minuten wordt de lopende mène uitgespeeld; bij gelijkstand nog één extra mène."
+              : "Na 15 minuten stopt de wedstrijd: tel de ballen zoals ze liggen."}
+          </p>
+
+          <div className="rounded-2xl border border-dashed border-rule p-3">
+            <button
+              type="button"
+              onClick={() => setForfeitOpen((v) => !v)}
+              aria-expanded={forfeitOpen}
+              className="flex w-full items-center justify-center gap-2 text-sm font-semibold text-ink-2"
+            >
+              <Flag size={15} aria-hidden /> Forfait
+            </button>
+            {forfeitOpen && (
+              <div className="mt-3 flex flex-col gap-2">
+                <p className="text-center text-xs text-ink-2">
+                  Niet (tijdig) aanwezig, of vanaf de 2de match geen vier spelers: die ploeg verliest 0–5.
+                </p>
+                <div className="flex gap-2">
+                  {[current.teamAId, current.teamBId].map((id) => (
+                    <button
+                      key={id}
+                      type="button"
+                      disabled={saving}
+                      onClick={() => forfeit(id)}
+                      className="min-h-11 flex-1 rounded-xl bg-[var(--err-bg)] px-3 py-2 text-sm font-semibold text-[var(--err-fg)] disabled:opacity-40"
+                    >
+                      {name(id)} geeft forfait
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {upcoming.length > 0 && (
             <section aria-labelledby="next-title" className="mt-2">

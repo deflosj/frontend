@@ -2,6 +2,7 @@
 
 import { Notice, Panel } from "@/components/admin/ui";
 import { useSearchParams } from "next/navigation";
+import { Paperclip, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
 import { apiFetch, getTokenPayload } from "@/lib/api";
@@ -19,6 +20,23 @@ interface MailResult {
 }
 
 interface TestResult { to: string; basedOn: string; sent: number; error: string | null }
+
+interface Attachment { filename: string; content: string; bytes: number }
+
+const MAX_FILES = 3;
+const MAX_BYTES = 5 * 1024 * 1024;
+
+const fileSize = (bytes: number) =>
+  bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} kB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+
+/** Leest een bestand als base64 zonder `data:`-prefix. */
+const readBase64 = (file: File) =>
+  new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result).replace(/^data:[^,]*,/, ""));
+    reader.onerror = () => reject(reader.error ?? new Error("Lezen mislukt"));
+    reader.readAsDataURL(file);
+  });
 
 const TEST_TO_KEY = "deflosj:admin-mail:test-to";
 
@@ -63,6 +81,30 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
   const [testTo, setTestTo] = useState("");
   const [testing, setTesting] = useState(false);
   const [testResult, setTestResult] = useState<{ tone: "ok" | "err"; text: string } | null>(null);
+  const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [attachError, setAttachError] = useState("");
+  const fileRef = useRef<HTMLInputElement>(null);
+  const totalBytes = attachments.reduce((sum, a) => sum + a.bytes, 0);
+
+  async function addFiles(files: FileList | null) {
+    if (!files?.length) return;
+    setAttachError("");
+    const next = [...attachments];
+    for (const file of Array.from(files)) {
+      if (!/\.(pdf|png|jpe?g)$/i.test(file.name)) { setAttachError("Enkel PDF, PNG of JPG."); continue; }
+      if (next.length >= MAX_FILES) { setAttachError(`Hoogstens ${MAX_FILES} bijlagen.`); break; }
+      if (next.reduce((s, a) => s + a.bytes, 0) + file.size > MAX_BYTES) { setAttachError("Samen hoogstens 5 MB."); continue; }
+      try {
+        next.push({ filename: file.name, content: await readBase64(file), bytes: file.size });
+      } catch {
+        setAttachError(`${file.name} kon niet gelezen worden.`);
+      }
+    }
+    setAttachments(next);
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  const attachmentPayload = () => attachments.map(({ filename, content }) => ({ filename, content }));
 
   // Testadres: wat je vorige keer gebruikte, anders het adres waarmee je inlogt.
   useEffect(() => {
@@ -147,7 +189,7 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
       const { subject: subj, body: txt, audience: aud, pouleId: pid } = payload(false);
       const res = await apiFetch<TestResult>(`tournaments/${tournament.id}/mail/test`, {
         method: "POST",
-        body: JSON.stringify({ subject: subj, body: txt, audience: aud, pouleId: pid, testTo: testTo.trim() }),
+        body: JSON.stringify({ subject: subj, body: txt, audience: aud, pouleId: pid, testTo: testTo.trim(), attachments: attachmentPayload() }),
       });
       mailStatus.reload();
       setTestResult(res.error
@@ -163,10 +205,14 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
   async function send() {
     const n = preview?.recipients.length ?? 0;
     if (!n) return;
-    if (!globalThis.confirm(`Mail "${subject}" versturen naar ${n} ploeg${n === 1 ? "" : "en"}?`)) return;
+    const withFiles = attachments.length ? ` met ${attachments.length} bijlage${attachments.length === 1 ? "" : "n"}` : "";
+    if (!globalThis.confirm(`Mail "${subject}"${withFiles} versturen naar ${n} ploeg${n === 1 ? "" : "en"}?`)) return;
     setSending(true); setSendError(""); setResult(null);
     try {
-      const res = await apiFetch<MailResult>(`tournaments/${tournament.id}/mail`, { method: "POST", body: JSON.stringify(payload(true)) });
+      const res = await apiFetch<MailResult>(`tournaments/${tournament.id}/mail`, {
+        method: "POST",
+        body: JSON.stringify({ ...payload(true), attachments: attachmentPayload() }),
+      });
       setResult(res);
       mailStatus.reload();
       if (res.failed.length === 0) {
@@ -223,6 +269,36 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
             </div>
             <textarea id="m-body" ref={bodyRef} rows={12} value={body} onChange={(e) => setBody(e.target.value)}
               style={{ resize: "vertical", lineHeight: 1.6 }} />
+          </div>
+
+          <div className="form-field">
+            <span className="text-[13px] font-medium text-ink">Bijlagen</span>
+            {attachments.length > 0 && (
+              <ul className="flex flex-col gap-1.5">
+                {attachments.map((a, i) => (
+                  <li key={`${a.filename}-${i}`} className="flex items-center gap-2 rounded-lg border border-rule bg-paper px-3 py-2 text-sm">
+                    <Paperclip size={14} className="shrink-0 text-ink-2" aria-hidden />
+                    <span className="min-w-0 flex-1 truncate text-ink">{a.filename}</span>
+                    <span className="text-xs text-ink-2">{fileSize(a.bytes)}</span>
+                    <button type="button" className="rounded p-1 text-ink-2 hover:text-ink" aria-label={`${a.filename} verwijderen`}
+                      onClick={() => setAttachments((list) => list.filter((_, j) => j !== i))}>
+                      <X size={14} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <input ref={fileRef} id="m-files" type="file" accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg"
+                multiple className="sr-only" onChange={(e) => addFiles(e.target.files)} />
+              <label htmlFor="m-files" className="btn-sm btn-sm--ghost cursor-pointer">
+                <Paperclip size={14} aria-hidden /> Bijlage toevoegen
+              </label>
+              <span className="text-xs text-ink-2">
+                PDF, PNG of JPG · max {MAX_FILES} · samen max 5 MB{attachments.length ? ` · nu ${fileSize(totalBytes)}` : ""}. Elke ploeg krijgt dezelfde bijlage.
+              </span>
+            </div>
+            {attachError && <Notice tone="err">{attachError}</Notice>}
           </div>
 
           <div className="form-field flex flex-col gap-2 rounded-xl border border-dashed border-rule p-3">
@@ -293,6 +369,15 @@ export function MailTab({ tournament }: Readonly<{ tournament: ActiveTournament 
         <pre className="m-0 whitespace-pre-wrap break-words border-t border-rule px-5 py-4 font-[inherit] text-sm leading-relaxed text-ink">
           {preview?.preview?.text ?? body}
         </pre>
+        {attachments.length > 0 && (
+          <div className="flex flex-wrap gap-2 border-t border-rule px-5 py-3">
+            {attachments.map((a, i) => (
+              <span key={`${a.filename}-${i}`} className="inline-flex items-center gap-1.5 rounded-md border border-rule bg-paper px-2 py-1 text-xs text-ink">
+                <Paperclip size={12} aria-hidden /> {a.filename} <span className="text-ink-2">{fileSize(a.bytes)}</span>
+              </span>
+            ))}
+          </div>
+        )}
       </Panel>
     </div>
     </div>

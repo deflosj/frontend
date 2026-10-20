@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import {
-  compareStanding,
+  comparePouleRank,
   isKnockout,
   isPlayed,
   matchStatus,
@@ -11,8 +11,11 @@ import {
   pouleTables,
   pouleTracks,
   knockoutScheduleFor,
+  KO_SHORT,
   projectedKnockout,
   rankTeams,
+  swappedFirstRound,
+  tiebreaksNeeded,
   useAutoRefresh,
   useNow,
 } from "@/lib/tournament-live";
@@ -56,6 +59,7 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
   const bestNths = tournament.bestNthsAdvancing ?? 0;
 
   const nameOf = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
+  const pouleOf = useMemo(() => new Map(poules.map((p) => [p.id, pouleLetter(p)])), [poules]);
   const tables = useMemo(() => pouleTables(poules, teams), [poules, teams]);
   const ranking = useMemo(() => rankTeams(tables, advancing, bestNths), [tables, advancing, bestNths]);
   const rankById = useMemo(() => new Map(ranking.map((r) => [r.team.id, r])), [ranking]);
@@ -71,17 +75,29 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
     [hasKO, matches, poules, teams, advancing, bestNths, tournament]
   );
 
+  const swapped = useMemo(() => swappedFirstRound(ranking, ko), [ranking, ko]);
+  // Bal gooien: zichtbaar op elke dia tot de scheidsrechter het ingeeft.
+  const ties = useMemo(() => tiebreaksNeeded(tournament).filter((t) => !t.resolved), [tournament]);
+  const tiedIds = useMemo(() => new Set(ties.flatMap((t) => t.teams.map((x) => x.id))), [ties]);
+  // Hoe meer ploegen in de popup, hoe kleiner de namen: alles moet op één scherm.
+  const chipSize = tiedIds.size <= 6 ? "text-[1.6em]" : tiedIds.size <= 12 ? "text-[1.25em]" : "text-[1em]";
+  // Popup blijft staan tot de scheidsrechter het bal gooien ingeeft.
+  const showTies = ties.length > 0;
+
   // Welke dia's er zijn hangt af van het moment.
   const trackCount = useMemo(() => new Set(matches.map((m) => m.track).filter((t) => t !== null)).size, [matches]);
+  const courtsBusy = matches.some((m) => m.track !== null && m.teamAId !== null && m.teamBId !== null && !isPlayed(m));
   const slides: Slide[] = useMemo(() => {
-    const courtPages = Math.max(1, Math.ceil(trackCount / COURTS_PER_SLIDE));
+    // Banen enkel tonen als er nog iets gespeeld wordt; anders is het een dia vol lege kaarten.
+    const courtPages = courtsBusy ? Math.max(1, Math.ceil(trackCount / COURTS_PER_SLIDE)) : 0;
     const out: Slide[] = Array.from({ length: courtPages }, (_, page) => ({ kind: "courts" as const, page, pages: courtPages }));
     const pages = Math.ceil(tables.length / POULES_PER_SLIDE);
     if (tables.length && (groupLeft || !hasKO)) for (let p = 0; p < pages; p++) out.push({ kind: "poules", page: p, pages });
     if (ko.length) out.push({ kind: "bracket" });
     if (tables.length && hasKO && !groupLeft) for (let p = 0; p < pages; p++) out.push({ kind: "poules", page: p, pages });
+    if (out.length === 0) out.push({ kind: "courts", page: 0, pages: 1 });
     return out;
-  }, [tables.length, groupLeft, hasKO, ko.length, trackCount]);
+  }, [tables.length, groupLeft, hasKO, ko.length, trackCount, courtsBusy]);
 
   const [idx, setIdx] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -117,56 +133,65 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
 
   return (
     <div style={LIGHT_THEME} className="fixed inset-0 flex flex-col overflow-hidden bg-paper text-ink [font-size:clamp(13px,1.1vw,27px)]">
-      {/* Kop */}
-      <header className="flex items-center gap-[1.4em] border-b border-rule bg-surface px-[2em] py-[0.8em]">
+      {/* Kop: één smalle balk, de dia krijgt de ruimte. */}
+      <header className="flex items-center gap-[0.9em] border-b border-rule bg-surface px-[1.6em] py-[0.4em]">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/logo.jpg" alt="De Flosj" className="h-[3em] w-[3em] shrink-0 rounded-[0.6em] object-cover" />
-        <div className="flex min-w-0 flex-col">
-          <span className="text-[0.95em] font-medium text-ink-2">{name} {year}</span>
-          <h1 className="text-[2.3em] font-semibold leading-tight tracking-[-0.02em]">{title}</h1>
-        </div>
-        <div className="ml-auto flex items-center gap-[1.4em]">
+        <img src="/logo.jpg" alt="De Flosj" className="h-[2em] w-[2em] shrink-0 rounded-[0.45em] object-cover" />
+        <h1 className="text-[1.6em] font-bold tracking-[-0.02em]">{title}</h1>
+        <span className="text-[1em] text-ink-2">{name} {year}</span>
+        <div className="ml-auto flex items-center gap-[1.2em]">
           {liveCount > 0 && (
-            <span className="inline-flex items-center gap-[0.5em] rounded-full bg-pink-soft px-[0.9em] py-[0.35em] text-[1em] font-semibold text-pink-ink">
+            <span className="inline-flex items-center gap-[0.5em] rounded-full bg-pink-soft px-[0.8em] py-[0.2em] text-[1em] font-semibold text-pink-ink">
               <span className="t-live-dot" /> {liveCount} bezig
             </span>
           )}
-          <div className="flex gap-[0.4em]" aria-hidden="true">
-            {slides.map((_, i) => (
-              <span key={i} className={`h-[0.5em] rounded-full transition-all duration-300 ${i === idx ? "w-[1.6em] bg-pink" : "w-[0.5em] bg-rule"}`} />
-            ))}
-          </div>
-          <span className="font-mono text-[2.3em] font-semibold tabular-nums">{clock}</span>
+          {slides.length > 1 && (
+            <div className="flex gap-[0.35em]" aria-hidden="true">
+              {slides.map((_, i) => (
+                <span key={i} className={`h-[0.45em] rounded-full transition-all duration-300 ${i === idx ? "w-[1.4em] bg-pink" : "w-[0.45em] bg-rule"}`} />
+              ))}
+            </div>
+          )}
+          <span className="font-mono text-[1.6em] font-semibold tabular-nums">{clock}</span>
         </div>
       </header>
 
       {/* Dia */}
-      <main key={`${idx}-${tick}`} className="t-rise min-h-0 flex-1 px-[2em] py-[1.4em]">
-        {slide.kind === "courts" && <Courts matches={matches} nameOf={nameOf} now={now} page={slide.page} />}
+      <main key={`${idx}-${tick}`} className="t-rise min-h-0 flex-1 px-[1.6em] py-[1em]">
+        {slide.kind === "courts" && <Courts matches={matches} nameOf={nameOf} pouleOf={pouleOf} now={now} page={slide.page} />}
         {slide.kind === "poules" && (
-          <div className="grid h-full grid-cols-3 grid-rows-2 gap-[1em]">
+          <div className="grid h-full grid-cols-2 grid-rows-3 gap-[0.8em]">
             {tables.slice(slide.page * POULES_PER_SLIDE, (slide.page + 1) * POULES_PER_SLIDE).map(({ poule, rows }) => (
               <section key={poule.id} className="flex min-h-0 flex-col overflow-hidden rounded-[1.1em] border border-rule bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
-                <div className="flex items-baseline justify-between gap-[0.6em] border-b border-rule px-[1.2em] pb-[0.5em] pt-[0.7em]">
-                  <h2 className="text-[1.5em] font-semibold">Poule {pouleLetter(poule)}</h2>
+                <div className="flex items-baseline justify-between gap-[0.6em] border-b border-rule px-[1.2em] pb-[0.3em] pt-[0.4em]">
+                  <h2 className="text-[1.3em] font-semibold">Poule {pouleLetter(poule)}</h2>
                   {trackOf.get(poule.id) && <span className="text-[1.1em] text-ink-2">baan {trackOf.get(poule.id)}</span>}
                 </div>
-                <div className="flex flex-1 flex-col justify-around py-[0.3em]">
-                  <div className="grid grid-cols-[0.35em_1.6em_minmax(0,1fr)_2.2em_2.8em_2.3em] items-center gap-[0.5em] pr-[1em] text-[1.35em] text-ink-2" aria-hidden="true">
+                <div className="flex flex-1 flex-col justify-around py-[0.15em]">
+                  <div className="grid grid-cols-[0.35em_1.4em_minmax(0,1fr)_2em_4.4em_3.4em_3em_2.6em] items-center gap-[0.45em] pr-[1em] text-[1.25em] text-ink-2" aria-hidden="true">
                     <span /><span /><span />
                     <span className="text-right text-[0.6em] font-medium">G</span>
+                    <span className="text-right text-[0.6em] font-medium">Gescoord</span>
+                    <span className="text-right text-[0.6em] font-medium">Tegen</span>
                     <span className="text-right text-[0.6em] font-medium">+/-</span>
                     <span className="text-right text-[0.6em] font-medium">Pnt</span>
                   </div>
-                  {[...rows].sort(compareStanding).map((t, i) => {
+                  {[...rows].sort(comparePouleRank).map((t, i) => {
                     const r = rankById.get(t.id);
                     const bar = i < advancing ? "bg-pink" : r?.kind === "nth" ? "bg-ink/40" : "bg-transparent";
                     return (
-                      <div key={t.id} className="grid grid-cols-[0.35em_1.6em_minmax(0,1fr)_2.2em_2.8em_2.3em] items-center gap-[0.5em] pr-[1em] text-[1.35em] tabular-nums">
+                      <div key={t.id} className="grid grid-cols-[0.35em_1.4em_minmax(0,1fr)_2em_4.4em_3.4em_3em_2.6em] items-center gap-[0.45em] pr-[1em] text-[1.25em] tabular-nums">
                         <span className={`h-[1.2em] rounded-r ${bar}`} />
                         <span className="font-semibold text-ink-2">{i + 1}</span>
-                        <span className={`truncate ${i < advancing ? "font-semibold" : ""}`}>{t.name}</span>
+                        <span className={`flex min-w-0 items-center gap-[0.4em] ${i < advancing ? "font-semibold" : ""}`}>
+                          <span className="truncate">{t.name}</span>
+                          {tiedIds.has(t.id) && (
+                            <span className="shrink-0 rounded-full border border-pink/50 bg-pink-soft px-[0.55em] text-[0.6em] font-semibold leading-[1.6] text-pink-ink">bal gooien</span>
+                          )}
+                        </span>
                         <span className="text-right text-ink-2">{t.played}</span>
+                        <span className="text-right text-ink-2">{t.goalsFor}</span>
+                        <span className="text-right text-ink-2">{t.goalsAgainst}</span>
                         <span className="text-right text-ink-2">{t.saldo > 0 ? "+" : ""}{t.saldo}</span>
                         <span className="text-right font-bold">{t.points}</span>
                       </div>
@@ -179,23 +204,63 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
         )}
         {slide.kind === "bracket" && (
           <div className="flex h-full flex-col justify-center">
-            <MirroredBracket matches={ko} nameOf={nameOf} year={year} projected={!hasKO} minimal rowEm={5.4} />
+            <MirroredBracket matches={ko} nameOf={nameOf} year={year} projected={!hasKO} minimal rowEm={5.4} swapped={swapped} />
           </div>
         )}
       </main>
 
+      {/* Bal gooien: popup over het scherm, de rest vervaagd erachter. */}
+      {showTies && ties.length > 0 && (
+        <div role="alertdialog" aria-labelledby="tie-title" className="absolute inset-0 z-50 flex items-center justify-center bg-ink/25 backdrop-blur-[6px]">
+          <div
+            className={`t-rise max-h-[90vh] overflow-hidden rounded-[1.6em] border-[0.15em] border-ink bg-surface px-[2.6em] pb-[2.2em] pt-[2em] shadow-[0.5em_0.5em_0_var(--ink)] ${
+              ties.length > 2 ? "w-[min(72em,92vw)]" : "w-[min(46em,86vw)]"
+            }`}
+          >
+            <p className="text-[1.2em] font-semibold text-pink-ink">Bal gooien</p>
+            <h2 id="tie-title" className="mt-[0.3em] text-[2.6em] font-black leading-[1.05] tracking-[-0.02em]">
+              {ties.length === 1 ? `${ties[0].label}: volledig gelijk` : "Volledig gelijke standen"}
+            </h2>
+            {ties.some((t) => t.kind === "ranking") && (
+              <p className="mt-[0.4em] text-[1.25em] text-ink-2">
+                {ties.length === 1 ? "Dit bepaalt hun plaats in de knock-out." : "Tussen poules bepaalt dit de plaats in de knock-out."}
+              </p>
+            )}
+            <div className={`mt-[1.2em] grid gap-x-[2em] gap-y-[1em] ${ties.length > 2 ? "grid-cols-2" : "grid-cols-1"}`}>
+              {ties.map((t) => (
+                <div key={t.key}>
+                  {ties.length > 1 && <p className="mb-[0.35em] text-[1.15em] font-bold text-ink-2">{t.label}</p>}
+                  <ul className="flex flex-wrap gap-[0.5em]">
+                    {t.teams.map((x) => (
+                      <li key={x.id} className={`rounded-[0.6em] border-[0.1em] border-ink px-[0.7em] py-[0.3em] font-bold ${chipSize}`}>{x.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+            <p className="mt-[1.4em] text-[1.4em] leading-snug text-ink-2">
+              Eén speler per ploeg komt naar de wedstrijdtafel en gooit één bal. Wie het dichtst bij het cochonnet ligt, gaat voor.
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Voet: legende + tijdbalk */}
-      <footer className="flex items-center gap-[1.5em] px-[2em] pb-[0.9em] text-[0.95em] text-ink-2">
+      {(slide.kind !== "courts" || paused) && (
+      <footer className="flex items-center gap-[1.5em] px-[1.6em] pb-[0.6em] text-[0.95em] text-ink-2">
         {slide.kind === "poules" && (
           <>
             <span className="inline-flex items-center gap-[0.5em]"><span className="h-[1em] w-[0.3em] rounded bg-pink" /> top {advancing} door</span>
             {bestNths > 0 && <span className="inline-flex items-center gap-[0.5em]"><span className="h-[1em] w-[0.3em] rounded bg-ink/40" /> bij de {bestNths} beste {advancing + 1}des</span>}
-            <span>G = gespeeld · winst 2, gelijk 1</span>
+            {ties.length > 0 && <span><span className="rounded-full border border-pink/50 bg-pink-soft px-[0.55em] font-semibold text-pink-ink">bal gooien</span> = volledig gelijk, beslist met één bal</span>}
           </>
         )}
+        {slide.kind === "bracket" && swapped.size > 0 && (
+          <span><span className="inline-flex h-[1.4em] w-[1.4em] items-center justify-center rounded-full bg-ink font-bold text-paper">⇄</span> = tegenstander gewisseld, zodat poulegenoten elkaar niet meteen treffen</span>
+        )}
         {paused && <span className="font-semibold text-pink-ink">Gepauzeerd (spatie)</span>}
-        <span className="ml-auto">← → wisselen · spatie pauze · F volledig scherm</span>
       </footer>
+      )}
       {!paused && (
         <div className="h-[0.3em] bg-rule">
           <div key={`${idx}-${tick}`} className="h-full bg-pink" style={{ animation: `tv-progress ${SLIDE_MS}ms linear both` }} />
@@ -208,63 +273,76 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
 
 // ── Op de banen ───────────────────────────────────────────────────────────────
 
-function Courts({ matches, nameOf, now, page }: Readonly<{ matches: TournamentMatch[]; nameOf: Map<number, string>; now: number; page: number }>) {
+/**
+ * Eén rij per baan: wat er nu speelt (groot) en wat daarna komt (klein).
+ * Rijen vullen het scherm gelijk op, zodat er geen lege kaarten staan.
+ */
+function Courts({
+  matches, nameOf, pouleOf, now, page,
+}: Readonly<{ matches: TournamentMatch[]; nameOf: Map<number, string>; pouleOf: Map<number, string>; now: number; page: number }>) {
   const allTracks = [...new Set(matches.map((m) => m.track).filter((t): t is number => t !== null))].sort((a, b) => a - b);
   const tracks = allTracks.slice(page * COURTS_PER_SLIDE, (page + 1) * COURTS_PER_SLIDE);
   const sorted = [...matches].filter((m) => m.scheduledAt).sort((a, b) => a.scheduledAt!.localeCompare(b.scheduledAt!));
   const name = (id: number | null) => (id ? nameOf.get(id) ?? "?" : "Nog te bepalen");
+  const what = (m: TournamentMatch) =>
+    m.phase === "GROUP_STAGE" ? (m.pouleId ? `Poule ${pouleOf.get(m.pouleId) ?? ""}` : "Poule") : KO_SHORT[m.phase] ?? "";
   if (tracks.length === 0) {
     return <p className="flex h-full items-center justify-center text-[2em] text-ink-2">Het schema volgt nog.</p>;
   }
   return (
-    <div
-      className="grid h-full gap-[1.2em]"
-      style={{
-        gridTemplateColumns: `repeat(${Math.min(tracks.length, 6)}, minmax(0, 1fr))`,
-      }}
-    >
-      {tracks.map((t) => {
-        const own = sorted.filter((m) => m.track === t);
-        const cur = own.find((m) => matchStatus(m, now) === "live") ?? own.find((m) => matchStatus(m, now) === "next");
-        const after = own.filter((m) => m !== cur && matchStatus(m, now) === "next").slice(0, 2);
-        const live = cur && matchStatus(cur, now) === "live";
-        return (
-          <section
-            key={t}
-            className={`flex min-h-0 flex-col overflow-hidden rounded-[1.1em] border-2 bg-surface ${live ? "border-pink" : "border-rule"}`}
-          >
-            <div className={`flex items-center justify-between px-[1.1em] py-[0.6em] ${live ? "bg-pink-soft" : ""}`}>
-              <h2 className="text-[1.6em] font-bold tracking-tight">Baan {t}</h2>
-              {live ? (
-                <span className="inline-flex items-center gap-[0.45em] text-[1.15em] font-semibold text-pink-ink"><span className="t-live-dot" /> bezig</span>
-              ) : cur ? (
-                <span className="font-mono text-[1.3em] font-semibold text-ink-2">{fmtTime(cur.scheduledAt)}</span>
-              ) : null}
+    <div className="flex h-full flex-col overflow-hidden rounded-[1.1em] border border-rule bg-surface">
+      <div className="grid grid-cols-[6.5em_minmax(0,1.5fr)_minmax(0,1fr)] border-b border-rule text-[0.95em] text-ink-2">
+        <span className="px-[1.2em] py-[0.5em]">Baan</span>
+        <span className="px-[1.2em] py-[0.5em]">Nu</span>
+        <span className="border-l border-rule px-[1.2em] py-[0.5em]">Daarna</span>
+      </div>
+      <div className="grid min-h-0 flex-1" style={{ gridTemplateRows: `repeat(${tracks.length}, minmax(0, 1fr))` }}>
+        {tracks.map((t) => {
+          const own = sorted.filter((m) => m.track === t);
+          const cur = own.find((m) => matchStatus(m, now) === "live") ?? own.find((m) => matchStatus(m, now) === "next");
+          const after = own.filter((m) => m !== cur && matchStatus(m, now) === "next").slice(0, 2);
+          const live = !!cur && matchStatus(cur, now) === "live";
+          return (
+            <div key={t} className="grid min-h-0 grid-cols-[6.5em_minmax(0,1.5fr)_minmax(0,1fr)] border-b border-rule last:border-b-0">
+              <div className="flex items-center justify-center">
+                <span className="text-[2.2em] font-medium leading-none text-ink-2 tabular-nums">{t}</span>
+              </div>
+
+              {/* Nu */}
+              {cur ? (
+                <div className="flex min-w-0 flex-col justify-center gap-[0.15em] px-[1.2em]">
+                  <span className="flex items-center gap-[0.5em] text-[1em] text-ink-2">
+                    {live ? <span>bezig</span> : <span className="tabular-nums">{fmtTime(cur.scheduledAt)}</span>}
+                    <span>·</span>
+                    <span>{what(cur)}</span>
+                  </span>
+                  <span className="flex min-w-0 items-baseline gap-[0.5em] text-[1.7em] font-medium leading-tight">
+                    <span className="truncate">{name(cur.teamAId)}</span>
+                    <span className="shrink-0 text-[0.55em] font-normal text-ink-2">tegen</span>
+                    <span className="truncate">{name(cur.teamBId)}</span>
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center px-[1.2em] text-[1.3em] text-ink-2">Geen wedstrijden meer</div>
+              )}
+
+              {/* Daarna */}
+              <div className="flex min-w-0 flex-col justify-center gap-[0.35em] border-l border-rule px-[1.2em]">
+                {after.length === 0 ? (
+                  <span className="text-[1.05em] text-ink-2">—</span>
+                ) : (
+                  after.map((m) => (
+                    <span key={m.id} className="flex min-w-0 items-baseline gap-[0.6em] text-[1.1em]">
+                      <span className="shrink-0 tabular-nums text-ink-2">{fmtTime(m.scheduledAt)}</span>
+                      <span className="truncate">{name(m.teamAId)} <span className="text-ink-2">–</span> {name(m.teamBId)}</span>
+                    </span>
+                  ))
+                )}
+              </div>
             </div>
-            {cur ? (
-              <div className="flex flex-1 flex-col justify-center gap-[0.25em] px-[1.1em]">
-                <span className="line-clamp-2 text-[1.75em] font-semibold leading-[1.15]">{name(cur.teamAId)}</span>
-                <span className="text-[1.1em] font-medium text-ink-2">tegen</span>
-                <span className="line-clamp-2 text-[1.75em] font-semibold leading-[1.15]">{name(cur.teamBId)}</span>
-              </div>
-            ) : (
-              <p className="flex flex-1 items-center px-[1.1em] text-[1.5em] text-ink-2">Geen wedstrijden meer</p>
-            )}
-            {after.length > 0 && (
-              <div className="flex flex-col gap-[0.6em] border-t border-rule bg-paper px-[1.1em] py-[0.8em]">
-                <span className="text-[0.95em] font-medium text-ink-2">Daarna</span>
-                {after.map((m) => (
-                  <div key={m.id} className="flex flex-col text-[1.1em] leading-snug">
-                    <span className="font-mono font-semibold text-ink-2">{fmtTime(m.scheduledAt)}</span>
-                    <span className="truncate">{name(m.teamAId)}</span>
-                    <span className="truncate">{name(m.teamBId)}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }

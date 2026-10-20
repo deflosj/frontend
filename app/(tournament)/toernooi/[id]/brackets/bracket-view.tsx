@@ -3,10 +3,10 @@
 import { Trophy } from "lucide-react";
 import { useMemo, useState } from "react";
 
-import { KO_ROUNDS, bracketSize, feederLabels, isKnockout, knockoutScheduleFor, posNumber, projectedKnockout, useAutoRefresh } from "@/lib/tournament-live";
+import { KO_ROUNDS, bracketSize, feederLabels, isKnockout, knockoutScheduleFor, posNumber, pouleTables, projectedKnockout, rankTeams, swappedFirstRound, useAutoRefresh } from "@/lib/tournament-live";
 import type { Phase, TournamentMatch, TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
 import { fmtTime } from "@/utils/DateHelpers";
-import { PageHead } from "../_shared";
+import { ForfeitTag, PageHead } from "../_shared";
 import { IconArrow, Segmented, TeamSearch, useAnimKey, usePersisted } from "../_filters";
 import { FollowStar, StarMark, useFollowed } from "../_follow";
 import { ForwardBracket, MirroredBracket } from "./ko-bracket";
@@ -63,6 +63,11 @@ export function BracketView({ matches: allMatches, teams, poules, advancingPerPo
   );
 
   const size = bracketSize(matches);
+  // Waar de tegenstander gewisseld is om poulegenoten uit elkaar te houden.
+  const swapped = useMemo(
+    () => swappedFirstRound(rankTeams(pouleTables(poules, teams), advancingPerPoule, bestNths), matches),
+    [poules, teams, advancingPerPoule, bestNths, matches]
+  );
   const nameOf = useMemo(() => new Map(teams.map((t) => [t.id, t.name])), [teams]);
   const byPos = useMemo(() => new Map(matches.filter((m) => m.bracketPos).map((m) => [m.bracketPos!, m])), [matches]);
 
@@ -152,6 +157,7 @@ export function BracketView({ matches: allMatches, teams, poules, advancingPerPo
         className="group flex min-h-[30px] w-full items-center gap-2 text-left disabled:cursor-default md:min-h-[22px]"
       >
         <span className={`min-w-0 flex-1 truncate ${big ? "text-[0.95rem]" : "text-[0.9375rem] md:text-[0.8125rem]"} ${sideCls(id, s)} ${id ? "group-hover:underline group-hover:underline-offset-2" : ""}`}>{followed.has(id) && <StarMark />}{name}</span>
+        {id && s.m?.forfeitTeamId === id && <ForfeitTag />}
         <span className={`min-w-5 text-right font-bold tabular-nums ${big ? "text-base" : "text-base md:text-[0.8125rem]"} ${s.winner && s.winner !== id ? "font-medium text-ink-2" : ""}`}>
           {score ?? ""}
         </span>
@@ -169,6 +175,11 @@ export function BracketView({ matches: allMatches, teams, poules, advancingPerPo
             <span>{s.pos.replace(/^R(32|16)-/, "#")}</span>
             {s.m.scheduledAt && <>·<span>{fmtTime(s.m.scheduledAt)}</span></>}
             {s.m.track !== null && <>·<span>baan {s.m.track}</span></>}
+            {swapped.get(s.pos) && (
+              <span title={swapped.get(s.pos)} className="ml-auto inline-flex items-center gap-1 rounded-full bg-ink px-1.5 text-paper">
+                <span aria-hidden>⇄</span> gewisseld<span className="sr-only">: {swapped.get(s.pos)}</span>
+              </span>
+            )}
           </div>
         )}
         {row(s.m?.teamAId ?? null, s.a, s.m?.scoreA)}
@@ -181,7 +192,7 @@ export function BracketView({ matches: allMatches, teams, poules, advancingPerPo
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
-        <PageHead title="Knock-out" subtitle={`${size} teams · ${rounds.map((r) => r.short).join(" → ")}`} />
+        <PageHead title="Knock-out" />
         {champId ? (
           <div className="t-pop flex items-center gap-3 rounded-full bg-pink-soft py-2 pl-2 pr-4" style={{ animationDelay: "300ms" }}>
             <span className="flex h-9 w-9 items-center justify-center rounded-full bg-pink text-[#16161a]"><Trophy size={15} strokeWidth={1.75} aria-hidden /></span>
@@ -231,6 +242,15 @@ export function BracketView({ matches: allMatches, teams, poules, advancingPerPo
         </div>
       )}
 
+      {swapped.size > 0 && (
+        <p className="flex items-start gap-2 text-[0.8125rem] leading-relaxed text-ink-2">
+          <span aria-hidden className="mt-[0.1rem] inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-ink text-[0.75rem] font-bold text-paper">⇄</span>
+          <span>
+            Ploegen uit dezelfde poule spelen in de eerste ronde niet tegen elkaar. Daarom {swapped.size === 1 ? "is bij één match" : `zijn bij ${swapped.size} matchen`} de tegenstander gewisseld met een match van gelijke sterkte.
+          </span>
+        </p>
+      )}
+
       {/* ── Bracket op laptop: langs twee kanten naar de finale ─ */}
       {mode === "bracket" && (
         // Breder dan de gewone inhoud, zodat 32 namen naast elkaar passen.
@@ -244,6 +264,7 @@ export function BracketView({ matches: allMatches, teams, poules, advancingPerPo
               isFollowed={followed.has}
               onPick={pick}
               projected={projected}
+              swapped={swapped}
             />
           </div>
         </div>
@@ -260,6 +281,7 @@ export function BracketView({ matches: allMatches, teams, poules, advancingPerPo
             isFollowed={followed.has}
             onPick={pick}
             projected={projected}
+            swapped={swapped}
           />
         </div>
       )}

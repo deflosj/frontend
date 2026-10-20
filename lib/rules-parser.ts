@@ -1,11 +1,13 @@
 /**
  * Zet de vrije reglementtekst om in secties, zodat de reglementpagina een
  * index kan tonen. Een sectiekop is een regel van de vorm `── Titel ──`.
- * Genummerde regels (`1. ...`) worden samengevoegd tot één lijst.
+ * Genummerde regels (`1. ...`) worden samengevoegd tot één lijst, regels die
+ * met `- ` of `• ` beginnen tot een opsomming.
  */
 
 export interface RulesBlock {
-  type: "paragraph" | "list";
+  /** list = genummerd (volgorde telt), bullets = opsomming. */
+  type: "paragraph" | "list" | "bullets";
   text?: string;
   items?: string[];
 }
@@ -18,6 +20,7 @@ export interface RulesSection {
 
 const HEADING = /^\s*[─—-]{2,}\s*(.+?)\s*[─—-]{2,}\s*$/;
 const NUMBERED = /^\s*\d+[.)]\s+(.*)$/;
+const BULLET = /^\s*[-•*]\s+(.*)$/;
 
 export function slugify(text: string): string {
   return text
@@ -32,6 +35,7 @@ function toBlocks(lines: string[]): RulesBlock[] {
   const blocks: RulesBlock[] = [];
   let paragraph: string[] = [];
   let list: string[] = [];
+  let bullets: string[] = [];
 
   const flushParagraph = () => {
     if (paragraph.length) {
@@ -43,6 +47,10 @@ function toBlocks(lines: string[]): RulesBlock[] {
     if (list.length) {
       blocks.push({ type: "list", items: list });
       list = [];
+    }
+    if (bullets.length) {
+      blocks.push({ type: "bullets", items: bullets });
+      bullets = [];
     }
   };
 
@@ -58,7 +66,16 @@ function toBlocks(lines: string[]): RulesBlock[] {
     const numbered = NUMBERED.exec(trimmed);
     if (numbered) {
       flushParagraph();
+      if (bullets.length) flushList();
       list.push(numbered[1]);
+      continue;
+    }
+
+    const bullet = BULLET.exec(trimmed);
+    if (bullet) {
+      flushParagraph();
+      if (list.length) flushList();
+      bullets.push(bullet[1]);
       continue;
     }
 

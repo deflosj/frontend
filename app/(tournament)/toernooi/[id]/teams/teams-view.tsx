@@ -4,7 +4,7 @@ import { Search } from "lucide-react";
 import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 
-import { compareStanding, isPlayed, matchStatus, pouleLetter, useNow } from "@/lib/tournament-live";
+import { comparePouleRank, isPlayed, matchStatus, pouleLetter, useNow } from "@/lib/tournament-live";
 import type { TournamentMatch, TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
 import { rosterOf } from "@/lib/team-roster";
 import { fmtTime } from "@/utils/DateHelpers";
@@ -48,7 +48,7 @@ export function TeamsView({ teams, poules, matches, tournamentId }: Readonly<Pro
   const placeOf = useMemo(() => {
     const map = new Map<number, number>();
     for (const p of groupPoules) {
-      teams.filter((t) => t.pouleId === p.id).sort(compareStanding).forEach((t, i) => map.set(t.id, i + 1));
+      teams.filter((t) => t.pouleId === p.id).sort(comparePouleRank).forEach((t, i) => map.set(t.id, i + 1));
     }
     return map;
   }, [teams, groupPoules]);
@@ -97,7 +97,7 @@ export function TeamsView({ teams, poules, matches, tournamentId }: Readonly<Pro
       const out = groupPoules
         .map((p) => {
           const own = rows.filter((r) => r.team.pouleId === p.id);
-          own.sort((a, b) => (started ? compareStanding(a.team, b.team) : a.team.name.localeCompare(b.team.name, "nl")));
+          own.sort((a, b) => (started ? comparePouleRank(a.team, b.team) : a.team.name.localeCompare(b.team.name, "nl")));
           return { key: String(p.id), label: `Poule ${pouleLetter(p)}`, rows: own };
         })
         .filter((g) => g.rows.length > 0);

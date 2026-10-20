@@ -15,6 +15,7 @@ import {
   isKnockout,
   qualifyReason,
   rankTeams,
+  tiebreaksNeeded,
   useAutoRefresh,
   useNow,
   type RankedTeam,
@@ -84,6 +85,12 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
   const ranking = useMemo(() => rankTeams(tables, advancingPerPoule, bestNths), [tables, advancingPerPoule, bestNths]);
   const rankById = useMemo(() => new Map(ranking.map((r) => [r.team.id, r])), [ranking]);
   const trackOf = useMemo(() => pouleTracks(matches), [matches]);
+  // Bal gooien nodig (volledig gelijk na een uitgespeelde poule).
+  const openTies = useMemo(
+    () => tiebreaksNeeded({ poules, teams, matches, teamsAdvancingPerPoule: advancingPerPoule, bestNthsAdvancing: bestNths }).filter((t) => !t.resolved),
+    [poules, teams, matches, advancingPerPoule, bestNths]
+  );
+  const tiedIds = useMemo(() => new Set(openTies.flatMap((t) => t.teams.map((x) => x.id))), [openTies]);
   const tracks = [...new Set(trackOf.values())].sort((a, b) => a - b);
   const qualifyCount = ranking.filter((r) => r.qualifies).length;
   // Voorlopige tegenstander in de eerste knock-outronde, "als het nu stopt".
@@ -356,11 +363,14 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
                           className={`relative grid min-h-11 grid-cols-[34px_minmax(0,1fr)_26px_44px_42px] items-center border-b border-rule text-sm tabular-nums transition-colors last:border-0 before:absolute before:bottom-2 before:left-0 before:top-2 before:w-1 before:rounded-r before:content-[''] sm:min-h-10 sm:grid-cols-[34px_minmax(0,1fr)_26px_26px_30px_26px_44px_46px] sm:text-[0.8125rem] ${bar} ${t.id === teamId ? "bg-pink-soft" : ""}`}
                         >
                           <span role="cell" className="pl-4 font-bold">{place}</span>
-                          <span role="cell" className="min-w-0">
-                            <button type="button" onClick={() => pick(t.id)} className={`block max-w-full truncate text-left hover:underline hover:underline-offset-2 ${followed.has(t.id) ? "font-bold text-pink-ink" : "font-semibold"}`}>
+                          <span role="cell" className="flex min-w-0 items-center">
+                            <button type="button" onClick={() => pick(t.id)} className={`block min-w-0 max-w-full truncate text-left hover:underline hover:underline-offset-2 ${followed.has(t.id) ? "font-bold text-pink-ink" : "font-semibold"}`}>
                               {followed.has(t.id) && <StarMark />}
                               {t.name}
                             </button>
+                            {tiedIds.has(t.id) && (
+                              <span title="Volledig gelijk: één speler per ploeg gooit één bal" className="ml-1.5 inline-flex shrink-0 rounded-full border border-pink/50 bg-pink-soft px-1.5 text-[0.6875rem] font-semibold text-pink-ink">bal gooien</span>
+                            )}
                           </span>
                           <span role="cell" className="text-right">{t.played}</span>
                           <span role="cell" className="hidden text-right sm:block">{t.won}</span>
@@ -374,7 +384,9 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
                   </div>
                   <p className="mt-auto border-t border-rule px-4 py-2.5 text-xs text-ink-2">
                     {done === pm.length
-                      ? "Poule afgewerkt"
+                      ? openTies.some((x) => x.pouleId === poule.id)
+                        ? "Poule afgewerkt · bal gooien beslist de volgorde"
+                        : "Poule afgewerkt"
                       : live
                         ? `Nu bezig${trackOf.get(poule.id) ? ` op baan ${trackOf.get(poule.id)}` : ""}`
                         : next
@@ -392,14 +404,15 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
             <IconInfo /> Hoe wordt de knock-out geloot?
           </button>
           <div key={animKey} className="t-rise overflow-x-auto rounded-2xl border border-rule bg-surface">
-            <div role="table" aria-label="Ranking na de poules" className="min-w-0 md:min-w-[720px]">
-              <div role="row" className="hidden min-h-[38px] grid-cols-[64px_minmax(0,1fr)_70px_56px_64px_56px_200px] items-center gap-2 border-b border-rule px-3 text-[0.72rem] font-semibold text-ink-2 md:grid">
+            <div role="table" aria-label="Ranking na de poules" className="min-w-0 md:min-w-[800px]">
+              <div role="row" className="hidden min-h-[38px] grid-cols-[64px_minmax(0,1fr)_70px_56px_64px_76px_60px_200px] items-center gap-2 border-b border-rule px-3 text-[0.72rem] font-semibold text-ink-2 md:grid">
                 <span role="columnheader">Plaats</span>
                 <span role="columnheader">Team</span>
                 <span role="columnheader" title="Poule en plaats in de poule">Poule</span>
                 <span role="columnheader" className="text-right">Pnt</span>
                 <span role="columnheader" className="text-right">+/−</span>
-                <span role="columnheader" className="text-right">Voor</span>
+                <span role="columnheader" className="text-right" title="Gescoorde punten in de poules">Gescoord</span>
+                <span role="columnheader" className="text-right" title="Punten tegen in de poules">Tegen</span>
                 <span role="columnheader">Status</span>
               </div>
               {shownRanking.map((r, i) => {
@@ -418,7 +431,7 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
                     {cut && <div className="border-b border-rule bg-pink-soft px-4 py-2.5 text-xs font-bold text-pink-ink md:px-6">{cut}</div>}
                     <div
                       role="row"
-                      className={`flex min-h-14 items-center gap-3 border-b border-rule px-3.5 tabular-nums last:border-0 md:grid md:min-h-11 md:grid-cols-[64px_minmax(0,1fr)_70px_56px_64px_56px_200px] md:gap-2 md:px-3 ${isMe ? "bg-pink-soft" : ""} ${r.qualifies ? "" : "text-ink-2"}`}
+                      className={`flex min-h-14 items-center gap-3 border-b border-rule px-3.5 tabular-nums last:border-0 md:grid md:min-h-11 md:grid-cols-[64px_minmax(0,1fr)_70px_56px_64px_76px_60px_200px] md:gap-2 md:px-3 ${isMe ? "bg-pink-soft" : ""} ${r.qualifies ? "" : "text-ink-2"}`}
                     >
                       <span role="cell" className="w-7 text-[0.95rem] font-extrabold md:w-auto md:text-sm">{r.seed}</span>
                       <span role="cell" className="flex min-w-0 flex-1 flex-col gap-0.5">
@@ -435,6 +448,7 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
                       <span role="cell" className="hidden text-right font-extrabold md:block">{r.team.points}</span>
                       <span role="cell" className={`hidden text-right md:block ${salCls(r.team.saldo)}`}>{fmtSal(r.team.saldo)}</span>
                       <span role="cell" className="hidden text-right md:block">{r.team.goalsFor}</span>
+                      <span role="cell" className="hidden text-right md:block">{r.team.goalsAgainst}</span>
                       <span role="cell">
                         <span className={`inline-flex h-6 items-center whitespace-nowrap rounded-full px-2.5 text-[0.7rem] font-bold ${KIND_CLS[r.kind]}`}>
                           <span className="md:hidden">{r.short}</span>
@@ -457,8 +471,10 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
           {qualifyCount > 0 && <> Dat zijn {qualifyCount} ploegen.</>}
         </p>
         <p>
-          Binnen een poule tellen eerst de punten (winst 2, gelijk 1, verlies 0), dan het saldo, dan de gemaakte punten.
-          Zo worden ook de {advancingPerPoule + 1}des onderling vergeleken.
+          Binnen een poule tellen eerst de punten (winst 2, gelijk 1, verlies 0). Bij gelijke punten: het onderling resultaat
+          (enkel bij twee ploegen), dan het saldo, de meeste gescoorde punten en de minste punten tegen. Is het dan nog gelijk,
+          dan gooit één speler per ploeg één bal.
+          Tussen poules (bv. de {advancingPerPoule + 1}des) tellen dezelfde criteria, zonder het onderling resultaat.
         </p>
         <p>
           Voor de loting komen eerst alle poulewinnaars (beste eerst), dan alle {advancingPerPoule}des
@@ -467,7 +483,11 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
         <p>
           In de eerste ronde speelt plaats 1 tegen de laatste plaats, plaats 2 tegen de voorlaatste, enzovoort.
           {bestNths > 0 && <> De beste poulewinnaar speelt dus tegen de zwakste {advancingPerPoule + 1}de die doorgaat.</>}{" "}
-          Twee ploegen uit dezelfde poule treffen elkaar nooit in de eerste ronde.
+          Twee ploegen uit dezelfde poule treffen elkaar niet in de eerste ronde: dan wordt de tegenstander gewisseld met
+          een match van gelijke sterkte (⇄ in de bracket).
+        </p>
+        <p>
+          Een ploeg met twee forfaits ligt uit het toernooi en gaat niet door; de volgende in de stand schuift op.
         </p>
         <Link href={`/toernooi/${params?.id ?? ""}/rules`} className="self-start font-semibold text-ink underline underline-offset-4">
           Naar het reglement

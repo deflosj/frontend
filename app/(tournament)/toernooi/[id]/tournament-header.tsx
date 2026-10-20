@@ -1,6 +1,6 @@
 "use client";
 
-import { CalendarDays, FileText, House, LayoutGrid, Menu, Trophy, Users, X } from "lucide-react";
+import { ArrowLeft, CalendarDays, FileText, House, LayoutGrid, Menu, Trophy, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -38,8 +38,8 @@ interface Props {
 
 /**
  * Schil van het toernooiplatform. Het toernooi staat los van de vzw-site:
- * eigen merk (naam + jaar), eigen navigatie, en enkel onderin het
- * mobiele menu een weg terug naar de hoofdsite.
+ * eigen merk (naam + jaar), eigen navigatie, en links een vaste knop terug
+ * naar de hoofdsite (op gsm en laptop).
  */
 export function TournamentHeader({ id, name, year, isLive }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
@@ -59,6 +59,18 @@ export function TournamentHeader({ id, name, year, isLive }: Readonly<Props>) {
   return (
     <header className="sticky top-0 z-40 border-b border-rule bg-paper/85 backdrop-blur-[14px] backdrop-saturate-150">
       <div className="mx-auto flex h-[60px] max-w-6xl items-stretch gap-3 px-5 sm:px-8">
+        {/* ── Terug naar de vzw-site ─────────────────────────── */}
+        <Link
+          href="/"
+          title={`Terug naar ${siteConfig.name}`}
+          aria-label={`Terug naar ${siteConfig.name}`}
+          className="-ml-2 flex shrink-0 items-center gap-1.5 self-center rounded-full px-2 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink"
+        >
+          <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
+          <span className="hidden lg:inline">{siteConfig.name}</span>
+        </Link>
+        <span aria-hidden className="my-4 w-px shrink-0 bg-rule" />
+
         {/* ── Merk van het toernooi ──────────────────────────── */}
         <Link
           href={hrefFor(id, "")}
@@ -90,11 +102,11 @@ export function TournamentHeader({ id, name, year, isLive }: Readonly<Props>) {
                 key={segment || "overview"}
                 href={hrefFor(id, segment)}
                 aria-current={active ? "page" : undefined}
-                className={`relative flex shrink-0 items-center gap-1.5 px-3 text-[0.8125rem] font-semibold transition-colors ${
+                className={`relative flex shrink-0 items-center gap-1.5 px-2.5 text-[0.8125rem] lg:px-3 font-semibold transition-colors ${
                   active ? "text-ink" : "text-ink/35 hover:text-ink/70"
                 }`}
               >
-                <Icon size={15} strokeWidth={1.75} aria-hidden />
+                <Icon size={15} strokeWidth={1.75} aria-hidden className="hidden lg:block" />
                 {label}
                 <span
                   className={`absolute bottom-0 left-3 right-3 h-0.5 rounded-full bg-pink transition-opacity ${
@@ -152,12 +164,6 @@ export function TournamentHeader({ id, name, year, isLive }: Readonly<Props>) {
             <div className="flex items-center gap-3 rounded-xl px-1.5 text-sm font-medium text-ink-2">
               <ThemeDropdown />
             </div>
-            <Link
-              href="/"
-              className="mt-0.5 flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-medium text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink"
-            >
-              ← Terug naar {siteConfig.name}
-            </Link>
           </div>
         </div>
       )}

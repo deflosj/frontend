@@ -32,7 +32,7 @@ export function RulesIndex({ sections }: Readonly<Props>) {
 
   return (
     <nav className="flex flex-col gap-0.5" aria-label="Op deze pagina">
-      <p className="mb-2 ml-3.5 text-[0.65rem] font-bold uppercase tracking-[0.14em] text-ink-2">
+      <p className="mb-2 ml-3.5 text-[0.8125rem] font-semibold text-ink-2">
         Op deze pagina
       </p>
       {sections.map(({ id, title }) => (
@@ -44,6 +44,23 @@ export function RulesIndex({ sections }: Readonly<Props>) {
               ? "bg-pink-soft font-semibold text-pink-ink"
               : "font-medium text-ink-2 hover:bg-ink/[0.04]"
           }`}
+        >
+          {title}
+        </a>
+      ))}
+    </nav>
+  );
+}
+
+/** Op gsm: dezelfde secties als een horizontale rij om naartoe te springen. */
+export function RulesIndexChips({ sections }: Readonly<Props>) {
+  return (
+    <nav aria-label="Secties" className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [&>*]:shrink-0">
+      {sections.map(({ id, title }) => (
+        <a
+          key={id}
+          href={`#${id}`}
+          className="rounded-full border-2 border-ink px-3.5 py-1.5 text-[0.8125rem] font-semibold text-ink active:bg-pink-soft"
         >
           {title}
         </a>

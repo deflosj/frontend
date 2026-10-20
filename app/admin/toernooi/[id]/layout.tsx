@@ -8,6 +8,7 @@ import { apiFetch } from "@/lib/api";
 import type { ActiveTournament } from "@/lib/tournament-types";
 import { TOURNAMENT_PHASES, tournamentPhase } from "@/lib/tournament-phase";
 import { TournamentProvider } from "./tournament-context";
+import { TiebreakBanner } from "./tiebreak-banner";
 
 const SECTIONS = [
   { slug: "", label: "Overzicht" },
@@ -53,7 +54,10 @@ export default function TournamentLayout({
   if (pathname.startsWith(`${base}/eventdag`)) {
     return (
       <TournamentProvider value={{ tournament, setTournament, reload }}>
-        <div className="mx-auto min-w-0 max-w-[640px]">{children}</div>
+        <div className="mx-auto flex min-w-0 max-w-[640px] flex-col gap-4">
+          <TiebreakBanner />
+          {children}
+        </div>
       </TournamentProvider>
     );
   }
@@ -126,6 +130,8 @@ export default function TournamentLayout({
             })}
           </nav>
         </header>
+
+        <TiebreakBanner />
 
         {/* min-w-0: brede tabellen scrollen binnen hun kaart i.p.v. de pagina op te rekken */}
         <div className="min-w-0">{children}</div>
