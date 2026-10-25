@@ -1,5 +1,6 @@
 "use client";
 
+import { brusselsDayKey, fmtDateTime } from "@/utils/DateHelpers";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type {
@@ -44,7 +45,7 @@ function exportCsv(rows: Registration[]) {
     ...rows.map((r) =>
       [
         r.id,
-        new Date(r.timestamp).toLocaleString("nl-BE"),
+        fmtDateTime(r.timestamp),
         escape(r.firstName),
         escape(r.lastName),
         r.dateOfBirth,
@@ -63,7 +64,7 @@ function exportCsv(rows: Registration[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `inschrijvingen_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `inschrijvingen_${brusselsDayKey()}.csv`;
   document.body.appendChild(a);
   a.click();
   a.remove();

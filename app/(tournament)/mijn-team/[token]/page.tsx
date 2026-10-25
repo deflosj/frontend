@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDateTime } from "@/utils/DateHelpers";
 import { use, useEffect, useState } from "react";
 
 import { API_BASE } from "@/lib/api";
@@ -9,7 +10,7 @@ import { MatchBlock, PageHead, SectionHead } from "../../toernooi/[id]/_shared";
 import { TournamentHeader } from "../../toernooi/[id]/tournament-header";
 
 function formatDeadline(iso: string): string {
-  return new Date(iso).toLocaleString("nl-BE", {
+  return fmtDateTime(iso, {
     weekday: "long",
     day: "numeric",
     month: "long",

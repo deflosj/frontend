@@ -1,5 +1,6 @@
 "use client";
 
+import { fromDatetimeLocal, toDatetimeLocal } from "@/utils/DateHelpers";
 import { Save } from "lucide-react";
 import { useState } from "react";
 import Link from "next/link";
@@ -69,7 +70,7 @@ function BasicsForm() {
 
 function DeadlineForm() {
   const { tournament, setTournament } = useTournament();
-  const [deadline, setDeadline] = useState(tournament.teamEditDeadline ? tournament.teamEditDeadline.slice(0, 16) : "");
+  const [deadline, setDeadline] = useState(toDatetimeLocal(tournament.teamEditDeadline));
   const [busy, setBusy] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
@@ -79,7 +80,7 @@ function DeadlineForm() {
     try {
       const updated = await apiFetch<ActiveTournament>(`tournaments/${tournament.id}`, {
         method: "PATCH",
-        body: JSON.stringify({ teamEditDeadline: deadline ? new Date(deadline).toISOString() : null }),
+        body: JSON.stringify({ teamEditDeadline: fromDatetimeLocal(deadline) }),
       });
       setTournament({ ...tournament, teamEditDeadline: updated.teamEditDeadline ?? null });
       setSaved(true);

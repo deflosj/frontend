@@ -1,3 +1,4 @@
+import { fmtDate } from "@/utils/DateHelpers";
 import { notFound } from "next/navigation";
 import { API_BASE } from "@/lib/api";
 import { BackLink } from "@/components/ui/back-link";
@@ -36,7 +37,7 @@ export default async function NewsArticlePage(props: any) {
         <article className="mt-6">
           <h1 className="text-3xl font-bold text-ink">{post.title}</h1>
           {post.publishedAt && (
-            <p className="mt-2 text-sm text-ink-2">{new Date(post.publishedAt).toLocaleDateString("nl-BE")}</p>
+            <p className="mt-2 text-sm text-ink-2">{fmtDate(post.publishedAt)}</p>
           )}
 
           {post.coverUrl && (

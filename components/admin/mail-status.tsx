@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDate, fmtTime } from "@/utils/DateHelpers";
 import { Mail } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { apiFetch } from "@/lib/api";
@@ -50,8 +51,8 @@ function fmtReset(iso: string | null, monthly: boolean) {
   if (!iso) return "";
   const d = new Date(iso);
   return monthly
-    ? `vanaf ${d.toLocaleDateString("nl-BE", { day: "numeric", month: "long" })}`
-    : `om ${d.toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}`;
+    ? `vanaf ${fmtDate(d, { day: "numeric", month: "long" })}`
+    : `om ${fmtTime(d)}`;
 }
 
 function Meter({ label, w, monthly }: Readonly<{ label: string; w: QuotaWindow; monthly?: boolean }>) {

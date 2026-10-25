@@ -1,5 +1,6 @@
 "use client";
 
+import { brusselsHour, fmtDate as fmtDateBE } from "@/utils/DateHelpers";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { LucideIcon } from "lucide-react";
@@ -29,14 +30,14 @@ function daysAgo(iso: string): number {
 }
 
 function greeting(): string {
-  const h = new Date().getHours();
+  const h = brusselsHour();
   if (h < 12) return "Goeiemorgen";
   if (h < 18) return "Goeiemiddag";
   return "Goeienavond";
 }
 
 function fmtDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("nl-BE", { day: "numeric", month: "short" });
+  return fmtDateBE(iso, { day: "numeric", month: "short" });
 }
 
 const TONE: Record<Tone, string> = {
@@ -205,7 +206,7 @@ export default function AdminDashboardPage() {
       sub: `Laatste: ${unread[0].subject ? `“${unread[0].subject}”` : `van ${unread[0].name}`}`,
     });
   }
-  const today = new Date().toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" });
+  const today = fmtDateBE(new Date(), { weekday: "long", day: "numeric", month: "long" });
 
   return (
     <div className="mx-auto flex max-w-[1120px] flex-col gap-7">

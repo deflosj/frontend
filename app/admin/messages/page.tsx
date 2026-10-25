@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDate } from "@/utils/DateHelpers";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { DataTable, type ColumnDef } from "@/components/admin/data-table";
@@ -32,7 +33,7 @@ function StatusBadge({ status }: Readonly<{ status: string }>) {
 }
 
 function DateCell({ iso }: Readonly<{ iso: string }>) {
-  return <span className="mono">{new Date(iso).toLocaleDateString("nl-BE")}</span>;
+  return <span className="mono">{fmtDate(iso)}</span>;
 }
 
 interface ActionCellProps {

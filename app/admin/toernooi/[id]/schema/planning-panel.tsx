@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtTime, fromDatetimeLocal, toDatetimeLocal, todayAtLocal } from "@/utils/DateHelpers";
 import { Save } from "lucide-react";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
@@ -10,10 +11,7 @@ import { Notice, NumberField, Panel, Subhead } from "@/components/admin/ui";
 
 /** Vandaag om 13:00 in het formaat dat datetime-local verwacht. */
 function defaultStartTime(): string {
-  const d = new Date();
-  d.setHours(13, 0, 0, 0);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return todayAtLocal(13);
 }
 
 /** Eind van de poulefase (laatste poulematch + slotduur) als waarde voor een
@@ -23,9 +21,7 @@ function latestGroupEnd(t: ActiveTournament, slotMinutes: number): string | null
     .filter((m) => m.phase === "GROUP_STAGE" && m.scheduledAt)
     .map((m) => new Date(m.scheduledAt as string).getTime());
   if (times.length === 0) return null;
-  const d = new Date(Math.max(...times) + slotMinutes * 60_000);
-  const pad = (n: number) => String(n).padStart(2, "0");
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  return toDatetimeLocal(Math.max(...times) + slotMinutes * 60_000);
 }
 
 export function PlanningPanel({
@@ -101,7 +97,7 @@ export function PlanningPanel({
   const koStartAt    = koMatches.length
     ? Math.min(...koMatches.filter((m) => m.scheduledAt).map((m) => new Date(m.scheduledAt!).getTime()))
     : lastGroup ? lastGroup + (groupSlot + koSettings.knockoutPauseMinutes) * 60_000 : 0;
-  const hhmm = (t: number) => new Date(t).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
+  const hhmm = (t: number) => fmtTime(t);
 
   async function saveFormat() {
     setFormatNote(""); setSavingFormat(true);
@@ -155,7 +151,7 @@ export function PlanningPanel({
       const body: Record<string, unknown> =
         kind === "poules"
           ? {
-              startTime: new Date(startTime).toISOString(),
+              startTime: fromDatetimeLocal(startTime) ?? new Date().toISOString(),
               slotMinutes: Number.parseInt(slotMinutes, 10),
               trackCount: tracks,
             }
@@ -180,7 +176,7 @@ export function PlanningPanel({
         const end = result.lastSlotAt ? new Date(result.lastSlotAt) : null;
         setGenNote(
           `${result.created} poulewedstrijden over ${tracks} banen` +
-          (end ? ` · laatste start om ${end.toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" })}.` : ".")
+          (end ? ` · laatste start om ${fmtTime(end)}.` : ".")
         );
       } else {
         setGenNote(`Knock-out met ${result.totalAdvancing} teams: ${result.created} wedstrijden aangemaakt.`);

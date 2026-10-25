@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDate, fmtDateTime as fmtDateTimeBE } from "@/utils/DateHelpers";
 import { useState } from "react";
 import { Sheet, SheetContent } from "@/components/admin/sheet";
 import { useDrawer } from "@/components/admin/drawer-provider";
@@ -26,12 +27,8 @@ function Row({ label, value }: Readonly<{ label: string; value: React.ReactNode 
   );
 }
 
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("nl-BE");
-}
-
 function fmtDateTime(iso: string) {
-  return new Date(iso).toLocaleString("nl-BE", {
+  return fmtDateTimeBE(iso, {
     day: "2-digit", month: "2-digit", year: "numeric",
     hour: "2-digit", minute: "2-digit",
   });

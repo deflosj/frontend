@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtTime } from "@/utils/DateHelpers";
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Flag, Minus } from "lucide-react";
 import { apiFetch } from "@/lib/api";
@@ -14,7 +15,7 @@ const MAX_SCORE = 99;
 export const isPlayed = (m: TournamentMatch) => m.scoreA !== null && m.scoreB !== null;
 
 export const hhmm = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" }) : "—";
+  iso ? fmtTime(iso) : "—";
 
 /** Speelbare wedstrijden (beide teams gekend) per baan, op volgorde van tijd. */
 export function matchesByTrack(matches: TournamentMatch[]): Map<number, TournamentMatch[]> {

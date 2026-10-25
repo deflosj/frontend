@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDate } from "@/utils/DateHelpers";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Sheet, SheetContent } from "@/components/admin/sheet";
@@ -32,7 +33,7 @@ interface Props {
 }
 
 function eventLabel(ev: { title: string; startsAt: string }) {
-  return `${ev.title} · ${new Date(ev.startsAt).toLocaleDateString("nl-BE", { day: "numeric", month: "short", year: "numeric" })}`;
+  return `${ev.title} · ${fmtDate(ev.startsAt, { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
 export function HelperDrawer({ editing, events, defaultEventId, onSaved }: Readonly<Props>) {

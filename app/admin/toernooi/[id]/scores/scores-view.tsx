@@ -1,5 +1,6 @@
 "use client";
 
+import { toTimeInput } from "@/utils/DateHelpers";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import type { ActiveTournament, TournamentMatch, TournamentTeam } from "@/lib/tournament-types";
@@ -16,10 +17,7 @@ import { useTournament } from "../tournament-context";
 /** De backend geeft een ISO-tijdstip terug; aan de wedstrijdtafel wil je
  *  gewoon "15:00" zien en typen. */
 function toTimeField(iso: string | null): string {
-  if (!iso) return "";
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "";
-  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+  return toTimeInput(iso);
 }
 
 function MatchRow({

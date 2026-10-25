@@ -123,7 +123,7 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
   }, [slides.length]);
 
   const slide = slides[Math.min(idx, slides.length - 1)];
-  const clock = new Date(now).toLocaleTimeString("nl-BE", { hour: "2-digit", minute: "2-digit" });
+  const clock = fmtTime(now);
   const liveCount = matches.filter((m) => matchStatus(m, now) === "live").length;
   const pageNote = (sl: { page: number; pages: number }) => (sl.pages > 1 ? ` ${sl.page + 1}/${sl.pages}` : "");
   const title =

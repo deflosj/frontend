@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDate } from "@/utils/DateHelpers";
 import type {
   RaceCategory,
   Registration,
@@ -11,10 +12,6 @@ import { DetailDrawer } from "@/components/admin/dorpelingenkoers/detail-drawer"
 import { Button } from "@/components/ui/button";
 
 // ── Cell components (module scope — required by S6478) ────────────────────────
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("nl-BE");
-}
 
 export function StatusBadge({ status }: Readonly<{ status: RegistrationStatus }>) {
   if (status === "APPROVED") return <span className="badge badge--green">Goedgekeurd</span>;

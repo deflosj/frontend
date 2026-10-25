@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDate } from "@/utils/DateHelpers";
 import { useEffect, useMemo, useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { MembersTabs } from "@/components/admin/members-tabs";
@@ -58,7 +59,7 @@ function ActiveBadge({ isActive }: Readonly<{ isActive: boolean }>) {
 }
 
 function DateCell({ iso }: Readonly<{ iso: string }>) {
-  return <>{new Date(iso).toLocaleDateString("nl-BE")}</>;
+  return <>{fmtDate(iso)}</>;
 }
 
 // ── Column specs ──────────────────────────────────────────────────────────────

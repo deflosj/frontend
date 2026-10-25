@@ -14,7 +14,7 @@ import {
   useNow,
 } from "@/lib/tournament-live";
 import type { ActiveTournament, TournamentMatch } from "@/lib/tournament-types";
-import { fmtTime } from "@/utils/DateHelpers";
+import { fmtDate, fmtTime } from "@/utils/DateHelpers";
 import { IconClose, TeamSearch } from "./_filters";
 import { FollowStar, useFollowed } from "./_follow";
 
@@ -82,7 +82,7 @@ export function OverviewView({ tournament }: Readonly<{ tournament: ActiveTourna
     const first = sorted[0];
     const days = first ? Math.ceil((t(first) - now) / 86_400_000) : null;
     kicker = days && days > 0 ? `${name}, over ${days} ${days === 1 ? "dag" : "dagen"}` : name;
-    title = first ? capital(new Date(first.scheduledAt!).toLocaleDateString("nl-BE", { weekday: "long", day: "numeric", month: "long" })) : "Binnenkort";
+    title = first ? capital(fmtDate(first.scheduledAt!, { weekday: "long", day: "numeric", month: "long" })) : "Binnenkort";
     status = [
       first ? `Eerste bal om ${fmtTime(first.scheduledAt)}.` : "Het schema volgt nog.",
       teams.length ? `${teams.length} ploegen doen mee.` : "",

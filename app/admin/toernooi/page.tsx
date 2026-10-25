@@ -1,5 +1,6 @@
 "use client";
 
+import { brusselsDayKey, fmtDate } from "@/utils/DateHelpers";
 import { Check, Pencil, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
@@ -25,7 +26,7 @@ function exportCsv(rows: TournamentListItem[]) {
         escape(t.name),
         t.year,
         t.status,
-        new Date(t.createdAt).toLocaleDateString("nl-BE"),
+        fmtDate(t.createdAt),
       ].join(";")
     ),
   ];
@@ -33,7 +34,7 @@ function exportCsv(rows: TournamentListItem[]) {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `toernooien_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `toernooien_${brusselsDayKey()}.csv`;
   a.click();
   URL.revokeObjectURL(url);
 }
@@ -127,10 +128,6 @@ function makeActionColumn(
 }
 
 // ── All columns (static definition) ──────────────────────────────────────────
-
-function fmtDate(iso: string) {
-  return new Date(iso).toLocaleDateString("nl-BE");
-}
 
 const ALL_COLUMNS: ColumnDef<TournamentListItem>[] = [
   {

@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDate } from "@/utils/DateHelpers";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Check, Copy } from "lucide-react";
@@ -68,7 +69,7 @@ export default function TournamentOverviewPage() {
   const koMatches = t.matches.filter((m) => m.phase !== "GROUP_STAGE");
   const played = (ms: typeof t.matches) => ms.filter((m) => m.scoreA !== null && m.scoreB !== null).length;
   const deadline = t.teamEditDeadline
-    ? new Date(t.teamEditDeadline).toLocaleDateString("nl-BE", { day: "numeric", month: "long" })
+    ? fmtDate(t.teamEditDeadline, { day: "numeric", month: "long" })
     : null;
 
   const perPoule = t.teamsPerPoule ?? 4;

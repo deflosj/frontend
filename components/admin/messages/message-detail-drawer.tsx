@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDateTime } from "@/utils/DateHelpers";
 import { useEffect, useState } from "react";
 import { Sheet, SheetContent } from "@/components/admin/sheet";
 import { useDrawer } from "@/components/admin/drawer-provider";
@@ -35,7 +36,7 @@ function MessageDetail({ message }: Readonly<{ message: ContactMessage }>) {
           </>
         )}
         <dt className="font-medium text-ink-2">Datum</dt>
-        <dd>{new Date(message.createdAt).toLocaleString("nl-BE")}</dd>
+        <dd>{fmtDateTime(message.createdAt)}</dd>
         <dt className="font-medium text-ink-2">Status</dt>
         <dd>
           <span className={`badge badge--${STATUS_BADGE[message.status]}`}>{STATUS_LABELS[message.status]}</span>

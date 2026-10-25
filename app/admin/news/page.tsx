@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDate } from "@/utils/DateHelpers";
 import { useEffect, useMemo, useState } from "react";
 import { usePageSize } from "@/hooks/use-page-size";
 import { apiFetch } from "@/lib/api";
@@ -28,7 +29,7 @@ function PublishBadge({ publishedAt }: Readonly<{ publishedAt: string | null }>)
 
 function DateCell({ iso }: Readonly<{ iso: string | null }>) {
   if (!iso) return <>—</>;
-  return <>{new Date(iso).toLocaleDateString("nl-BE")}</>;
+  return <>{fmtDate(iso)}</>;
 }
 
 function EditButton({ onClick }: Readonly<{ onClick: () => void }>) {

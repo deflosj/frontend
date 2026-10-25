@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDateTime } from "@/utils/DateHelpers";
 import { Save } from "lucide-react";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
@@ -128,7 +129,7 @@ export function ReglementEditor({
   }
 
   const updated = tournament.rulesUpdatedAt
-    ? new Date(tournament.rulesUpdatedAt).toLocaleString("nl-BE", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })
+    ? fmtDateTime(tournament.rulesUpdatedAt, { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })
     : null;
 
   return (

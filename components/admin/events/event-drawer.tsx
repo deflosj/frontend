@@ -1,5 +1,6 @@
 "use client";
 
+import { fromDatetimeLocal, toDatetimeLocal } from "@/utils/DateHelpers";
 import { useState } from "react";
 import { apiFetch } from "@/lib/api";
 import { Sheet, SheetContent } from "@/components/admin/sheet";
@@ -22,11 +23,6 @@ interface Form {
   startsAt: string;
   endsAt: string;
   isPublished: boolean;
-}
-
-function toDatetimeLocal(iso: string | null): string {
-  if (!iso) return "";
-  return new Date(iso).toISOString().slice(0, 16);
 }
 
 interface Props {
@@ -66,8 +62,8 @@ export function EventDrawer({ editing, onSaved }: Readonly<Props>) {
         title: form.title,
         description: form.description || null,
         location: form.location || null,
-        startsAt: form.startsAt,
-        endsAt: form.endsAt || null,
+        startsAt: fromDatetimeLocal(form.startsAt),
+        endsAt: fromDatetimeLocal(form.endsAt),
         isPublished: form.isPublished,
       };
       if (editing) {

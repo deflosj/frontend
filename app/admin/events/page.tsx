@@ -1,5 +1,6 @@
 "use client";
 
+import { fmtDate } from "@/utils/DateHelpers";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { usePageSize } from "@/hooks/use-page-size";
 import Link from "next/link";
@@ -22,7 +23,7 @@ function LocationCell({ location }: Readonly<{ location: string | null }>) {
 }
 
 function StartDateCell({ startsAt }: Readonly<{ startsAt: string }>) {
-  return <span className="mono">{new Date(startsAt).toLocaleDateString("nl-BE")}</span>;
+  return <span className="mono">{fmtDate(startsAt)}</span>;
 }
 
 function PublishBadge({ isPublished }: Readonly<{ isPublished: boolean }>) {

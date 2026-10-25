@@ -1,10 +1,11 @@
+import { fmtDate } from "@/utils/DateHelpers";
 import Link from "next/link";
 import EventService from "@/services/EventService";
 import NewsService from "@/services/NewsService";
 
 //TODO: move to utils
 function formatDate(iso: string): string {
-  return new Date(iso).toLocaleDateString("nl-BE", {
+  return fmtDate(iso, {
     day: "numeric",
     month: "short",
     year: "numeric",
@@ -100,7 +101,7 @@ export default async function HomePage() {
                   <div className="p-4">
                     {post.publishedAt && (
                       <p className="text-[0.6rem] font-semibold uppercase tracking-[0.08em] text-ink-2 sm:text-[0.625rem]">
-                        {new Date(post.publishedAt).toLocaleDateString("nl-BE", { day: "numeric", month: "short", year: "numeric" })}
+                        {fmtDate(post.publishedAt, { day: "numeric", month: "short", year: "numeric" })}
                       </p>
                     )}
                     <h3 className="mt-1 text-sm font-bold text-ink lg:text-base">{post.title}</h3>
