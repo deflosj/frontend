@@ -24,7 +24,8 @@ const VIEWS: { key: View; label: string }[] = [
 export default function EventdayPage() {
   const { tournament } = useTournament();
   const [view, setView] = useState<View>("aanmelden");
-  const [track, setTrack] = useState<number | null>(null);
+  // Vanuit "Banen" één baan openen, los van de eigen keuze.
+  const [focusTrack, setFocusTrack] = useState<number | null>(null);
   // Scheidsrechters kunnen niet naar het toernooibeheer: geen terugknop.
   const [canManage, setCanManage] = useState(false);
   useEffect(() => {
@@ -32,8 +33,35 @@ export default function EventdayPage() {
     setCanManage(role === "ADMIN" || role === "SUPERADMIN");
   }, []);
 
+  // "Mijn banen": elke scheidsrechter kiest op zijn gsm welke banen hij doet.
+  // Bewaard per toestel en per toernooi, zodat herladen niets kwijtspeelt.
+  const storeKey = `eventdag:${tournament.id}:mijnBanen`;
+  const [myTracks, setMyTracksState] = useState<number[]>([]);
+  useEffect(() => {
+    try {
+      const raw = globalThis.localStorage?.getItem(storeKey);
+      const saved: unknown = raw ? JSON.parse(raw) : null;
+      if (Array.isArray(saved) && saved.length) {
+        setMyTracksState(saved.filter((n): n is number => typeof n === "number"));
+        setView("scores");
+      }
+    } catch {
+      /* geen opslag beschikbaar: dan gewoon alle banen */
+    }
+  }, [storeKey]);
+  function setMyTracks(next: number[]) {
+    const sorted = [...new Set(next)].sort((a, b) => a - b);
+    setMyTracksState(sorted);
+    setFocusTrack(null);
+    try {
+      globalThis.localStorage?.setItem(storeKey, JSON.stringify(sorted));
+    } catch {
+      /* negeren */
+    }
+  }
+
   function openTrack(t: number) {
-    setTrack(t);
+    setFocusTrack(t);
     setView("scores");
   }
 
@@ -74,8 +102,8 @@ export default function EventdayPage() {
       </header>
 
       {view === "aanmelden" && <CheckInView />}
-      {view === "scores" && <ScoreboardView track={track} onTrackChange={setTrack} />}
-      {view === "banen" && <TracksView onOpenTrack={openTrack} />}
+      {view === "scores" && <ScoreboardView myTracks={myTracks} onMyTracksChange={setMyTracks} focusTrack={focusTrack} onClearFocus={() => setFocusTrack(null)} />}
+      {view === "banen" && <TracksView onOpenTrack={openTrack} myTracks={myTracks} />}
     </div>
   );
 }

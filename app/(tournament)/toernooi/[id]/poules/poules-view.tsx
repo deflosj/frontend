@@ -22,6 +22,7 @@ import {
 } from "@/lib/tournament-live";
 import type { TournamentMatch, TournamentPoule, TournamentTeam } from "@/lib/tournament-types";
 import { fmtTime } from "@/utils/DateHelpers";
+import { rosterOf } from "@/lib/team-roster";
 import { PageHead } from "../_shared";
 import {
   Chip,
@@ -79,6 +80,13 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
   const [onlyQual, setOnlyQual] = usePersisted("standen", "onlyQual", false);
   const [open, setOpen] = useState(false);
   const [info, setInfo] = useState(false);
+  // Tik op een ploeg: korte fiche met spelers + link naar de teampagina.
+  const [sheetId, setSheetId] = useState<number | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const openSheet = (id: number) => {
+    setSheetId(id);
+    setSheetOpen(true);
+  };
   const params = useParams<{ id?: string }>();
 
   const tables = useMemo(() => pouleTables(poules, teams), [poules, teams]);
@@ -281,7 +289,7 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
                   style={{ animationDelay: `${i * 45}ms` }}
                 >
                   <div className="flex items-center gap-2">
-                    <button type="button" onClick={() => pick(r.team.id)} className="min-w-0 flex-1 truncate text-left text-base font-bold hover:underline hover:underline-offset-2">
+                    <button type="button" onClick={() => openSheet(r.team.id)} className="min-w-0 flex-1 truncate text-left text-base font-bold hover:underline hover:underline-offset-2">
                       {r.team.name}
                     </button>
                     <span className={`inline-flex h-7 shrink-0 items-center rounded-full px-3 text-xs font-bold ${KIND_CLS[r.kind]}`}>
@@ -364,7 +372,7 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
                         >
                           <span role="cell" className="pl-4 font-bold">{place}</span>
                           <span role="cell" className="flex min-w-0 items-center">
-                            <button type="button" onClick={() => pick(t.id)} className={`block min-w-0 max-w-full truncate text-left hover:underline hover:underline-offset-2 ${followed.has(t.id) ? "font-bold text-pink-ink" : "font-semibold"}`}>
+                            <button type="button" onClick={() => openSheet(t.id)} className={`block min-w-0 max-w-full truncate text-left hover:underline hover:underline-offset-2 ${followed.has(t.id) ? "font-bold text-pink-ink" : "font-semibold"}`}>
                               {followed.has(t.id) && <StarMark />}
                               {t.name}
                             </button>
@@ -435,7 +443,7 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
                     >
                       <span role="cell" className="w-7 text-[0.95rem] font-extrabold md:w-auto md:text-sm">{r.seed}</span>
                       <span role="cell" className="flex min-w-0 flex-1 flex-col gap-0.5">
-                        <button type="button" onClick={() => pick(r.team.id)} className={`block max-w-full truncate text-left text-sm hover:underline hover:underline-offset-2 ${followed.has(r.team.id) ? "font-bold text-pink-ink" : "font-semibold"}`}>
+                        <button type="button" onClick={() => openSheet(r.team.id)} className={`block max-w-full truncate text-left text-sm hover:underline hover:underline-offset-2 ${followed.has(r.team.id) ? "font-bold text-pink-ink" : "font-semibold"}`}>
                           {followed.has(r.team.id) && <StarMark />}
                           {r.team.name}
                         </button>
@@ -493,6 +501,98 @@ export function PoulesView({ poules, teams, matches, isActive, advancingPerPoule
           Naar het reglement
         </Link>
       </InfoSheet>
+      <TeamSheet
+        open={sheetOpen}
+        onClose={() => setSheetOpen(false)}
+        team={sheetId ? teams.find((t) => t.id === sheetId) : undefined}
+        tournamentId={params?.id ?? ""}
+        meta={(() => {
+          const t = sheetId ? teams.find((x) => x.id === sheetId) : undefined;
+          if (!t) return "";
+          const p = poules.find((x) => x.id === t.pouleId);
+          const r = rankById.get(t.id);
+          const parts = [
+            p ? `Poule ${pouleLetter(p)}` : "",
+            p && trackOf.get(p.id) ? `baan ${trackOf.get(p.id)}` : "",
+            r ? `${r.place}${r.place === 1 ? "ste" : "de"} · ${t.points} pnt` : "",
+          ];
+          return parts.filter(Boolean).join(" · ");
+        })()}
+        followed={followed}
+        onHighlight={(id) => {
+          pick(id);
+          setSheetOpen(false);
+        }}
+      />
     </div>
+  );
+}
+
+function TeamSheet({
+  open,
+  onClose,
+  team,
+  tournamentId,
+  meta,
+  followed,
+  onHighlight,
+}: Readonly<{
+  open: boolean;
+  onClose: () => void;
+  team: TournamentTeam | undefined;
+  tournamentId: string;
+  meta: string;
+  followed: ReturnType<typeof useFollowed>;
+  onHighlight: (id: number) => void;
+}>) {
+  if (!team) return null;
+  const players = rosterOf(team);
+  return (
+    <InfoSheet open={open} onClose={onClose} title={team.name}>
+      <div className="flex items-center justify-between gap-3">
+        {meta && <p className="text-sm font-semibold text-ink-2">{meta}</p>}
+        <FollowStar teamId={team.id} name={team.name} followed={followed} />
+      </div>
+      {team.motto?.trim() && (
+        <figure className="flex flex-col gap-1 rounded-2xl bg-pink-soft px-4 pb-3.5 pt-3 text-pink-ink">
+          <span aria-hidden className="h-6 font-serif text-5xl leading-[0.9] text-pink">&ldquo;</span>
+          <blockquote className="font-serif text-2xl italic leading-tight">{team.motto.trim()}</blockquote>
+          <figcaption className="text-xs font-semibold opacity-75">Motto van de ploeg</figcaption>
+        </figure>
+      )}
+      <div className="flex flex-col gap-2">
+        <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.14em] text-ink-2">Spelers</p>
+        {players.length > 0 ? (
+          <ul className="flex flex-wrap gap-2">
+            {players.map((p, i) => (
+              <li
+                key={`${p.name}-${i}`}
+                className={`rounded-full border px-3.5 py-1.5 text-[0.8125rem] ${p.captain ? "border-pink/20 bg-pink-soft font-semibold text-ink" : "border-rule text-ink-2"}`}
+              >
+                {p.name}
+                {p.captain && " · kapitein"}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm">Nog geen spelers ingevuld.</p>
+        )}
+      </div>
+      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+        <Link
+          href={`/toernooi/${tournamentId}/teams/${team.id}`}
+          className="t-press flex h-[52px] flex-1 items-center justify-center rounded-2xl bg-ink px-5 text-[0.9375rem] font-bold text-paper md:h-11 md:rounded-xl md:text-sm"
+        >
+          Naar teampagina
+        </Link>
+        <button
+          type="button"
+          onClick={() => onHighlight(team.id)}
+          className="t-press flex h-[52px] flex-1 items-center justify-center rounded-2xl border border-rule bg-surface px-5 text-[0.9375rem] font-semibold text-ink md:h-11 md:rounded-xl md:text-sm"
+        >
+          Toon in de stand
+        </button>
+      </div>
+    </InfoSheet>
   );
 }

@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowLeft, CalendarDays, FileText, House, LayoutGrid, Menu, Trophy, Users, X } from "lucide-react";
+import { CalendarDays, FileText, House, LayoutGrid, Menu, Trophy, Users, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 
 import { ThemeDropdown } from "@/components/layout/theme-dropdown";
@@ -38,8 +39,8 @@ interface Props {
 
 /**
  * Schil van het toernooiplatform. Het toernooi staat los van de vzw-site:
- * eigen merk (naam + jaar), eigen navigatie, en links een vaste knop terug
- * naar de hoofdsite (op gsm en laptop).
+ * eigen merk (naam + jaar), eigen navigatie, en links het logo van de
+ * hoofdsite als kruimelpad (De Flosj / Toernooi).
  */
 export function TournamentHeader({ id, name, year, isLive }: Readonly<Props>) {
   const [open, setOpen] = useState(false);
@@ -59,17 +60,29 @@ export function TournamentHeader({ id, name, year, isLive }: Readonly<Props>) {
   return (
     <header className="sticky top-0 z-40 border-b border-rule bg-paper/85 backdrop-blur-[14px] backdrop-saturate-150">
       <div className="mx-auto flex h-[60px] max-w-6xl items-stretch gap-3 px-5 sm:px-8">
-        {/* ── Terug naar de vzw-site ─────────────────────────── */}
+        {/* ── Hoofdsite: logo van De Flosj, als "kruimelpad" ─────
+             Bewust geen pijltje: dat las iedereen als een terugknop.
+             Logo + schuine streep = "dit toernooi hoort bij De Flosj". */}
         <Link
           href="/"
-          title={`Terug naar ${siteConfig.name}`}
-          aria-label={`Terug naar ${siteConfig.name}`}
-          className="-ml-2 flex shrink-0 items-center gap-1.5 self-center rounded-full px-2 py-1.5 text-[0.8125rem] font-medium text-ink-2 transition-colors hover:bg-ink/5 hover:text-ink"
+          title={`Naar de site van ${siteConfig.name}`}
+          aria-label={`Naar de site van ${siteConfig.name}`}
+          className="group -ml-1.5 flex shrink-0 items-center gap-2 self-center rounded-lg px-1.5 py-1 transition-colors hover:bg-ink/5"
         >
-          <ArrowLeft size={16} strokeWidth={1.75} aria-hidden />
-          <span className="hidden lg:inline">{siteConfig.name}</span>
+          <Image
+            src="/logo_transparant.png"
+            alt=""
+            width={26}
+            height={26}
+            className="rounded-md transition-opacity group-hover:opacity-75"
+          />
+          <span className="hidden text-[0.8125rem] font-semibold text-ink-2 transition-colors group-hover:text-ink lg:inline">
+            {siteConfig.name}
+          </span>
         </Link>
-        <span aria-hidden className="my-4 w-px shrink-0 bg-rule" />
+        <span aria-hidden className="-mx-1 shrink-0 self-center text-lg font-light text-rule">
+          /
+        </span>
 
         {/* ── Merk van het toernooi ──────────────────────────── */}
         <Link

@@ -3,10 +3,10 @@
 import { useMemo } from "react";
 import { ChevronRight } from "lucide-react";
 import { useTournament } from "../tournament-context";
-import { hhmm, isPlayed, matchesByTrack } from "./scoreboard-view";
+import { hhmm, isPlayed, matchesByTrack, trackQueue } from "./scoreboard-view";
 
 /** Overzicht van alle banen: wat er nu speelt en hoe ver elke baan zit. */
-export function TracksView({ onOpenTrack }: Readonly<{ onOpenTrack: (t: number) => void }>) {
+export function TracksView({ onOpenTrack, myTracks = [] }: Readonly<{ onOpenTrack: (t: number) => void; myTracks?: number[] }>) {
   const { tournament } = useTournament();
   const byTrack = useMemo(() => matchesByTrack(tournament.matches), [tournament.matches]);
   const name = (id: number | null) => tournament.teams.find((t) => t.id === id)?.name ?? "?";
@@ -21,9 +21,10 @@ export function TracksView({ onOpenTrack }: Readonly<{ onOpenTrack: (t: number) 
 
   return (
     <ul className="flex flex-col gap-2 pb-6">
-      {[...byTrack.entries()].map(([track, list]) => {
+      {/* Eigen banen eerst (sort is stabiel). */}
+      {[...byTrack.entries()].sort(([a], [b]) => Number(myTracks.includes(b)) - Number(myTracks.includes(a))).map(([track, list]) => {
         const done = list.filter(isPlayed).length;
-        const current = list.find((m) => !isPlayed(m));
+        const { current, skipped } = trackQueue(list);
         return (
           <li key={track}>
             <button
@@ -39,7 +40,13 @@ export function TracksView({ onOpenTrack }: Readonly<{ onOpenTrack: (t: number) 
                 {current ? (
                   <span className="truncate text-sm font-semibold">{name(current.teamAId)} – {name(current.teamBId)}</span>
                 ) : (
-                  <span className="text-sm font-semibold text-[var(--ok-fg)]">Klaar</span>
+                  <span className="text-sm font-semibold text-[var(--ok-fg)]">{skipped.length ? "Enkel overgeslagen over" : "Klaar"}</span>
+                )}
+                {(myTracks.includes(track) || skipped.length > 0) && (
+                  <span className="flex flex-wrap gap-1.5">
+                    {myTracks.includes(track) && <span className="rounded-full bg-ink/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-ink">Mijn baan</span>}
+                    {skipped.length > 0 && <span className="rounded-full bg-pink-soft px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-pink-ink">{skipped.length} overgeslagen</span>}
+                  </span>
                 )}
                 <span className="flex items-center gap-2 text-xs text-ink-2">
                   {current && <span className="font-mono">{hhmm(current.scheduledAt)}</span>}

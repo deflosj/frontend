@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+
+import { API_BASE } from "@/lib/api";
 
 import {
   comparePouleRank,
@@ -16,7 +18,6 @@ import {
   rankTeams,
   swappedFirstRound,
   tiebreaksNeeded,
-  useAutoRefresh,
   useNow,
 } from "@/lib/tournament-live";
 import type { ActiveTournament, TournamentMatch } from "@/lib/tournament-types";
@@ -24,6 +25,43 @@ import { fmtTime } from "@/utils/DateHelpers";
 import { MirroredBracket } from "@/app/(tournament)/toernooi/[id]/brackets/ko-bracket";
 
 const SLIDE_MS = 15_000;
+/** Zo vaak haalt de tv nieuwe scores op, ook als hij op pauze staat. */
+const POLL_MS = 10_000;
+
+/**
+ * De tv haalt zelf de laatste stand op bij de API, los van de dia's of de
+ * pauze. Zo staat een aangepaste score er binnen enkele seconden, ook als de
+ * tv op de finales gepauzeerd staat. Mislukt een keer ophalen (wifi weg), dan
+ * blijft het laatste beeld staan en probeert hij het gewoon opnieuw.
+ */
+function useLiveTournament(initial: ActiveTournament): ActiveTournament {
+  const [data, setData] = useState(initial);
+  useEffect(() => setData(initial), [initial]);
+  useEffect(() => {
+    let alive = true;
+    const load = async () => {
+      try {
+        const res = await fetch(`${API_BASE}tournaments/${initial.id}`, { cache: "no-store" });
+        if (!res.ok) return;
+        const next = (await res.json()) as ActiveTournament;
+        if (alive) setData({ ...next, id: initial.id });
+      } catch {
+        /* volgende keer opnieuw */
+      }
+    };
+    const t = setInterval(load, POLL_MS);
+    const onVisible = () => document.visibilityState === "visible" && void load();
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      alive = false;
+      clearInterval(t);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [initial.id]);
+  return data;
+}
+
+const slideKey = (s: Slide) => (s.kind === "bracket" ? "bracket" : `${s.kind}-${s.page}`);
 /** De tv hangt aan het raam: leesbaar tot ~3 m, dus er mag veel op één dia. */
 const POULES_PER_SLIDE = 6;
 const COURTS_PER_SLIDE = 6;
@@ -50,9 +88,9 @@ const LIGHT_THEME = {
 } as React.CSSProperties;
 
 
-export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament }>) {
+export function TvScreen({ tournament: initial }: Readonly<{ tournament: ActiveTournament }>) {
   // Vaker verversen dan de gewone pagina's: op de tv kijkt niemand op "vernieuwen".
-  useAutoRefresh(true, 30_000);
+  const tournament = useLiveTournament(initial);
   const now = useNow(10_000);
   const { name, year, teams, poules, matches } = tournament;
   const advancing = tournament.teamsAdvancingPerPoule ?? 2;
@@ -121,6 +159,21 @@ export function TvScreen({ tournament }: Readonly<{ tournament: ActiveTournament
     globalThis.addEventListener("keydown", onKey);
     return () => globalThis.removeEventListener("keydown", onKey);
   }, [slides.length]);
+
+  // Verandert het aantal dia's door nieuwe scores (bv. de banen-dia valt weg),
+  // dan blijft de tv op dezelfde dia staan in plaats van te verspringen.
+  const shownKey = useRef<string | null>(null);
+  useEffect(() => {
+    shownKey.current = slides[Math.min(idx, slides.length - 1)] ? slideKey(slides[Math.min(idx, slides.length - 1)]) : null;
+    // enkel bij bewust wisselen van dia
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idx, tick]);
+  useEffect(() => {
+    if (!shownKey.current) return;
+    const i = slides.findIndex((s) => slideKey(s) === shownKey.current);
+    if (i >= 0 && i !== idx) setIdx(i);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slides]);
 
   const slide = slides[Math.min(idx, slides.length - 1)];
   const clock = fmtTime(now);

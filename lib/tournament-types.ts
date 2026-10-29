@@ -99,6 +99,8 @@ export interface TournamentMatch {
   forfeitTeamId?: number | null;
   /** Automatisch forfait na twee eerdere forfaits. */
   forfeitAuto?: boolean;
+  /** Eventdag: bewust overgeslagen bij het ingeven, nog zonder score. */
+  skipped?: boolean;
 }
 
 export type TournamentStatus = "UPCOMING" | "ONGOING" | "COMPLETED";
